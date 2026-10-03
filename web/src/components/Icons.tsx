@@ -188,3 +188,16 @@ export const IconMoon = (p: IconProps) => (
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </Svg>
 );
+
+/** The app's mark: a hard hat (the site) on a shield (its safety record), in the accent green. The same drawing is
+ *  web/public/favicon.svg. The green outlines on the ridge and brim separate them from the dome. */
+export const LogoMark = ({ size = 32, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false" {...rest}>
+    <path d="M32 3 55 11v18.5C55 44.6 45.6 54.6 32 61 18.4 54.6 9 44.6 9 29.5V11Z" fill="#2b7a22" />
+    <g fill="#fff" stroke="#2b7a22" strokeWidth="2">
+      <path d="M17 40c0-9.8 6.7-17 15-17s15 7.2 15 17Z" stroke="none" />
+      <rect x="28.5" y="19" width="7" height="22" rx="3.5" />
+      <rect x="14" y="38" width="36" height="7" rx="3.5" />
+    </g>
+  </svg>
+);

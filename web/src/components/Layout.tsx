@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { MOCK_MODE } from "../api/client";
-import { IconShield } from "./Icons";
+import { LogoMark } from "./Icons";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -29,9 +29,7 @@ export function Layout() {
       <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <Link to="/" className="mr-auto flex min-h-10 items-center gap-2.5 text-ink">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-forest text-cta">
-              <IconShield size={17} />
-            </span>
+            <LogoMark size={32} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
             <span className="text-[17px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap">
               Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
             </span>

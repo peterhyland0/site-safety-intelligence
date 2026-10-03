@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the header toggle (data-theme on <html>), not the OS setting */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /*
  * Design tokens: Inter, near-black ink, a light-green call to action,
  * forest green, "concrete" grey bands and hairline borders. Light by default; dark is a forest-green
