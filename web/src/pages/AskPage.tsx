@@ -5,6 +5,7 @@ import type { AskResponse, ChatTurn } from "../api/types";
 import { useApi } from "../api/useApi";
 import { IconArrowLeft, IconInfo, IconSend, IconX } from "../components/Icons";
 import { EvidenceChip } from "../components/InspectionSheet";
+import { knownProjectName } from "../lib/chatPanel";
 import { Markdown } from "../lib/markdown";
 import { useTitle } from "../lib/useTitle";
 
@@ -126,7 +127,7 @@ export function ForemanChat({
   }
 
   const scorecardHref = `/projects/${encodeURIComponent(projectId)}`;
-  const projectName = project.data?.project.name;
+  const projectName = project.data?.project.name ?? knownProjectName(projectId);
   const llmOff = health.data && !health.data.llm_enabled;
   const Heading = variant === "page" ? "h1" : "h2";
 

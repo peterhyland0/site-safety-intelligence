@@ -21,6 +21,18 @@ export function useChatPanel(): ChatPanel | null {
   return useContext(ChatPanelContext);
 }
 
+// Project names already loaded by the scorecard, so the chat can show its project at once instead of
+// "Loading project…" while it fetches the project again.
+const knownNames = new Map<string, string>();
+
+export function rememberProjectName(projectId: string, name: string) {
+  knownNames.set(projectId, name);
+}
+
+export function knownProjectName(projectId: string): string | null {
+  return knownNames.get(projectId) ?? null;
+}
+
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {

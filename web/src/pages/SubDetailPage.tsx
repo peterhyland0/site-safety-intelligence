@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { api, errorMessage } from "../api/client";
 import type { Bucket, SubDetail } from "../api/types";
 import { useApi } from "../api/useApi";
+import { AskForemanButton } from "../components/AskForemanButton";
 import { HazardBreakdown, InjuryRates, LicenceCard, QuestionCard, RedFlagsTable } from "../components/EvidenceSections";
-import { IconChat, IconInfo, IconSpinner, IconTrash } from "../components/Icons";
+import { IconInfo, IconSpinner, IconTrash } from "../components/Icons";
 import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
@@ -112,10 +113,7 @@ export function SubDetailPage() {
         <p className="mt-2 text-sm text-ink-2">{VERDICTS[c.verdict].meaning}</p>
         <p className="mt-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-2">{d.coverage.sentence}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link to={`/projects/${encodeURIComponent(projectId)}/ask`} className="btn btn-secondary btn-sm">
-            <IconChat size={16} />
-            Ask about this sub
-          </Link>
+          <AskForemanButton projectId={projectId} label="Ask about this sub" className="btn btn-secondary btn-sm" />
         </div>
       </div>
 

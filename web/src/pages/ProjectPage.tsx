@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, errorMessage, MOCK_MODE } from "../api/client";
 import type { LookbackYears, ProjectDetail, SubCard as SubCardT, Verdict } from "../api/types";
@@ -10,6 +10,7 @@ import { LookbackToggle } from "../components/LookbackToggle";
 import { SubCard } from "../components/SubCard";
 import { BackLink, ErrorBanner, InlineError, Loading } from "../components/ui";
 import { VerdictIcon } from "../components/VerdictChip";
+import { rememberProjectName } from "../lib/chatPanel";
 import { formatDate, plural } from "../lib/format";
 import { US_STATES } from "../lib/parseSubs";
 import { useAdjudication } from "../lib/useAdjudication";
@@ -22,7 +23,11 @@ export function ProjectPage() {
   const [adding, setAdding] = useState(false);
   const [lookbackError, setLookbackError] = useState<string | null>(null);
   const [savingLookback, setSavingLookback] = useState(false);
-  useTitle(detail.data?.project.name ?? "Project");
+  const projectName = detail.data?.project.name;
+  useTitle(projectName ?? "Project");
+  useEffect(() => {
+    if (projectName) rememberProjectName(projectId, projectName);
+  }, [projectId, projectName]);
 
   const { setData, reload } = detail;
   const applyCard = useCallback(

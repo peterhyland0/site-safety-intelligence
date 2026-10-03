@@ -3,19 +3,27 @@ import { ASK_TOGGLE_ID, CHAT_PANEL_ID, useChatPanel } from "../lib/chatPanel";
 import { IconChat } from "./Icons";
 
 /** Opens the foreman chat: docked beside the page on wide screens, the full-page /ask route otherwise. */
-export function AskForemanButton({ projectId }: { projectId: string }) {
+export function AskForemanButton({
+  projectId,
+  label = "Ask the foreman assistant",
+  className = "btn btn-primary btn-sm",
+}: {
+  projectId: string;
+  label?: string;
+  className?: string;
+}) {
   const panel = useChatPanel();
-  const label = (
+  const content = (
     <>
       <IconChat size={16} />
-      Ask the foreman assistant
+      {label}
     </>
   );
 
   if (!panel?.canDock) {
     return (
-      <Link to={`/projects/${encodeURIComponent(projectId)}/ask`} className="btn btn-primary btn-sm">
-        {label}
+      <Link to={`/projects/${encodeURIComponent(projectId)}/ask`} className={className}>
+        {content}
       </Link>
     );
   }
@@ -25,12 +33,12 @@ export function AskForemanButton({ projectId }: { projectId: string }) {
     <button
       id={ASK_TOGGLE_ID}
       type="button"
-      className="btn btn-primary btn-sm"
+      className={className}
       aria-expanded={open}
       aria-controls={open ? CHAT_PANEL_ID : undefined}
       onClick={() => (open ? document.getElementById("ask-input")?.focus() : panel.open(projectId))}
     >
-      {label}
+      {content}
     </button>
   );
 }

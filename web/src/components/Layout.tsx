@@ -51,62 +51,64 @@ export function Layout() {
 
   return (
     <ChatPanelContext value={chatPanel}>
-    <div className={`flex flex-col ${isChat ? "h-dvh" : "min-h-dvh"}`}>
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2"
-      >
-        Skip to content
-      </a>
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-        {/* With the chat docked, the header's content lines up with the narrower page column. */}
-        <div className={panelProjectId ? "pr-[420px]" : undefined}>
-        <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-          <Link to="/" className="mr-auto flex min-h-10 items-center gap-2.5 text-ink">
-            <LogoMark size={32} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
-            <span className="text-[17px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap">
-              Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
-            </span>
-          </Link>
-          {MOCK_MODE ? (
-            <span
-              className="pill border-review-line bg-review-bg whitespace-nowrap text-review-fg"
-              title="Showing demo fixtures (VITE_MOCK=1)"
-            >
-              Demo<span className="hidden sm:inline">&nbsp;data</span>
-            </span>
-          ) : null}
-          <nav aria-label="Main" className="flex items-center gap-1">
-            <NavLink to="/" end className={navClass}>
-              Projects
-            </NavLink>
-            <NavLink to="/methodology" className={navClass}>
-              Method
-            </NavLink>
-            <ThemeToggle />
-          </nav>
-        </div>
-        </div>
-      </header>
-      <div className={`flex flex-1 ${isChat ? "min-h-0" : ""}`}>
-        <main
-          id="main"
-          className={`mx-auto w-full max-w-5xl min-w-0 flex-1 ${isChat ? "flex min-h-0 flex-col" : "px-4 pt-4 pb-16 sm:pt-6"}`}
+      <div className={`flex flex-col ${isChat ? "h-dvh" : "min-h-dvh"}`}>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2"
         >
-          <Outlet />
-        </main>
-        {panelProjectId ? (
-          <aside
-            id={CHAT_PANEL_ID}
-            aria-label="Foreman assistant"
-            onKeyDown={onPanelKeyDown}
-            className="sticky top-14 flex h-[calc(100dvh-3.5rem)] w-[420px] shrink-0 flex-col self-start border-l border-line bg-surface"
+          Skip to content
+        </a>
+        {/* With the chat docked, the header's content lines up with the narrower page column. */}
+        <header
+          className={`sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90 ${
+            panelProjectId ? "pr-[420px]" : ""
+          }`}
+        >
+          <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
+            <Link to="/" className="mr-auto flex min-h-10 items-center gap-2.5 text-ink">
+              <LogoMark size={32} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
+              <span className="text-[17px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap">
+                Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
+              </span>
+            </Link>
+            {MOCK_MODE ? (
+              <span
+                className="pill border-review-line bg-review-bg whitespace-nowrap text-review-fg"
+                title="Showing demo fixtures (VITE_MOCK=1)"
+              >
+                Demo<span className="hidden sm:inline">&nbsp;data</span>
+              </span>
+            ) : null}
+            <nav aria-label="Main" className="flex items-center gap-1">
+              <NavLink to="/" end className={navClass}>
+                Projects
+              </NavLink>
+              <NavLink to="/methodology" className={navClass}>
+                Method
+              </NavLink>
+              <ThemeToggle />
+            </nav>
+          </div>
+        </header>
+        <div className={`flex flex-1 ${isChat ? "min-h-0" : ""}`}>
+          <main
+            id="main"
+            className={`mx-auto w-full max-w-5xl min-w-0 flex-1 ${isChat ? "flex min-h-0 flex-col" : "px-4 pt-4 pb-16 sm:pt-6"}`}
           >
-            <ForemanChat key={panelProjectId} projectId={panelProjectId} variant="panel" onClose={chatPanel.close} />
-          </aside>
-        ) : null}
+            <Outlet />
+          </main>
+          {panelProjectId ? (
+            <aside
+              id={CHAT_PANEL_ID}
+              aria-label="Foreman assistant"
+              onKeyDown={onPanelKeyDown}
+              className="sticky top-14 flex h-[calc(100dvh-3.5rem)] w-[420px] shrink-0 flex-col self-start border-l border-line bg-surface"
+            >
+              <ForemanChat key={panelProjectId} projectId={panelProjectId} variant="panel" onClose={chatPanel.close} />
+            </aside>
+          ) : null}
+        </div>
       </div>
-    </div>
     </ChatPanelContext>
   );
 }
