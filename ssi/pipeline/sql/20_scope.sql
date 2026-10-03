@@ -3,13 +3,24 @@
 --   1. compute the establishment key (cleaned name + address key + zip + state) for EVERY inspection;
 --   2. keep every inspection of any establishment that has at least one construction-coded inspection.
 -- scope_reason records why each inspection is in.
+--
+-- History window: only inspections opened in the last {{HISTORY_YEARS}} years before the newest inspection
+-- in the data are kept (0 = every year back to 1972). Set with SSI_HISTORY_YEARS.
+CREATE OR REPLACE TABLE history_window AS
+SELECT CASE WHEN {{HISTORY_YEARS}} > 0 THEN (max_open - INTERVAL ({{HISTORY_YEARS}}) YEAR)::DATE
+            ELSE DATE '1900-01-01' END AS since
+FROM (SELECT max(try_cast(left(open_date, 10) AS DATE)) AS max_open FROM raw_inspection);
+
+CREATE OR REPLACE TABLE raw_inspection_window AS
+SELECT * FROM raw_inspection
+WHERE try_cast(left(open_date, 10) AS DATE) >= (SELECT since FROM history_window);
 CREATE OR REPLACE TABLE name_clean AS
 SELECT estab_name, clean_name(estab_name) AS clean_name
-FROM (SELECT DISTINCT estab_name FROM raw_inspection);
+FROM (SELECT DISTINCT estab_name FROM raw_inspection_window);
 
 CREATE OR REPLACE TABLE addr_clean AS
 SELECT mail_street, addr_key(mail_street) AS addr_key, clean_addr(mail_street) AS addr_clean, addr_unit(mail_street) AS addr_unit
-FROM (SELECT DISTINCT mail_street FROM raw_inspection);
+FROM (SELECT DISTINCT mail_street FROM raw_inspection_window);
 
 CREATE OR REPLACE TABLE insp_key AS
 SELECT i.activity_nr,
@@ -21,7 +32,7 @@ SELECT i.activity_nr,
        coalesce(i.naics_code LIKE '23%', false) AS is_naics23,
        coalesce(left(i.sic_code, 2) IN ('15', '16', '17'), false) AS is_sic_construction,
        is_placeholder(n.clean_name) AS is_placeholder
-FROM raw_inspection i
+FROM raw_inspection_window i
 LEFT JOIN name_clean n ON n.estab_name IS NOT DISTINCT FROM i.estab_name
 LEFT JOIN addr_clean a ON a.mail_street IS NOT DISTINCT FROM i.mail_street;
 

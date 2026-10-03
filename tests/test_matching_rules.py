@@ -99,3 +99,12 @@ def test_all_generic_name_in_another_state_is_excluded():
     assert decide(qr, c("QUALITY ROOFING", "", state="OH", city="AKRON"), GENERIC).bucket == EXCLUDED
     assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="KNOXVILLE"), GENERIC).bucket == UNCERTAIN
     assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="NASHVILLE"), GENERIC).bucket == MATCHED
+
+
+def test_city_spelling_variants_match():
+    from ssi.matching.rules import norm_city
+    assert norm_city("LaFollette") == norm_city("LA FOLLETTE")
+    assert norm_city("St. Louis") == norm_city("SAINT LOUIS")
+    assert norm_city("Fort Worth") == norm_city("FT WORTH")
+    d = q("DIXIE ROOFING", "DIXIE", state="TN", tier="medium", city="LaFollette")
+    assert decide(d, c("DIXIE ROOFING", "DIXIE", state="TN", city="LA FOLLETTE"), GENERIC).bucket == MATCHED

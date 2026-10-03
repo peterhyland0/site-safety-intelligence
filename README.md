@@ -10,7 +10,7 @@ A GC bidding a job pastes in its 10–15 subcontractors and gets a ranked scorec
 - **The foreman's view.** A phone chat that answers only from a fixed set of named queries.
   - Every figure is checked against the query results, and every event links to osha.gov.
   - If "the mechanical sub" could mean two subs, it asks which one.
-- **Data:** 2.5M OSHA construction inspections and 4.95M citations, all years (1972–2026). It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
+- **Data:** the last 10 years of OSHA construction enforcement: 322,607 inspections and 584,919 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
 > Demo project: *Hospital expansion, Nashville TN*, 13 real Southeast subs (`make seed-demo`). All facts come from public OSHA records; verdicts are mechanical summaries of those records, not judgements about any company.
 
@@ -81,7 +81,7 @@ flowchart LR
 | **Facts in DuckDB, decisions in Postgres.** | Each store fits its workload: scanning millions of rows for analysis vs small, concurrent transactional writes. Full history stays online at no hosting cost. | Two stores, joined in API code. That's cheap: a sub's scope is tens of keys. DuckDB has no trigram index, so candidate search uses a token-blocking table plus Jaro-Winkler. |
 | **Normalised facts; accidents ↔ inspections many-to-many.** | OSHA opens an inspection for *every* employer on a fatality site and copies the injury rows to each. Storing the accident once and linking it to each inspection avoids duplication and false attribution. | More joins; fine at this size. |
 | **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatcat_cited` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. | Extra logic in the pipeline. |
-| **Rollups are additive at establishment × year.** | The lookback window (3/5/10 years) is a setting, not a schema decision. A sub's figures are sums over its matched keys and years. The all-time red-flag table supports unlimited lookback for catastrophic events. | Duplicated data. Company-level medians can't be precomputed, but benchmarks describe *peers*, so that's fine. |
+| **Rollups are additive at establishment × year.** | The lookback window (3/5/10 years) is a setting, not a schema decision. A sub's figures are sums over its matched keys and years. The red-flag table covers the whole history window, so catastrophic events count however old they are within it. | Duplicated data. Company-level medians can't be precomputed, but benchmarks describe *peers*, so that's fine. |
 | **Flag, don't delete.** Blank penalty ≠ $0; deleted citations are marked, not removed; an `other` hazard bucket. | Totals always reconcile: hazard counts sum to citation counts, a build check. Every quirk stays visible. | Every query has to respect the flags, so only the named queries touch the data. |
 | **One meaning per business term, in `ref`.** | "Fall protection" means 1926.501–503 *and* Washington's `296-155-24510`, Oregon's `437-003-…` and so on, in both the GC view and the foreman's answers. | The map needs upkeep. Unmapped codes land in `other` and are still counted. |
 | **New file per build, then an atomic pointer swap.** | A failed build never replaces live data. The previous build stays available for rollback. | 2× disk during a build. Daily incremental updates via the DOL API are a next step. |
@@ -116,9 +116,11 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 | Blank ≠ zero | Penalties blank 37–71% of the time before 2010; $0 after | Nullable penalties; old history judged by citation *type*, not dollars |
 | Fields that look useful but aren't | `why_no_insp` is filled on ~100% of rows; `state_flag` is always empty; `nr_in_estab` goes up to 1,000,000; `fta_penalty` is mostly `0.00` | Kept raw, with no logic built on them |
 
-**Lookback rule.** The GC sees two tiers:
+**How far back.** The warehouse keeps the last **10 years** by default (`SSI_HISTORY_YEARS`). Within that, two tiers:
 - **The project window** (3, 5 or 10 years) for rates, trends and penalties.
-- **Unlimited lookback** for catastrophic or repeated offences: cited fatalities, willful violations, failure-to-abate, and repeat-violation patterns.
+- **The whole history window** for catastrophic or repeated offences: cited fatalities, willful violations, failure-to-abate and repeat-violation patterns.
+
+Setting `SSI_HISTORY_YEARS=0` turns the second tier into a truly unlimited lookback back to 1972, and the verdicts then also flag catastrophic events older than 10 years. Ten years is the default because it keeps the data small (a 192 MB warehouse) while covering what GCs typically ask about. Older records are also harder to attribute confidently to today's company.
 
 ---
 
@@ -230,7 +232,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min; nightly on Modal) ─�
                                      └──► Claude (adjudicator, foreman) · LangSmith traces
 ```
 
-- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 9 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
+- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 192 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 9 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px.
 - **Deploy** ([modal_app.py](modal_app.py)): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
@@ -294,11 +296,17 @@ cd web && npm run build && cd .. && make api   # http://localhost:8000
 
 Without them, enrichment is just empty.
 
-**Configuration** is in `.env` (see [.env.example](.env.example)): `ANTHROPIC_API_KEY` (optional), `LANGSMITH_API_KEY` (optional), `DATABASE_URL`, `BASIC_AUTH_USER/PASS`.
+**Configuration** is in `.env` (see [.env.example](.env.example)):
+- `DATABASE_URL`: the local Postgres for the app layer (default `postgresql://localhost:5432/ssi`).
+- `SSI_HISTORY_YEARS`: years of OSHA history to keep (default 10; `0` = all years).
+- **AI model** (optional; without one the app runs rules-only):
+  - **Claude:** `ANTHROPIC_API_KEY`.
+  - **Any OpenAI-compatible endpoint**, e.g. GLM served on Modal: `SSI_LLM_PROVIDER=openai_compat`, `SSI_LLM_BASE_URL`, `SSI_LLM_MODEL`, plus `SSI_LLM_MODAL_KEY` / `SSI_LLM_MODAL_SECRET` for Modal proxy auth.
 
-**Deploy to Modal:**
-- Create the secrets listed at the top of [modal_app.py](modal_app.py).
-- Run `make refresh` (first download and build on Modal), then `make deploy`.
+  Check an endpoint with `uv run python -m scripts.check_llm`: one plain call, one JSON call, one tool call.
+- `LANGSMITH_API_KEY` (optional): traces and eval experiments.
+
+**Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).
 
 ---
 

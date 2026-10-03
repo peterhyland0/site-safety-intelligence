@@ -24,6 +24,10 @@ MODEL = os.environ.get("SSI_MODEL", "claude-sonnet-5-5")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY") or None
 DAILY_TOKEN_BUDGET = int(os.environ.get("SSI_DAILY_TOKEN_BUDGET", "2000000"))
 
+# How much OSHA history the warehouse keeps: inspections opened in the last N years before the newest
+# inspection in the data (0 = all years, back to 1972). Default 10.
+HISTORY_YEARS = int(os.environ.get("SSI_HISTORY_YEARS", "10"))
+
 # Verdict and matching thresholds (documented in the README)
 RED_FLAG_RECENCY_YEARS = 10
 BENCHMARK_MIN_PEERS = 30

@@ -36,7 +36,7 @@ SELECT
     CASE WHEN try_cast(left(i.open_date, 10) AS DATE) < DATE '1971-04-28' THEN 'opened_before_osha_existed' END
   ], lambda f: f IS NOT NULL)                               AS dq_flags
 FROM scope s
-JOIN raw_inspection i ON i.activity_nr = s.activity_nr
+JOIN raw_inspection_window i ON i.activity_nr = s.activity_nr
 JOIN insp_key k ON k.activity_nr = s.activity_nr;
 
 -- employers inspected at the same site on the same day (GC + subs inspected together)

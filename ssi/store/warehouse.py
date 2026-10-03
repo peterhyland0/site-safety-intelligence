@@ -28,8 +28,12 @@ def open_warehouse(path: Path | None = None) -> duckdb.DuckDBPyConnection:
         if not con.execute("SELECT count(*) FROM duckdb_functions() WHERE function_name = 'clean_name'").fetchone()[0]:
             install_macros(con, temp=True)  # older warehouse without persisted macros
         _con, _path = con, path
-        row = con.execute("SELECT build_id, data_as_of::VARCHAR, accident_detail_through::VARCHAR FROM mart.build_info").fetchone()
-        _meta = {"build_id": row[0], "data_as_of": row[1], "accident_detail_through": row[2]}
+        row = con.execute("SELECT * FROM mart.build_info").fetchone()
+        cols = [d[0] for d in con.description]
+        info = dict(zip(cols, row))
+        _meta = {"build_id": info["build_id"], "data_as_of": str(info["data_as_of"]),
+                 "accident_detail_through": str(info["accident_detail_through"]),
+                 "history_since": str(info["history_since"]) if info.get("history_since") else None}
         return con
 
 

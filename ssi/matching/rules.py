@@ -57,6 +57,17 @@ class Decision:
     reason: str
 
 
+_CITY_ABBREV = (("SAINT ", "ST "), ("MOUNT ", "MT "), ("FORT ", "FT "), ("SAINTE ", "STE "))
+
+
+def norm_city(city: str | None) -> str:
+    """LaFollette = LA FOLLETTE, St. Louis = Saint Louis: compare cities without spaces or punctuation."""
+    c = " " + (city or "").upper().strip() + " "
+    for long, short in _CITY_ABBREV:
+        c = c.replace(" " + long, " " + short)
+    return "".join(ch for ch in c if ch.isalnum())
+
+
 def tokens(s: str | None) -> list[str]:
     return [t for t in (s or "").split(" ") if t]
 
@@ -93,7 +104,7 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     same_full = c.clean_name == q.clean or c.clean_name in q.aliases or q.clean in {c.legal_name, c.dba_name}
     core_equal = bool(q.core) and c.name_core == q.core
     same_state = bool(q.state) and c.state == q.state
-    same_city = bool(q.city) and bool(c.city) and c.city.upper() == q.city.upper()
+    same_city = bool(q.city) and bool(c.city) and norm_city(c.city) == norm_city(q.city)
     distinctive = q.tier == "distinctive"
     generic_diff = core_equal and only_generic_difference(c.clean_name, q.clean, generic)
     descriptor_diff = core_equal and only_descriptor_difference(c.clean_name, q.clean, descriptors)

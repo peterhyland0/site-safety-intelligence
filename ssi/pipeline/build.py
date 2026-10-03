@@ -27,6 +27,7 @@ TEMPLATE_VARS = {
     "DISTINCTIVE_MAX_VARIETY": str(config.DISTINCTIVE_MAX_VARIETY),
     "SHARED_OFFICE_MIN_CORES": str(config.SHARED_OFFICE_MIN_CORES),
     "MIN_RATED": str(config.BENCHMARK_MIN_RATED_INSPECTIONS),
+    "HISTORY_YEARS": str(config.HISTORY_YEARS),
 }
 
 # Ref tables the SQL depends on, with the columns to stub if the CSV is not there yet
@@ -167,11 +168,13 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     checks = con.execute("SELECT name, severity, expected, actual, pass FROM wh.mart.dq_check").fetchall()
     report["checks"] = [dict(zip(["name", "severity", "expected", "actual", "pass"], c)) for c in checks]
     report["tables"] = table_counts(con)
+    history_since = con.execute("SELECT since::VARCHAR FROM history_window").fetchone()[0]
+    report["history_since"] = history_since
     con.execute("""CREATE OR REPLACE TABLE wh.mart.build_info AS
                    SELECT ? AS build_id, ?::TIMESTAMP AS built_at, ?::DATE AS data_as_of,
-                          ?::DATE AS accident_detail_through""",
+                          ?::DATE AS accident_detail_through, ?::DATE AS history_since""",
                 [build_id, datetime.now(timezone.utc).replace(tzinfo=None), data_as_of,
-                 con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0]])
+                 con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0], history_since])
     con.execute("DETACH wh")
     con.close()
     # Persist the cleaning macros in the warehouse itself: GC input is then cleaned by exactly the
@@ -206,7 +209,7 @@ def main() -> None:
     ap.add_argument("--keep-scratch", action="store_true")
     args = ap.parse_args()
     r = build(args.data_dir, dev=args.dev, from_step=args.from_step, keep_scratch=args.keep_scratch)
-    print(json.dumps({k: r[k] for k in ("build_id", "ok", "seconds_total", "warehouse_mb", "data_as_of", "scope")}, indent=2))
+    print(json.dumps({k: r[k] for k in ("build_id", "ok", "seconds_total", "warehouse_mb", "data_as_of", "history_since", "scope")}, indent=2))
     for c in r["checks"]:
         print(f"  {'PASS' if c['pass'] else 'FAIL'} {c['severity']:5s} {c['name']}: actual={c['actual']} expected={c['expected']}")
 
