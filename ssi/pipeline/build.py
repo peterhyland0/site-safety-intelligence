@@ -155,6 +155,11 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
                  con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0]])
     con.execute("DETACH wh")
     con.close()
+    # Persist the cleaning macros in the warehouse itself: GC input is then cleaned by exactly the
+    # rules that built this data, even if the code's rules change later.
+    whc = duckdb.connect(str(wh_path))
+    install_macros(whc)
+    whc.close()
 
     failed = [c for c in report["checks"] if c["severity"] == "error" and not c["pass"]]
     report["seconds_total"] = round(time.time() - t0, 1)
