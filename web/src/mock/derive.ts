@@ -71,6 +71,8 @@ export function toInspectionRow(sub: FxSub, i: FxInspection): InspectionRow {
     open_date: i.open,
     close_date: i.close,
     is_open: i.close == null,
+    is_provisional: i.close == null, // the fixtures' open cases are all recent, so none is final yet
+    no_inspection: false,
     insp_type_label: i.type,
     site_city: i.city,
     site_state: i.state,
@@ -111,6 +113,7 @@ function redFlagsFor(sub: FxSub, inspections: FxInspection[], bucket: "matched" 
       event_date: i.open,
       activity_nr: i.nr,
       case_open: i.close == null,
+      case_provisional: i.close == null,
       shared_site_n: i.shared,
       establishment_name: estOf(sub, i.est)?.display_name ?? "",
       bucket,
@@ -289,7 +292,7 @@ function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: 
   }
   const openSerious = matched.filter((i) => i.close == null && i.cits.some(isSeriousPlus));
   if (openSerious.length) {
-    add("R_open", `${openSerious.length} open case(s) with serious citations (still provisional)`, "review", openSerious.map((i) => i.nr), { count: openSerious.length });
+    add("R_open", `${openSerious.length} open case(s) with serious citations not yet final (still provisional)`, "review", openSerious.map((i) => i.nr), { count: openSerious.length });
   }
   if (sub.questions.length) {
     add("R_questions", `${sub.questions.length} possible match(es) with red flags need your confirmation`, "review", [], { count: sub.questions.length });
@@ -335,6 +338,7 @@ function coverageFor(sub: FxSub, lookback: number): Coverage {
     first_year: first,
     last_year: last,
     open_cases: open,
+    visits_without_inspection: 0,
     accident_detail_through: ACCIDENT_DETAIL_THROUGH,
     sentence,
   };

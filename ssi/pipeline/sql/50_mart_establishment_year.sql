@@ -1,12 +1,14 @@
 -- mart.establishment_year: additive counts per establishment per year (inspection open year).
 -- A "company" only exists at query time (the establishments matched to a GC's sub), so marts must be
 -- additive: a sub's figures for any window are sums over its matched keys and years.
--- Rated inspections exclude follow-ups (F), monitoring (D) and variance (E) visits, which inflate counts.
+-- Rated inspections exclude follow-ups (F), monitoring (D) and variance (E) visits, which inflate counts, and
+-- files where OSHA conducted no inspection (insp_scope D).
 CREATE OR REPLACE TABLE wh.mart.establishment_year AS
 WITH insp AS (
   SELECT establishment_key, year(open_date) AS year,
          count(*) AS insp_n,
-         count(*) FILTER (WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E')) AS insp_rated_n,
+         count(*) FILTER (WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E') AND NOT no_inspection) AS insp_rated_n,
+         count(*) FILTER (WHERE NOT no_inspection) AS insp_conducted_n,
          count(*) FILTER (WHERE citation_n > 0) AS insp_with_cit_n,
          count(*) FILTER (WHERE insp_type IN ('H', 'I', 'K')) AS insp_programmed_n,
          count(*) FILTER (WHERE insp_type = 'B') AS insp_complaint_n,
@@ -14,6 +16,7 @@ WITH insp AS (
          count(*) FILTER (WHERE insp_type IN ('A', 'M')) AS insp_accident_n,
          count(*) FILTER (WHERE insp_type = 'F') AS insp_followup_n,
          count(*) FILTER (WHERE is_open) AS open_insp_n,
+         count(*) FILTER (WHERE is_provisional) AS provisional_insp_n,
          count(*) FILTER (WHERE jurisdiction = 'state_plan') AS state_plan_insp_n,
          count(*) FILTER (WHERE fatality_status = 'fatality_cited') AS fatality_cited_n
   FROM wh.osha.inspection

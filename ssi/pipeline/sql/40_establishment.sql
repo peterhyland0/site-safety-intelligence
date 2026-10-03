@@ -23,7 +23,8 @@ WITH base AS (
          list(DISTINCT estab_name_raw ORDER BY estab_name_raw)[1:25] AS name_variants,
          min(open_date) AS first_seen,
          max(open_date) AS last_seen,
-         count(*) AS insp_n,
+         count(*) AS insp_n,  -- every record (matching evidence); insp_conducted_n is what the GC is shown
+         count(*) FILTER (WHERE NOT no_inspection) AS insp_conducted_n,
          count(*) FILTER (WHERE scope_reason IN ('naics23', 'sic15_17')) AS construction_insp_n,
          bool_and(scope_reason = 'related_name') AS related_only,  -- another facility of a construction company
          list(DISTINCT site_state ORDER BY site_state) FILTER (WHERE site_state IS NOT NULL) AS site_states

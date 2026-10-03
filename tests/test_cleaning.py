@@ -55,6 +55,13 @@ EXACT = {
     "CO": "CO",  # never strip a name down to nothing
     "561-ROOFING, INC": "561 ROOFING",
     "1234 - ACME DRYWALL": "ACME DRYWALL",  # short ID with a spaced dash
+    # Arizona's and Iowa's case numbers in front of the name
+    "FCX2024XEG419X0079 - VALLEYCARE LANDSCAPING, LLC": "VALLEYCARE LANDSCAPING",
+    "URX2022XRS251X0001 - WILLMENG CONSTRUCTION, INC.": "WILLMENG CONSTRUCTION",
+    "A09CS000013UQXVAA4 - PHILLIP'S FLOORS INC.": "PHILLIPS FLOORS",
+    "3M COMPANY": "3M",
+    "A1 ROOFING - DIVISION 2": "A1 ROOFING DIVISION 2",
+    "B2B CONTRACTING - NORTH": "B2B CONTRACTING NORTH",
 }
 
 
@@ -84,6 +91,12 @@ def test_dba_parts(con):
 @pytest.mark.parametrize("raw,expected", [
     ("UNKNOWN ROOFER", True), ("Unknown/Invalid Establishment", True), ("N/A", True), ("", True),
     ("UNITED ROOFING", False), ("BRASFIELD & GORRIE", False),
+    ("Home Owner", True), ("ROOFING CONTRACTOR", True), ("Self-Employed", True), ("UNK", True),
+    ("ABC ROOFING CONTRACTOR", False),
+    # OSHA's own offices entered as the employer on internal records
+    ("USDOL OSHA - CINCINNATI AREA OFFICE", True), ("U.S. DOL OSHA AUSTIN AREA OFFICE", True),
+    ("US Department of Labor - OSHA", True), ("WICHITA AREA OSHA OFFICE", True), ("OSHA", True),
+    ("OSHA STEEL", False), ("OSHA TRAINING INSTITUTE", False),
 ])
 def test_placeholders(con, raw, expected):
     assert q(con, "is_placeholder(clean_name(?))", raw) is expected

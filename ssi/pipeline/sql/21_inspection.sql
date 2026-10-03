@@ -15,7 +15,10 @@ SELECT
   -- 3rd digit of the reporting office ID is '5' for state-plan offices (evidence-based; see docs)
   CASE WHEN substr(i.reporting_id, 3, 1) = '5' THEN 'state_plan' ELSE 'federal' END AS jurisdiction,
   i.owner_type, i.insp_type, i.insp_scope,
-  i.why_no_insp,  -- kept raw: populated on ~100% of recent rows, so it can't be used as a filter
+  -- insp_scope 'D': OSHA opened a file but conducted no inspection (no work in progress, denied entry, ...).
+  -- 0.1% have citations. Kept, but not counted as an inspection (rates, "recent record", verdicts).
+  coalesce(i.insp_scope = 'D', false)                       AS no_inspection,
+  i.why_no_insp,  -- kept raw: populated on every row, whatever the scope, so it can't be used as a filter
   i.union_status, i.safety_hlth,
   nullif(nullif(i.naics_code, '000000'), '0')               AS naics_code,
   nullif(lpad(nullif(trim(i.sic_code), ''), 4, '0'), '0000') AS sic_code,  -- restore the leading zero ('175' -> '0175')
@@ -30,10 +33,11 @@ SELECT
   list_filter([
     CASE WHEN try_cast(left(i.close_case_date, 10) AS DATE) < try_cast(left(i.open_date, 10) AS DATE) THEN 'closed_before_opened' END,
     CASE WHEN try_cast(i.nr_in_estab AS INTEGER) >= 10000 THEN 'employees_implausible' END,
-    CASE WHEN regexp_matches(upper(i.estab_name), '^[A-Z]{0,3}[0-9]{3,}\s*-\s*') THEN 'id_prefix_stripped' END,
+    CASE WHEN regexp_matches(upper(i.estab_name), '^([A-Z]{0,3}[0-9]{3,}|[A-Z]+[0-9][A-Z0-9]{8,})\s*-\s*') THEN 'id_prefix_stripped' END,
     CASE WHEN strpos(i.estab_name, '�') > 0 THEN 'name_encoding_damage' END,
     CASE WHEN k.is_placeholder THEN 'placeholder_name' END,
-    CASE WHEN try_cast(left(i.open_date, 10) AS DATE) < DATE '1971-04-28' THEN 'opened_before_osha_existed' END
+    CASE WHEN try_cast(left(i.open_date, 10) AS DATE) < DATE '1971-04-28' THEN 'opened_before_osha_existed' END,
+    CASE WHEN i.insp_scope = 'D' THEN 'no_inspection_conducted' END
   ], lambda f: f IS NOT NULL)                               AS dq_flags
 FROM scope s
 JOIN raw_inspection_window i ON i.activity_nr = s.activity_nr

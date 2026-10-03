@@ -6,6 +6,9 @@ SELECT v.activity_nr, v.citation_id, v.is_deleted, v.viol_type,
        coalesce(h.hazard_code, 'other') AS hazard_code,
        v.issued_on, v.abate_on, v.contest_on, v.final_order_on,
        v.contest_on IS NOT NULL AS contested,
+       -- a final order by the data date: the citation won't change, even while the case stays open (cases stay
+       -- open until penalties are paid, years after the citations became final)
+       coalesce(v.final_order_on <= (SELECT max(open_date) FROM stg_inspection), false) AS is_final,
        v.penalty_initial, v.penalty_current, v.is_fta,
        v.viol_type IN ('S', 'W', 'R', 'U') AS is_serious_plus,
        v.nr_instances, v.nr_exposed, v.gravity, v.dq_flags

@@ -22,6 +22,10 @@ INSP_TYPE_FALLBACK = {
 }
 VIOL_TYPE_FALLBACK = {"S": "Serious", "W": "Willful", "R": "Repeat", "O": "Other-than-serious", "U": "Unclassified",
                       "P": "Undocumented type 'P'"}
+# OSHA fatality/catastrophe investigations of this employer (not another employer's site, not a catastrophe
+# whose published detail shows no death): a self-reported death in the same year is already on record
+OSHA_FATALITY_KINDS = {"fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
+                       "fatcat_not_cited", "fatcat_no_inspection"}
 RED_FLAG_LABELS = {
     "fatality_cited": "Fatality, employer cited",
     "fatality_inspected_not_cited": "Fatality on site, employer not cited for serious violations",
@@ -30,6 +34,7 @@ RED_FLAG_LABELS = {
     "fatality_pending": "Fatality/catastrophe investigation still open, outcome not yet published",
     "fatcat_site_cited": "Cited on a site where a fatality/catastrophe is under investigation",
     "catastrophe_cited": "Catastrophe investigation (serious injuries, no death), cited",
+    "fatcat_no_inspection": "Fatality/catastrophe reported, OSHA did not inspect this employer",
     "willful": "Willful violation",
     "repeat": "Repeat violation",
     "fta": "Failure to abate",
@@ -135,7 +140,8 @@ def red_flags(keys: list[str]) -> list[S.RedFlag]:
                       hazard_label=hl.get(r["hazard_code"], r["hazard_code"]) if r["hazard_code"] else None,
                       penalty_initial=float(r["penalty_initial"]) if r["penalty_initial"] is not None else None,
                       penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
-                      case_open=bool(r["case_open"]), shared_site_n=r["shared_site_n"] or 1,
+                      case_open=bool(r["case_open"]), case_provisional=bool(r["case_provisional"]),
+                      shared_site_n=max((r["shared_site_n"] or 1) - 1, 0),
                       establishment_name=r["establishment_name"],
                       url=osha_search_url(r["establishment_name"], r["insp_state"], r["insp_open"])) for r in rs]
 
@@ -184,16 +190,17 @@ def trend(keys: list[str]) -> list[S.YearRow]:
     pen: dict[int, float] = {}
     for r in rs:
         c = by.setdefault(r["year"], Counter())
-        for k in ("insp_n", "insp_with_cit_n", "viol_n", "viol_serious_plus_n", "viol_w_n", "viol_r_n"):
+        for k in ("insp_conducted_n", "insp_with_cit_n", "viol_n", "viol_serious_plus_n", "viol_w_n", "viol_r_n"):
             c[k] += r[k] or 0
         if r["penalty_current_sum"] is not None:
             pen[r["year"]] = pen.get(r["year"], 0.0) + float(r["penalty_current_sum"])
-    return [S.YearRow(year=y, inspections=c["insp_n"], inspections_with_citations=c["insp_with_cit_n"],
+    return [S.YearRow(year=y, inspections=c["insp_conducted_n"], inspections_with_citations=c["insp_with_cit_n"],
                       citations=c["viol_n"], serious_plus=c["viol_serious_plus_n"], willful=c["viol_w_n"],
                       repeat=c["viol_r_n"], penalty_current=pen.get(y)) for y, c in sorted(by.items())]
 
 
 INSPECTION_COLS = """i.activity_nr, i.open_date::VARCHAR AS open_date, i.close_date::VARCHAR AS close_date, i.is_open,
+    i.is_provisional, i.no_inspection,
     i.insp_type, i.site_city, i.site_state, i.jurisdiction, i.estab_name_raw, i.citation_n, i.serious_plus_n,
     i.penalty_initial, i.penalty_current, i.fatality_status, i.site_group_n, i.dq_flags"""
 
@@ -201,6 +208,7 @@ INSPECTION_COLS = """i.activity_nr, i.open_date::VARCHAR AS open_date, i.close_d
 def _inspection_row(r: dict, itl: dict) -> S.InspectionRow:
     return S.InspectionRow(
         activity_nr=r["activity_nr"], open_date=r["open_date"] or "", close_date=r["close_date"], is_open=bool(r["is_open"]),
+        is_provisional=bool(r["is_provisional"]), no_inspection=bool(r["no_inspection"]),
         insp_type_label=itl.get(r["insp_type"], r["insp_type"] or "Unknown"), site_city=r["site_city"],
         site_state=r["site_state"], jurisdiction=r["jurisdiction"], establishment_name=r["estab_name_raw"],
         citations=r["citation_n"] or 0, serious_plus=r["serious_plus_n"] or 0,
@@ -208,18 +216,20 @@ def _inspection_row(r: dict, itl: dict) -> S.InspectionRow:
         penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
         fatality_status=r["fatality_status"] if r["fatality_status"] in
         ("fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-         "fatcat_site_cited", "catastrophe_cited", "accident_outcome_unknown") else "none",
-        shared_site_n=r["site_group_n"] or 1, dq_flags=list(r["dq_flags"] or []),
+         "fatcat_site_cited", "catastrophe_cited", "fatcat_no_inspection", "accident_outcome_unknown") else "none",
+        shared_site_n=max((r["site_group_n"] or 1) - 1, 0), dq_flags=list(r["dq_flags"] or []),
         url=osha_search_url(r["estab_name_raw"], r["site_state"], r["open_date"]))
 
 
-def inspections(keys: list[str], offset: int = 0, limit: int = 25, open_only: bool = False,
+def inspections(keys: list[str], offset: int = 0, limit: int = 25, provisional_only: bool = False,
                 hazard: str | None = None, since_year: int | None = None) -> list[S.InspectionRow]:
+    """provisional_only: open cases with a citation that isn't final yet (an open case whose citations are all
+    final orders is only waiting on penalties, so nothing about it can change)."""
     if not keys:
         return []
     where, params = [f"i.establishment_key IN {_in(keys)}"], []
-    if open_only:
-        where.append("i.is_open")
+    if provisional_only:
+        where.append("i.is_provisional")
     if since_year:
         where.append("year(i.open_date) >= ?")
         params.append(since_year)
@@ -291,48 +301,61 @@ def compute(sub: dict, project: dict) -> dict:
     since = window_since(window)
     yrs = year_rows(keys)
     tot = Counter()
-    for r in yrs:
-        for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n", "open_insp_n"):
+    for r in yrs:  # files where OSHA conducted no inspection are not inspections (insp_n - insp_conducted_n)
+        for k in ("insp_n", "insp_conducted_n", "insp_rated_n", "viol_serious_plus_n"):
             tot[k] += r[k] or 0
     if keys:  # the window is dates (the last N years before the data date), so count from the inspections
         w = warehouse.one(
-            f"""SELECT count(*) AS insp_n,
-                       count(*) FILTER (WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E')) AS insp_rated_n,
+            f"""SELECT count(*) FILTER (WHERE NOT no_inspection) AS insp_n,
+                       count(*) FILTER (WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E') AND NOT no_inspection)
+                         AS insp_rated_n,
                        coalesce(sum(serious_plus_n), 0) AS viol_serious_plus_n
                 FROM osha.inspection WHERE establishment_key IN {_in(keys)} AND open_date >= ?""", [since])
         for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n"):
             tot["w_" + k] = int(w[k] or 0)
     flags = red_flags(keys)
     hz = hazards(keys, window)
-    open_serious = [i.activity_nr for i in inspections(keys, limit=50, open_only=True) if i.serious_plus > 0]
+    open_serious = [i.activity_nr for i in inspections(keys, limit=50, provisional_only=True) if i.serious_plus > 0]
     n4 = primary_trade(keys, sub.get("trade"))
     bm = benchmark(n4, window)
     hfacts = [HazardFact(h.hazard_code, h.label, h.inspections, 0, h.first_year, h.last_year) for h in hz]
-    if hfacts:  # window counts and evidence for recurring hazards only
-        hw = warehouse.rows(f"""SELECT v.hazard_code, count(DISTINCT v.activity_nr) AS n
+    if hfacts:  # patterns count separate visits (a safety and a health inspection of one visit are one visit)
+        hv = warehouse.rows(f"""SELECT v.hazard_code, count(DISTINCT i.visit_id) AS n_all,
+                                       count(DISTINCT i.visit_id) FILTER (WHERE i.open_date >= ?) AS n_window
                                 FROM osha.violation v JOIN osha.inspection i USING (activity_nr)
-                                WHERE i.establishment_key IN {_in(keys)} AND NOT v.is_deleted AND i.open_date >= ?
+                                WHERE i.establishment_key IN {_in(keys)} AND NOT v.is_deleted
                                 GROUP BY 1""", [since])
-        wmap = {r["hazard_code"]: int(r["n"]) for r in hw}
+        vmap = {r["hazard_code"]: r for r in hv}
         for h in hfacts:
-            h.insp_window = wmap.get(h.hazard_code, 0)
+            h.insp_all = int(vmap[h.hazard_code]["n_all"]) if h.hazard_code in vmap else h.insp_all
+            h.insp_window = int(vmap[h.hazard_code]["n_window"]) if h.hazard_code in vmap else 0
             if h.hazard_code != "other" and (h.insp_all >= 3 or h.insp_window >= 2):
                 h.evidence = hazard_evidence(keys, h.hazard_code)
+    repeats = [f.activity_nr for f in flags if f.kind == "repeat"]
+    visit = {r["activity_nr"]: r["visit_id"] for r in warehouse.rows(
+        f"SELECT activity_nr, visit_id FROM osha.inspection WHERE activity_nr IN ({','.join(map(str, set(repeats)))})")
+    } if repeats else {}
     rates = injury_rates(keys, n4)
     lics = licences(keys)
+    # deaths the company reported on its 300A summaries, in years with no OSHA fatality investigation (±1 year)
+    osha_fatal_years = {int(f.event_date[:4]) for f in flags if f.event_date and f.kind in OSHA_FATALITY_KINDS}
+    ita_deaths = [(r.year, r.deaths) for r in rates
+                  if r.deaths and not any(abs(r.year - y) <= 1 for y in osha_fatal_years)]
     facts = Facts(
         as_of_year=aof.year, as_of=aof, window_years=window, matched_establishments=len(keys),
-        inspections_all=tot["insp_n"], inspections_window=tot["w_insp_n"], rated_window=tot["w_insp_rated_n"],
+        inspections_all=tot["insp_conducted_n"], inspections_window=tot["w_insp_n"], rated_window=tot["w_insp_rated_n"],
         serious_plus_window=tot["w_viol_serious_plus_n"],
         red_flags=[RedFlagFact(f.kind, int(f.event_date[:4]) if f.event_date else None, f.activity_nr, f.case_open,
-                               date.fromisoformat(f.event_date[:10]) if f.event_date else None) for f in flags],
+                               date.fromisoformat(f.event_date[:10]) if f.event_date else None,
+                               visit.get(f.activity_nr)) for f in flags],
         hazards=hfacts, open_serious_cases=open_serious, pending_questions=len(sc["pending_questions"]),
         benchmark_p75=bm["serious_plus_rate_p75"] if bm else None, benchmark_p90=bm["serious_plus_rate_p90"] if bm else None,
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,
         ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),
+        visits_without_inspection=tot["insp_n"] - tot["insp_conducted_n"], ita_deaths=ita_deaths,
     )
     verdict, reasons = evaluate(facts)
-    est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, first_seen, last_seen
+    est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, insp_conducted_n, first_seen, last_seen
                              FROM entity.establishment WHERE establishment_key IN {_in(keys + sc['possible'])}""") if (keys or sc["possible"]) else []
     est_by = {e["establishment_key"]: e for e in est}
     matched_est = [est_by[k] for k in keys if k in est_by]
@@ -342,7 +365,8 @@ def compute(sub: dict, project: dict) -> dict:
     return {"scope": sc, "keys": keys, "facts": facts, "verdict": verdict, "reasons": reasons, "flags": flags,
             "hazards": hz, "benchmark": bm, "naics4": n4, "display_name": display, "est_by": est_by,
             "rate": rate, "years": years, "window": window, "as_of": aof, "rates": rates, "licences": lics,
-            "possible_inspections": sum(est_by[k]["insp_n"] for k in sc["possible"] if k in est_by),
+            "possible_inspections": sum(est_by[k]["insp_conducted_n"] for k in sc["possible"] if k in est_by),
+            "visits_without_inspection": facts.visits_without_inspection,
             "states": sorted({e["state"] for e in matched_est if e["state"]})}
 
 
@@ -380,13 +404,19 @@ def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
 
 def coverage(d: dict) -> S.Coverage:
     meta = warehouse.meta()
-    open_n = sum(1 for _ in inspections(d["keys"], limit=500, open_only=True)) if d["keys"] else 0
+    open_n = sum(1 for _ in inspections(d["keys"], limit=500, provisional_only=True)) if d["keys"] else 0
     first = min(d["years"]) if d["years"] else None
     last = max(d["years"]) if d["years"] else None
-    if d["keys"]:
+    no_insp = d.get("visits_without_inspection", 0)
+    if d["keys"] and d["facts"].inspections_all == 0:
+        sentence = (f"Matched {len(d['keys'])} OSHA record(s), but they are {no_insp} file(s) where OSHA conducted no "
+                    f"inspection (data as of {meta['data_as_of']}). No record is not a clean record: ask the sub for "
+                    "its EMR, TRIR and OSHA 300 logs.")
+    elif d["keys"]:
         sentence = (f"Based on {d['facts'].inspections_all} OSHA inspections ({first}–{last}) across "
                     f"{len(d['keys'])} matched record(s), data as of {meta['data_as_of']}"
-                    + (f"; {open_n} case(s) still open, so their citations may change" if open_n else "")
+                    + (f"; {open_n} case(s) with citations not yet final, so they may change" if open_n else "")
+                    + (f"; {no_insp} OSHA file(s) with no inspection conducted, not counted" if no_insp else "")
                     + (f"; {d['possible_inspections']} inspection(s) under similar names not counted" if d["possible_inspections"] else "")
                     + f"; accident details published through {meta['accident_detail_through']}.")
     else:
@@ -394,7 +424,7 @@ def coverage(d: dict) -> S.Coverage:
                     "record: OSHA inspects a small share of employers. Ask the sub for its EMR, TRIR and OSHA 300 logs.")
     return S.Coverage(as_of=meta["data_as_of"], window_years=d["window"], establishments_matched=len(d["keys"]),
                       possible_not_counted=d["possible_inspections"], inspections_all_time=d["facts"].inspections_all,
-                      first_year=first, last_year=last, open_cases=open_n,
+                      first_year=first, last_year=last, open_cases=open_n, visits_without_inspection=no_insp,
                       accident_detail_through=meta["accident_detail_through"] or "", sentence=sentence)
 
 

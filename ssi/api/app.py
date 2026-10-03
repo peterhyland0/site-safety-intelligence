@@ -96,7 +96,7 @@ def _bucket_rows(d: dict, bucket: str) -> list[S.MatchedEstablishment]:
         return []
     ests = {e["establishment_key"]: e for e in warehouse.rows(
         """SELECT establishment_key, display_name, name_variants, address, city, state, zip5, primary_naics4,
-                  first_seen::VARCHAR AS first_seen, last_seen::VARCHAR AS last_seen, insp_n,
+                  first_seen::VARCHAR AS first_seen, last_seen::VARCHAR AS last_seen, insp_conducted_n,
                   coalesce(related_only, false) AS related_only
            FROM entity.establishment WHERE establishment_key IN (SELECT unnest(?::VARCHAR[]))""", [keys])}
     from ssi.matching import candidates as C
@@ -111,7 +111,7 @@ def _bucket_rows(d: dict, bucket: str) -> list[S.MatchedEstablishment]:
             establishment_key=k, display_name=e["display_name"], name_variants=list(e["name_variants"] or [])[:8],
             address=e["address"], city=e["city"], state=e["state"], zip=e["zip5"],
             trade_label=NAICS4_LABELS.get(e["primary_naics4"] or ""), first_seen=e["first_seen"], last_seen=e["last_seen"],
-            inspections=e["insp_n"], bucket=bucket, method=m["method"], rule_id=m["rule_id"],
+            inspections=e["insp_conducted_n"], bucket=bucket, method=m["method"], rule_id=m["rule_id"],
             confidence=m["confidence"], rationale=m["rationale"], has_red_flags=bool(flagged.get(k)),
             related_only=bool(e["related_only"]), industry_code=e["primary_naics4"]))
     return sorted(out, key=lambda x: -x.inspections)
@@ -137,7 +137,7 @@ def _detail(sub: dict, project: dict) -> S.SubDetail:
                    for q in sc["pending_questions"]],
         matched=_bucket_rows(d, "matched"), possible=_bucket_rows(d, "possible"), excluded=_bucket_rows(d, "excluded"),
         red_flags=d["flags"][:100], trend=Q.trend(keys), hazards=d["hazards"],
-        open_cases=Q.inspections(keys, limit=50, open_only=True), inspections=Q.inspections(keys, limit=25),
+        open_cases=Q.inspections(keys, limit=50, provisional_only=True), inspections=Q.inspections(keys, limit=25),
         injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq)
 
 

@@ -20,6 +20,7 @@ export type FatalityStatus =
   | "fatcat_not_cited"
   | "fatcat_site_cited"
   | "catastrophe_cited"
+  | "fatcat_no_inspection"
   | "accident_outcome_unknown"
   | "none";
 export type AskStatus =
@@ -208,6 +209,7 @@ export interface RedFlag {
     | "fatcat_not_cited"
     | "fatcat_site_cited"
     | "catastrophe_cited"
+    | "fatcat_no_inspection"
     | "willful"
     | "repeat"
     | "fta";
@@ -219,8 +221,9 @@ export interface RedFlag {
   hazard_label: string | null;
   penalty_initial: number | null;
   penalty_current: number | null;
-  case_open: boolean;
-  shared_site_n: number;
+  case_open: boolean; // OSHA's case status (stays open until penalties are paid)
+  case_provisional: boolean; // open AND a citation isn't final yet
+  shared_site_n: number; // OTHER employers inspected on the same site and day
   establishment_name: string;
   bucket: Bucket;
   url: string;
@@ -252,7 +255,9 @@ export interface InspectionRow {
   activity_nr: number;
   open_date: string;
   close_date: string | null;
-  is_open: boolean;
+  is_open: boolean; // OSHA's case status (stays open until penalties are paid)
+  is_provisional: boolean; // open AND a citation isn't final yet: citations and penalties may change
+  no_inspection: boolean; // OSHA opened a file but conducted no inspection
   insp_type_label: string;
   site_city: string | null;
   site_state: string | null;
@@ -305,7 +310,8 @@ export interface Coverage {
   inspections_all_time: number;
   first_year: number | null;
   last_year: number | null;
-  open_cases: number;
+  open_cases: number; // provisional cases: open, with a citation that isn't final yet
+  visits_without_inspection: number;
   accident_detail_through: string;
   /** appended verbatim to foreman answers and shown under the scorecard */
   sentence: string;

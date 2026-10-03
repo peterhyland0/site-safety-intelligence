@@ -111,6 +111,7 @@ const KIND_LABEL: Record<RedFlag["kind"], string> = {
   fatcat_not_cited: "Fatality/catastrophe, not cited",
   fatcat_site_cited: "Cited at a fatality/catastrophe site",
   catastrophe_cited: "Catastrophe, cited",
+  fatcat_no_inspection: "Fatality/catastrophe, not inspected",
   willful: "Willful",
   repeat: "Repeat",
   fta: "Failure to abate",
@@ -146,7 +147,7 @@ export function RedFlagsTable({ flags }: { flags: RedFlag[] }) {
             </p>
             <p className="text-xs text-muted">
               {f.establishment_name}
-              {f.case_open ? " · open case, provisional" : ""}
+              {f.case_provisional ? " · open case, provisional" : ""}
               {f.shared_site_n ? ` · ${plural(f.shared_site_n, "other employer")} on site` : ""}
             </p>
             <p className="mt-1">
@@ -180,7 +181,7 @@ export function RedFlagsTable({ flags }: { flags: RedFlag[] }) {
                   {f.label}
                   <span className="block text-xs text-muted">
                     {f.establishment_name}
-                    {f.case_open ? " · open case, provisional" : ""}
+                    {f.case_provisional ? " · open case, provisional" : ""}
                     {f.shared_site_n ? ` · ${plural(f.shared_site_n, "other employer")} on site` : ""}
                   </span>
                 </td>

@@ -1,13 +1,13 @@
 # Matching evaluation (silver labels from ITA EINs)
 
-300 pairs (150 positive, 150 negative), 418 s.
+300 pairs (150 positive, 150 negative), 462 s.
 
 | Metric | Value |
 |---|---|
-| matched_precision | 0.847 |
-| matched_recall | 0.667 |
+| matched_precision | 0.845 |
+| matched_recall | 0.653 |
 | candidate_recall | 0.947 |
-| positives_left_uncertain | 0.267 |
+| positives_left_uncertain | 0.28 |
 | false_exclusion_rate | 0.013 |
 | negatives_kept_out | 0.88 |
 
@@ -15,10 +15,10 @@
 
 | Pair type | matched | uncertain | excluded | not found |
 |---|---|---|---|---|
-| different_name | 1 | 5 | 2 | 8 |
+| different_name | 0 | 5 | 2 | 8 |
 | same_core_different_ein | 12 | 43 | 89 | 0 |
 | same_name_different_ein | 6 | 0 | 0 | 0 |
-| same_name_other_address | 99 | 35 | 0 | 0 |
+| same_name_other_address | 98 | 37 | 0 | 0 |
 
 ## Disagreements with the silver label (first 20)
 
@@ -51,19 +51,17 @@
 
 | Outcome | Count |
 |---|---|
-| same matches as the correct spelling | 324 |
-| fewer (the rest left for the AI reviewer and the GC) | 57 |
+| same matches as the correct spelling | 325 |
+| fewer (the rest left for the AI reviewer and the GC) | 56 |
 | a match the correct spelling doesn't make | 0 |
 
 Licensed contractors with no OSHA record, one letter from an OSHA name in the same city:
 
 | Case | Matched automatically |
 |---|---|
-| same address (a slip) | 19 of 75 |
-| another address (usually another company) | 4 of 128 |
+| same address (a slip) | 19 of 72 |
+| another address (usually another company) | 4 of 130 |
 - COLUMBIA CROSSING CONSTRUCTION LLC (Portland, OR) matched COLUMBIA CROSSINGS
 - HUIZENGA BROS CONST INC (Deming, WA) matched HUIZENGA CONSTR
 - PLUMBING TECH REPIPE SPECIALISTS INC (San Jose, CA) matched REPIPE SPECIALIST
 - SANDESSEE ELECTRIC (Pasco, WA) matched SANDESSE
-
-LangSmith experiment: `rules-21041836`

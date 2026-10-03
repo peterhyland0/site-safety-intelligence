@@ -47,6 +47,33 @@ SELECT * FROM (VALUES
      ((SELECT count(*) FILTER (WHERE viol_type IN ('W', 'R')) + count(*) FILTER (WHERE is_fta)
          FROM wh.osha.violation WHERE NOT is_deleted)
       - (SELECT count(*) FROM wh.mart.red_flag WHERE kind IN ('willful', 'repeat', 'fta')))::DOUBLE),
+  -- an employer name must not start with a case number the cleaner left in (Arizona's "FCX2024XEG419X0079 -",
+  -- Iowa's "A09CS000013UQXVAA4 -"): each such record becomes its own one-inspection company no search finds.
+  -- A case number has 4+ digits; START2FINISHNJ and IGNITION633MINISTERS are company names.
+  ('id_prefix_left_in_names', 'error', 0,
+     (SELECT count(*) FROM wh.entity.establishment WHERE regexp_matches(clean_name, '^[A-Z]+[0-9][A-Z0-9]{8,}( |$)')
+        AND length(regexp_replace(split_part(clean_name, ' ', 1), '[^0-9]', '', 'g')) >= 4)::DOUBLE),
+  -- files where OSHA conducted no inspection (insp_scope D, recounted from the raw column) are never rated
+  ('no_inspection_counted_as_rated', 'error', 0,
+     ((SELECT sum(insp_rated_n) FROM wh.mart.establishment_year)
+      - (SELECT count(*) FROM wh.osha.inspection
+         WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E') AND coalesce(insp_scope, '') <> 'D'))::DOUBLE),
+  -- OSHA must cite within 6 months: an investigation older than 7 months can't still be "pending"
+  ('pending_past_citation_deadline', 'error', 0,
+     (SELECT count(*) FROM wh.osha.inspection WHERE fatality_status = 'fatality_pending'
+        AND open_date < (SELECT max(open_date) FROM wh.osha.inspection) - INTERVAL 7 MONTH)::DOUBLE),
+  -- a death reported in the narrative must reach the inspection's fatality status
+  ('narrative_death_without_fatality_status', 'error', 0,
+     (SELECT count(*) FROM wh.osha.accident a JOIN wh.osha.accident_inspection l USING (summary_nr)
+        JOIN wh.osha.inspection i USING (activity_nr)
+      WHERE a.death_in_narrative AND i.fatality_status NOT IN ('fatality_cited', 'fatality_inspected_not_cited',
+                                                               'fatality_pending', 'fatcat_no_inspection'))::DOUBLE),
+  -- deaths known only from the narrative (the employee died later); a jump means a new pattern to read
+  ('deaths_only_in_narrative', 'warn', 10,
+     (SELECT count(*) FROM wh.osha.accident WHERE list_contains(dq_flags, 'death_only_in_narrative'))::DOUBLE),
+  -- the data date is the newest inspection: one future-dated record would move every window
+  ('open_date_in_future', 'error', 0,
+     (SELECT count(*) FROM raw_inspection WHERE try_cast(left(open_date, 10) AS DATE) > current_date)::DOUBLE),
   -- OSHA's accident detail lags; warn when it is more than 18 months behind the inspection data
   ('accident_detail_days_behind', 'warn', 548,
      (SELECT date_diff('day', (SELECT max(event_date) FROM wh.osha.accident), (SELECT max(open_date) FROM wh.osha.inspection)))::DOUBLE),
@@ -60,6 +87,7 @@ ALTER TABLE wh.mart.dq_check ADD COLUMN pass BOOLEAN;
 UPDATE wh.mart.dq_check SET pass = CASE
   WHEN name IN ('hazard_other_share_pct', 'accident_detail_days_behind') THEN actual <= expected
   WHEN name = 'orphan_violations_quarantined' THEN abs(actual - expected) <= 50
+  WHEN name = 'deaths_only_in_narrative' THEN abs(actual - expected) <= 10
   ELSE actual = expected END;
 
 CREATE OR REPLACE TABLE wh.osha.quarantine AS SELECT * FROM quarantine;

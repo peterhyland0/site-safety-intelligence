@@ -26,6 +26,8 @@ const inspection: InspectionDetail = {
   open_date: "2022-03-14",
   close_date: "2022-09-01",
   is_open: false,
+  is_provisional: false,
+  no_inspection: false,
   insp_type_label: "Fatality/catastrophe",
   site_city: "Nashville",
   site_state: "TN",

@@ -11,10 +11,12 @@ CREATE OR REPLACE MACRO ssi_n1_upper(s) AS
   trim(regexp_replace(upper(nfc_normalize(coalesce(s, ''))), '\s+', ' ', 'g'));
 
 -- n2: strip per-inspection ID prefixes ("WA317965935 - ", "105314 - ", "1234 - "): 5+ digits and a dash,
--- or 3+ digits and a spaced dash. "84 LUMBER", "1ST CHOICE ROOFING" and "561-ROOFING" (a company number)
+-- or 3+ digits and a spaced dash. Also the case numbers Arizona (since 2021: "FCX2024XEG419X0079 - ") and
+-- Iowa (since 2026: "A09CS000013UQXVAA4 - ") put in front of the name: letters, a digit, 8+ more letters
+-- or digits, a spaced dash. "84 LUMBER", "1ST CHOICE ROOFING" and "561-ROOFING" (a company number)
 -- are untouched.
 CREATE OR REPLACE MACRO ssi_n2_strip_id(s) AS
-  regexp_replace(s, '^[A-Z]{0,3}([0-9]{5,}\s*-\s*|[0-9]{3,}\s+-\s+)', '');
+  regexp_replace(s, '^([A-Z]{0,3}([0-9]{5,}\s*-\s*|[0-9]{3,}\s+-\s+)|[A-Z]+[0-9][A-Z0-9]{8,}\s+-\s+)', '');
 
 -- n3: delete apostrophes and periods without a space (L.L.C. -> LLC, O'BRIEN -> OBRIEN, J.R. -> JR)
 CREATE OR REPLACE MACRO ssi_n3_dots(s) AS
@@ -75,11 +77,15 @@ CREATE OR REPLACE MACRO legal_part(clean) AS trim(split_part(clean, ' DBA ', 1))
 CREATE OR REPLACE MACRO dba_part(clean) AS
   CASE WHEN strpos(clean, ' DBA ') > 0 THEN nullif(trim(split_part(clean, ' DBA ', 2)), '') END;
 
--- Placeholders: inspectors' stand-ins for an unidentified employer. Never matchable.
+-- Placeholders: inspectors' stand-ins for an unidentified employer, and OSHA's own offices entered as the
+-- employer on internal records ("USDOL OSHA CINCINNATI AREA OFFICE": no inspection, no citations). Never matchable.
 CREATE OR REPLACE MACRO is_placeholder(clean) AS
   coalesce(clean, '') = ''
   OR regexp_matches(clean, '\b(UNKNOWN|UNKOWN|UNKNWN|UNIDENTIFIED)\b|INVALID ESTABLISHMENT')
-  OR regexp_full_match(clean, 'N ?A|NONE|TBD|NO NAME|TEST|NOT AVAILABLE|VARIOUS|OWNER');
+  OR regexp_full_match(clean, 'N ?A|NONE|TBD|NO NAME|TEST|NOT AVAILABLE|VARIOUS|OWNER|UNK|HOME ?OWNERS?|ROOFER|'
+                              || 'ROOFING CONTRACTOR|CONTRACTOR|SELF EMPLOYED')
+  OR regexp_matches(clean, '^(US ?DOL|USDL|US DEPARTMENT OF LABOR|US DEPT OF LABOR|DEPARTMENT OF LABOR|DOL) OSHA\b|^OSHA$'
+                           || '|^OSHA( [A-Z]+)* (AREA|DISTRICT|REGIONAL) OFFICE$|\bAREA OSHA OFFICE$');
 
 -- Joint ventures are flagged and linked to members, never merged into them
 CREATE OR REPLACE MACRO is_jv(clean) AS regexp_matches(clean, '\b(JV|JOINT VENTURE)\b');

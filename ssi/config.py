@@ -39,6 +39,7 @@ BENCHMARK_MIN_RATED_INSPECTIONS = 3
 DISTINCTIVE_MAX_VARIETY = 5
 GENERIC_MIN_VARIETY = 25
 SHARED_OFFICE_MIN_CORES = 6
+RELATED_MIN_CONSTRUCTION_SHARE = 0.2  # related facilities only for firms with >= 20% construction-coded inspections
 ADJUDICATE_MAX_CLUSTERS = 15
 QUESTION_GROUP_THRESHOLD = 3  # past this many red-flag questions for a sub, one question per OSHA name
 

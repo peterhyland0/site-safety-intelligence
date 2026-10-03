@@ -10,7 +10,7 @@ A GC bidding a job enters its 10–15 subcontractors (one row of fields each, or
 - **The foreman's view.** A phone chat that answers only from a fixed set of named queries.
   - Every figure is checked against the query results, and every cited inspection opens its record (citations, penalties, accident narrative), with a link to find it on osha.gov.
   - If "the mechanical sub" could mean two subs, it asks which one.
-- **Data:** the last 10 years of OSHA construction enforcement: 322,607 inspections and 584,919 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
+- **Data:** the last 10 years of OSHA construction enforcement: 319,689 inspections (plus 18,550 files where OSHA didn't inspect) and 585,758 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
 > Demo project: *Hospital expansion, Nashville TN*, 13 real Southeast subs (`make seed-demo`). All facts come from public OSHA records; verdicts are mechanical summaries of those records, not judgements about any company.
 
@@ -81,7 +81,7 @@ flowchart LR
 | **Layers split by trust and rebuildability; decisions in a separate store.** | A pipeline rebuild can never destroy a GC's confirmed matches. Every figure traces to source records. | `app` can't use foreign keys into the rebuildable warehouse. Instead, establishment keys are **deterministic hashes** (the same input gives the same key every build), and `entity.establishment_member` lets a rule change remap old keys to new ones by inspection overlap. |
 | **Facts in DuckDB, decisions in Postgres.** | Each store fits its workload: scanning millions of rows for analysis vs small, concurrent transactional writes. Full history stays online at no hosting cost. | Two stores, joined in API code. That's cheap: a sub's scope is tens of keys. DuckDB has no trigram index, so candidate search uses a token-blocking table plus Jaro-Winkler. |
 | **Normalised facts; accidents ↔ inspections many-to-many.** | OSHA opens an inspection for *every* employer on a fatality site and copies the injury rows to each. Storing the accident once and linking it to each inspection avoids duplication and false attribution. | More joins; fine at this size. |
-| **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatality_pending` / `fatcat_cited` / `fatcat_not_cited` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. OSHA's accident detail lags (it ends 2025-03-28 in this load), so an investigation without published detail is still flagged: *pending* while the case is open, *cited* / *not cited* once closed. | Extra logic in the pipeline. A build check fails if any fatality/catastrophe investigation without detail has no flag. |
+| **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatality_pending` / `fatcat_cited` / `fatcat_not_cited` / `fatcat_no_inspection` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. OSHA's accident detail lags (it ends 2025-03-28 in this load), so an investigation without published detail is still flagged: *pending* while citations can still come (OSHA must cite within 6 months), *cited* / *not cited* after that, *no inspection* when OSHA opened the file but didn't inspect this employer. | Extra logic in the pipeline. A build check fails if any fatality/catastrophe investigation without detail has no flag. |
 | **Rollups are additive at establishment × year.** | The lookback window (3/5/10 years) is a setting, not a schema decision. A sub's figures are sums over its matched keys and years. The red-flag table covers the whole history window, so catastrophic events count however old they are within it. | Duplicated data. Company-level medians can't be precomputed, but benchmarks describe *peers*, so that's fine. |
 | **Flag, don't delete.** Blank penalty ≠ $0; deleted citations are marked, not removed; an `other` hazard bucket. | Totals always reconcile: hazard counts sum to citation counts, a build check. Every quirk stays visible. | Every query has to respect the flags, so only the named queries touch the data. |
 | **One meaning per business term, in `ref`.** | "Fall protection" means 1926.501–503 *and* Washington's `296-155-24510`, Oregon's `437-003-…` and so on, in both the GC view and the foreman's answers. | The map needs upkeep. Unmapped codes land in `other` and are still counted. |
@@ -107,12 +107,15 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 | Trap | Evidence | Handling |
 |---|---|---|
 | No company ID | 266k distinct names across 377k construction inspections since 2015 | Establishments + matching (§3) |
-| Per-inspection IDs inside names | 17.6% of names, e.g. `WA317965935 - BARNHART CRANE`; mostly WA, NC and OR | Stripped by a cleaning rule; measured per rule each build |
+| Per-inspection IDs inside names | 17.6% of names, e.g. `WA317965935 - BARNHART CRANE`; mostly WA, NC and OR. Arizona (since 2021) and Iowa (since 2026) prefix a case number with letters: `FCX2024XEG419X0079 - VALLEYCARE LANDSCAPING` | Stripped by a cleaning rule; measured per rule each build. A build check fails if a case number is left in a name: each became a one-inspection company no search found, including 50 Arizona fatality/catastrophe investigations |
 | Industry codes drift | 44% of firms with 5+ inspections carry several NAICS codes; SIC→NAICS changed in the 2000s | Scope = every inspection of any establishment with ≥1 construction-coded inspection **in any year** (+175k inspections recovered) |
-| A construction company's plant, yard or shop is coded under another industry | Tindall's Conley GA precast plant (concrete manufacturing) had an open fatality/catastrophe investigation from Aug 2026 that no construction scope could see | **Related facilities**: records sharing a company name that is distinctive across *all* industries (≤5 variants, long enough, not a person's name) come in as `related_name` (28,726 inspections). They are shown as "facility not coded as construction" and only count once confirmed |
+| A construction company's plant, yard or shop is coded under another industry | Tindall's Conley GA precast plant (concrete manufacturing) had an open fatality/catastrophe investigation from Aug 2026 that no construction scope could see | **Related facilities**: records sharing a company name that is distinctive across *all* industries (≤5 variants, long enough, not a person's name), of a company with ≥20% of its inspections coded as construction, come in as `related_name` (10,713 inspections). They are shown as "facility not coded as construction" and only count once confirmed. Without the 20% rule, US Postal, Amazon and Dollar Tree came in too (28,726) |
 | Accident detail is stale | Accident records end 2025-03-28. Coverage of accident-type inspections falls from 85% (2017–19) to 0% (2026) | Fatality status from the inspection type when there's no detail; the coverage note says so |
 | Shared-site duplication | 32% of construction inspections share a site and date with another employer | `accident_inspection` M:N; "cited vs not cited" |
-| Recent data is provisional | 65% of 2026 and 49% of 2025 citations are from open cases; settlements cut penalties 18–36% | Open cases flagged "provisional"; initial *and* current penalty shown |
+| Recent data is provisional | 65% of 2026 and 49% of 2025 citations are from open cases; settlements cut penalties 18–36% | Cases whose citations aren't final orders yet are "provisional"; initial *and* current penalty shown |
+| An open case isn't a provisional one | OSHA keeps a case open until penalties are paid: 26,055 of 29,564 open cases with serious citations have every citation final (Reyes & Son Painting: opened 2016, final 2017, still open) | "Provisional" = open with a citation not yet final; the rest are only waiting on payment |
+| Some "inspections" are files where OSHA didn't inspect | 18,550 records (5.5%) have `insp_scope = D`: no work in progress, entry refused… 0.1% have citations. 9,010 construction firms have nothing else | Shown, never counted as inspections: a sub with only these has no OSHA record |
+| A worker who died later is recorded as hospitalized | 10 accidents: the narrative says the employee died, the injury degree says "hospitalized" | The narrative counts (`death_in_narrative`); 6 of the employers were cited, so those are cited fatalities |
 | State plans use their own codes | 23% of construction citations (WA `296-155`, OR `OAR 437`, MI, CA Title 8) | Hazard map covers them |
 | A 2026 load batch shifted a column | Construction operation landed in `const_op_cause` (394/394 cross-checks) | Fixed in the pipeline |
 | Blank ≠ zero | Penalties blank 37–71% of the time before 2010; $0 after | Nullable penalties; old history judged by citation *type*, not dollars |
@@ -123,7 +126,7 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 - **The project window** (3, 5 or 10 years) for rates, trends and penalties.
 - **The whole history window** for catastrophic or repeated offences: cited fatalities, willful violations, failure-to-abate and repeat-violation patterns.
 
-Setting `SSI_HISTORY_YEARS=0` turns the second tier into a truly unlimited lookback back to 1972, and the verdicts then also flag catastrophic events older than 10 years. Ten years is the default because it keeps the data small (a 192 MB warehouse) while covering what GCs typically ask about. Older records are also harder to attribute confidently to today's company.
+Setting `SSI_HISTORY_YEARS=0` turns the second tier into a truly unlimited lookback back to 1972, and the verdicts then also flag catastrophic events older than 10 years. Ten years is the default because it keeps the data small (a 210 MB warehouse) while covering what GCs typically ask about. Older records are also harder to attribute confidently to today's company.
 
 ---
 
@@ -184,9 +187,9 @@ A GC has to be able to defend turning a sub down, so the tool gives **reasons wi
 
 | Verdict | Triggered by |
 |---|---|
-| **High concern** | Any of the following:<br>• a cited fatality, willful violation, failure-to-abate or fatality/catastrophe investigation with serious citations, recent<br>• repeat violations in ≥2 separate inspections within W<br>• serious citations per inspection in the trade's top 10% (≥5 inspections, ≥30 peers) |
-| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections, or in ≥2 inside the window, with at least one inside the window (older patterns show as information)<br>• open cases with serious citations<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• a recent fatality on site where the sub wasn't cited<br>• a fatality/catastrophe investigation that's still open, or closed without serious citations and no published detail |
-| **No OSHA record** | No matched records: **"unknown, not clean"**. Ask the sub for its EMR, TRIR and 300 logs |
+| **High concern** | Any of the following:<br>• a cited fatality, willful violation, failure-to-abate or fatality/catastrophe investigation with serious citations, recent<br>• repeat violations in ≥2 separate inspections within W (a safety and a health inspection of the same visit count once)<br>• serious citations per inspection in the trade's top 10% (≥5 inspections, ≥30 peers) |
+| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections, or in ≥2 inside the window, with at least one inside the window (older patterns show as information)<br>• open cases whose serious citations aren't final yet<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• work-related deaths the sub reported on its OSHA injury summaries (300A) with no OSHA fatality investigation on record that year<br>• a recent fatality on site where the sub wasn't cited<br>• a fatality/catastrophe investigation that's still open, or closed without serious citations and no published detail, or a file OSHA opened without inspecting |
+| **No OSHA record** | No matched records, or only files where OSHA conducted no inspection: **"unknown, not clean"**. Ask the sub for its EMR, TRIR and 300 logs |
 | **No recent record** | Matched records exist, but none in W |
 | **No flags** | Matched records in W and nothing above |
 
@@ -257,7 +260,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
                                      └──► LLMs on Modal (GLM 5.3 foreman, DeepSeek V4.1 Flash adjudicator) · LangSmith traces
 ```
 
-- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 192 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 9 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
+- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 210 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 23 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px. The design uses Inter, the green / forest / concrete palette, pill buttons, and the dark pill tab bar for switches. Light by default, with a dark forest theme on a header toggle that's remembered per browser.
 - **Deploy** ([modal_app.py](modal_app.py), prepared but not deployed: the app currently runs locally): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
@@ -271,7 +274,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 190 test cases:
+**Tests:** `uv run pytest`, 231 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -293,9 +296,9 @@ The web front end has 40 more (`npm test`).
 | Candidate recall | 0.94 | 0.95 | The right record was found at all |
 | False exclusions | 0.013 | 0.013 | Same-company records wrongly excluded (here: DR HORTON INC GREENSBORO, a city used as a division name) |
 | Different companies kept out | 0.88 | 0.93 | Not auto-matched |
-| Same-company records left "possible" | 0.27 | 0.33 | Sent to the AI adjudicator or the GC, not counted |
+| Same-company records left "possible" | 0.28 | 0.33 | Sent to the AI adjudicator or the GC, not counted |
 
-The person-name, branch and red-flag rules added after the pipeline review change no outcome in this sample (run with and without them on the same 300 pairs); their effect is on the cases the review found, below.
+The person-name, branch and red-flag rules added after the pipeline review change no outcome in this sample (run with and without them on the same 300 pairs); their effect is on the cases the review found, below. The outlier review's scope changes swapped 2 of the 300 pairs (Otis Elevator and Williams Construction out, two Performance Contracting pairs in); the outcome counts by pair type change only by those pairs (precision 0.847 → 0.845).
 
 **Typos.** The pairs above search with OSHA's own spellings, so two more checks cover a GC's slips (same file):
 
@@ -335,6 +338,22 @@ A GC would most likely treat each as one company. Precision is lower on 10-year 
 | Smaller items | Trailing "THE" stripped ("CLARK CONSTRUCTION GROUP LLC THE" was a "different company"); number prefixes stripped only with 5+ digits or a spaced dash ("561-ROOFING" keeps its number); shifted injury columns fixed by pattern, not load year; injury rows pointing at missing inspections quarantined; 2019 injury-filing ids ("447943.00") normalised and the reader made strict; federal storage/materials-handling codes mapped ("other" 0.55% → 0.45%); benchmarks use construction peers only; cited catastrophe investigations without a death flagged (Review) |
 
 Build checks that re-run the logic they check can't catch its mistakes, so the build now also recounts independently: scope from the keys, citations from the raw file, red flags from live citations; it fails on short SIC codes, unflagged fatality/catastrophe investigations, person names rated distinctive and injury rows mixing two people, warns when accident detail is more than 18 months behind, and compares each build's tables with the previous build of the same inputs.
+
+**Outlier review.** Everything above reconciles, so a second pass looked for records that are kept correctly but *read* wrongly. It ran queries over the whole warehouse and the real matcher on the companies involved. Each fix has a test and, where the data can regress, a build check:
+
+| Found | Fixed |
+|---|---|
+| Arizona (since 2021) and Iowa (since 2026) put a case number before the name (`FCX2024XEG419X0079 - VALLEYCARE LANDSCAPING`); 1,184 records became one-inspection companies. Given the exact name and city of 12 Arizona companies with a cited fatality/catastrophe, the matcher didn't even find 10 of the records | Case numbers stripped; all 21 such companies now match their fatality record (19) or get a GC question (2). A build check fails if one is left in a name |
+| 18,550 "inspections" (5.5%) were files where OSHA didn't inspect (`insp_scope = D`); a sub with only those read "No flags", based on "12 inspections" | Never counted as inspections or in rates; only such files = No OSHA record. A fatality/catastrophe file without an inspection says so (`fatcat_no_inspection`) |
+| "Open case" was read as "still provisional", but OSHA keeps cases open until penalties are paid: 26,055 of 29,564 open serious cases were final | Provisional = open with a citation not yet final; Review, the coverage line, the foreman's open cases and the app's badge use it |
+| 10 workers who died later in hospital were recorded as "hospitalized" | A death in the narrative counts as fatal; a build check fails if one doesn't reach the inspection's status |
+| Deaths self-reported on 300A filings were never used: Karvo Companies reported 6 in 2023 (the I-695 work-zone crash) and has no OSHA fatality record; 435 construction firms, 533 deaths | Review: "self-reported N work-related deaths…; no OSHA fatality investigation on record", unless an OSHA fatality investigation is within a year |
+| 55 fatality investigations were "still open, outcome not yet published" for up to 10 years | OSHA must cite within 6 months; after 7 months without citations it's "not cited" (build check) |
+| A safety and a health inspection of one visit counted as two "separate inspections": High for "repeat violations in 2 separate inspections" from one visit (13 firms) | Repeats and hazard patterns count visits (same site and day) |
+| `related_name` pulled in US Postal (1,454 records), Amazon, Dollar Tree…: names with few variants, but under 7% construction | Only firms with ≥20% construction-coded inspections (Tindall: 51%); 28,726 → 10,713 |
+| Smaller items | OSHA's own offices as the employer ("USDOL OSHA – Cincinnati Area Office", no inspection) and phrases like `ROOFING CONTRACTOR`, `HOME OWNER` are placeholders; injury ages 1 and 99 are unknown; a future-dated inspection fails the build (it would move every window); the app showed "Shared site: +1 employer" on every inspection (the count included the employer itself) |
+
+Not fixed: 936 federal citations recorded as serious or other-than-serious carry willful/repeat-level initial penalties (above any federal serious maximum), the mark of a willful or repeat citation reclassified in settlement. That's an inference from penalties, so it's documented ([docs/data-profile.md](docs/data-profile.md)) rather than flagged.
 
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 

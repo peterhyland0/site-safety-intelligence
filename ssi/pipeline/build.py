@@ -29,6 +29,7 @@ TEMPLATE_VARS = {
     "SHARED_OFFICE_MIN_CORES": str(config.SHARED_OFFICE_MIN_CORES),
     "MIN_RATED": str(config.BENCHMARK_MIN_RATED_INSPECTIONS),
     "HISTORY_YEARS": str(config.HISTORY_YEARS),
+    "RELATED_MIN_CONSTRUCTION_SHARE": str(config.RELATED_MIN_CONSTRUCTION_SHARE),
 }
 
 # Ref tables the SQL depends on, with the columns to stub if the CSV is not there yet
@@ -143,7 +144,8 @@ def code_fingerprint() -> str:
         h.update(p.name.encode())
         h.update(p.read_bytes())
     h.update(f"{config.HISTORY_YEARS}|{config.DISTINCTIVE_MAX_VARIETY}|{config.GENERIC_MIN_VARIETY}|"
-             f"{config.SHARED_OFFICE_MIN_CORES}|{config.BENCHMARK_MIN_RATED_INSPECTIONS}".encode())
+             f"{config.SHARED_OFFICE_MIN_CORES}|{config.BENCHMARK_MIN_RATED_INSPECTIONS}|"
+             f"{config.RELATED_MIN_CONSTRUCTION_SHARE}".encode())
     return h.hexdigest()[:16]
 
 

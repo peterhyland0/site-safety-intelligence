@@ -15,7 +15,8 @@ Method = Literal["rule", "llm", "gc", "llm_rejected"]
 Severity = Literal["high", "review", "info"]
 MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
-                         "fatcat_not_cited", "fatcat_site_cited", "catastrophe_cited", "accident_outcome_unknown", "none"]
+                         "fatcat_not_cited", "fatcat_site_cited", "catastrophe_cited", "fatcat_no_inspection",
+                         "accident_outcome_unknown", "none"]
 AskStatus = Literal["answered", "clarify", "unanswerable", "guard_failed", "needs_confirmation", "no_api_key"]
 
 # osha.gov numbers inspections differently from the published data (activity 348557646 is inspection
@@ -151,7 +152,7 @@ class QuestionAnswer(BaseModel):
 # --- evidence ------------------------------------------------------------------------------------
 class RedFlag(BaseModel):
     kind: Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-                  "fatcat_site_cited", "catastrophe_cited", "willful", "repeat", "fta"]
+                  "fatcat_site_cited", "catastrophe_cited", "fatcat_no_inspection", "willful", "repeat", "fta"]
     label: str
     event_date: str | None
     activity_nr: int
@@ -160,8 +161,9 @@ class RedFlag(BaseModel):
     hazard_label: str | None
     penalty_initial: float | None
     penalty_current: float | None
-    case_open: bool
-    shared_site_n: int
+    case_open: bool  # OSHA's case status (stays open until penalties are paid)
+    case_provisional: bool  # open AND a citation isn't final yet (contested or in the contest period)
+    shared_site_n: int  # OTHER employers inspected on the same site and day
     establishment_name: str
     bucket: Bucket = "matched"
     url: str
@@ -193,7 +195,9 @@ class InspectionRow(BaseModel):
     activity_nr: int
     open_date: str
     close_date: str | None
-    is_open: bool
+    is_open: bool  # OSHA's case status (stays open until penalties are paid)
+    is_provisional: bool  # open AND a citation isn't final yet: citations and penalties may change
+    no_inspection: bool  # OSHA opened a file but conducted no inspection (insp_scope D)
     insp_type_label: str
     site_city: str | None
     site_state: str | None
@@ -204,7 +208,7 @@ class InspectionRow(BaseModel):
     penalty_initial: float | None
     penalty_current: float | None
     fatality_status: FatalityStatus
-    shared_site_n: int
+    shared_site_n: int  # OTHER employers inspected on the same site and day
     dq_flags: list[str]
     url: str
 
@@ -246,7 +250,8 @@ class Coverage(BaseModel):
     inspections_all_time: int
     first_year: int | None
     last_year: int | None
-    open_cases: int
+    open_cases: int  # provisional cases: open, with a citation that isn't final yet
+    visits_without_inspection: int  # OSHA files with no inspection conducted (not counted as inspections)
     accident_detail_through: str
     sentence: str  # appended verbatim to foreman answers and shown under the scorecard
 
@@ -283,7 +288,7 @@ class SubDetail(BaseModel):
     red_flags: list[RedFlag]
     trend: list[YearRow]
     hazards: list[HazardRow]
-    open_cases: list[InspectionRow]
+    open_cases: list[InspectionRow]  # provisional cases only
     inspections: list[InspectionRow]  # first page, newest first; more via /inspections?offset=
     injury_rates: list[ItaYear]
     licences: list[Licence]

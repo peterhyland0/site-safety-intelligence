@@ -3,14 +3,15 @@
 -- * Some rows put the construction-operation code in const_op_cause instead of const_op (the whole 2026
 --   load batch: 394 of 394 accidents present in both batches; and 142 rows loaded 2022-2025, recognised by
 --   the same pattern: const_op empty, nature and body empty); it is moved back here.
--- * Codes are stored as floats ('12.0'); age 0 means unknown.
+-- * Codes are stored as floats ('12.0'); ages 0, 1 and 99 mean unknown (36 rows say 1, 23 say 99).
 CREATE OR REPLACE TABLE stg_injury_rows AS
 SELECT
   try_cast(summary_nr AS BIGINT)                             AS summary_nr,
   try_cast(rel_insp_nr AS BIGINT)                            AS rel_insp_nr,
   try_cast(injury_line_nr AS INTEGER)                        AS line_nr,
   left(load_dt, 4) >= '2026'                                 AS shifted_batch,
-  nullif(try_cast(try_cast(age AS DOUBLE) AS INTEGER), 0)    AS age,
+  CASE WHEN try_cast(try_cast(age AS DOUBLE) AS INTEGER) NOT IN (0, 1, 99)
+       THEN try_cast(try_cast(age AS DOUBLE) AS INTEGER) END AS age,
   nullif(trim(sex), '')                                      AS sex,
   try_cast(try_cast(nature_of_inj AS DOUBLE) AS INTEGER)     AS nature_code,
   try_cast(try_cast(part_of_body AS DOUBLE) AS INTEGER)      AS body_code,
@@ -101,13 +102,18 @@ SELECT l.summary_nr,
        eu.label AS end_use,
        try_cast(a.build_stories AS DOUBLE) AS building_stories,
        coalesce(a.fatality = 'X', false) AS fatality_flag,
+       -- the employee died later (in hospital): the narrative says so, the injury degree doesn't (03_narrative_macros)
+       narrative_reports_death(n.narrative) AS death_in_narrative,
        n.narrative,
        coalesce(inj.injured_n, 0) AS injured_n,
        coalesce(inj.fatal_n, 0) AS fatal_n,
        coalesce(e.employers_on_site, 1) AS employers_on_site,
        (a.summary_nr IS NULL) AS record_missing,
        list_filter([CASE WHEN a.summary_nr IS NULL THEN 'accident_record_missing' END,
-                    CASE WHEN n.narrative IS NULL THEN 'no_narrative' END], lambda f: f IS NOT NULL) AS dq_flags
+                    CASE WHEN n.narrative IS NULL THEN 'no_narrative' END,
+                    CASE WHEN narrative_reports_death(n.narrative) AND NOT coalesce(a.fatality = 'X', false)
+                              AND coalesce(inj.fatal_n, 0) = 0 THEN 'death_only_in_narrative' END],
+                   lambda f: f IS NOT NULL) AS dq_flags
 FROM linked l
 LEFT JOIN raw_accident a ON try_cast(a.summary_nr AS BIGINT) = l.summary_nr
 LEFT JOIN accident_narrative n ON n.summary_nr = l.summary_nr

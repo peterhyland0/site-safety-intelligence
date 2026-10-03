@@ -13,6 +13,7 @@ const FATALITY_LABEL: Record<FatalityStatus, string | null> = {
   fatcat_not_cited: "Fatality/catastrophe investigation, no serious citations",
   fatcat_site_cited: "Cited on a site where a fatality/catastrophe is under investigation",
   catastrophe_cited: "Catastrophe investigation (serious injuries), citations issued",
+  fatcat_no_inspection: "Fatality/catastrophe reported, OSHA did not inspect this employer",
   accident_outcome_unknown: "Accident inspection, outcome not in OSHA's accident data",
   none: null,
 };
@@ -21,9 +22,14 @@ export function InspectionBadges({ row }: { row: InspectionRow }) {
   const fat = FATALITY_LABEL[row.fatality_status];
   return (
     <span className="flex flex-wrap gap-1.5">
-      {row.is_open ? (
-        <span className="pill border-review-line bg-review-bg text-review-fg" title="Case still open: citations and penalties may change">
+      {row.is_provisional ? (
+        <span className="pill border-review-line bg-review-bg text-review-fg" title="Citations aren't final yet: they and the penalties may change">
           Open case · provisional
+        </span>
+      ) : null}
+      {row.no_inspection ? (
+        <span className="pill border-line-strong bg-surface-2 text-ink-2" title="OSHA opened a file but conducted no inspection (e.g. no work in progress); not counted as an inspection">
+          No inspection conducted
         </span>
       ) : null}
       {fat ? (
@@ -114,7 +120,7 @@ function InspectionItem({ row }: { row: InspectionRow }) {
       </div>
       <div className="mt-1.5 pl-6">
         <InspectionBadges row={row} />
-        {row.dq_flags.map((f) => (
+        {row.dq_flags.filter((f) => f !== "no_inspection_conducted").map((f) => (
           <p key={f} className="mt-1 text-xs text-muted">
             Data note: {f}
           </p>
@@ -141,8 +147,13 @@ function InspectionItem({ row }: { row: InspectionRow }) {
 export function InspectionDetailView({ detail }: { detail: InspectionDetail }) {
   return (
     <div className="space-y-3 text-sm">
-      {detail.is_open ? (
-        <p className="text-review-fg">This case is still open. Citations and penalties may change after settlement or contest.</p>
+      {detail.is_provisional ? (
+        <p className="text-review-fg">This case is still open and its citations aren't final. Citations and penalties may change after settlement or contest.</p>
+      ) : detail.is_open ? (
+        <p className="text-muted">OSHA still lists this case as open, but every citation is a final order (usually it's waiting on penalty payment).</p>
+      ) : null}
+      {detail.no_inspection ? (
+        <p className="text-muted">OSHA opened this file but conducted no inspection, so it isn't counted as an inspection.</p>
       ) : null}
       {detail.citation_rows.length ? (
         <ul className="divide-y divide-line" aria-label="Citations">

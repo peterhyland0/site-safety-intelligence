@@ -32,6 +32,7 @@ SITE_KINDS = {
     "fatcat_site_cited": ("R_fatcat_site_cited", ("Cited for serious violations on a site where another employer's "
                                                   "fatality/catastrophe investigation is open or unpublished")),
     "catastrophe_cited": ("R_catastrophe_cited", "Catastrophe investigation (serious injuries, no death) with serious citations"),
+    "fatcat_no_inspection": ("R_fatcat_no_inspection", "Fatality/catastrophe reported; OSHA opened a file but didn't inspect this employer"),
 }
 
 
@@ -49,6 +50,7 @@ class RedFlagFact:
     activity_nr: int
     case_open: bool
     when: date | None = None  # event date; windows compare dates, not calendar years
+    visit: str | None = None  # same site and day; a safety and a health inspection of one visit are one visit
 
 
 @dataclass
@@ -82,6 +84,9 @@ class Facts:
     ita_dart_above_p75_years: list[int] = field(default_factory=list)
     licence_lapsed: str | None = None
     as_of: date | None = None
+    visits_without_inspection: int = 0  # OSHA files with no inspection conducted; not in inspections_all
+    # (year, deaths) self-reported on OSHA 300A summaries, in years with no OSHA fatality investigation (±1 year)
+    ita_deaths: list[tuple[int, int]] = field(default_factory=list)
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -123,7 +128,8 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
         if hits:
             add(f"H_{kind}", f"{text} ({_years(hits)})", "high", hits, count=len(hits))
     repeat_window = [x for x in f.red_flags if x.kind == "repeat" and in_window(x)]
-    repeat_insp = {x.activity_nr for x in repeat_window}
+    # separate visits: OSHA often opens a safety and a health inspection for one visit
+    repeat_insp = {x.visit or str(x.activity_nr) for x in repeat_window}
     if len(repeat_insp) >= 2:
         add("H_repeat", f"Repeat violations in {len(repeat_insp)} separate inspections in the last {f.window_years} years",
             "high", repeat_window, inspections=len(repeat_insp))
@@ -172,8 +178,8 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
             add(f"I_past_{h.hazard_code}",
                 f"{short} cited in {h.insp_all} separate inspections ({h.first_year}–{h.last_year}), none in the last {f.window_years} years",
                 "info", evidence=h.evidence[:20], inspections=h.insp_all)
-    if f.open_serious_cases:
-        add("R_open", f"{len(f.open_serious_cases)} open case(s) with serious citations (still provisional)",
+    if f.open_serious_cases:  # serious citations not final yet; open cases whose citations are final don't count
+        add("R_open", f"{len(f.open_serious_cases)} open case(s) with serious citations not yet final (still provisional)",
             "review", evidence=f.open_serious_cases[:20], count=len(f.open_serious_cases))
     if f.pending_questions:
         add("R_questions", f"{f.pending_questions} possible match(es) with red flags need your confirmation", "review",
@@ -183,12 +189,23 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
             ", ".join(map(str, f.ita_dart_above_p75_years)), "review")
     if f.licence_lapsed:
         add("R_licence", f"Contractor licence {f.licence_lapsed}", "review")
+    # Deaths the company itself reported (300A) with no OSHA fatality investigation on record: Review, not High
+    # (no citation, and the filing is linked by name and address)
+    ita_recent = [(y, n) for y, n in f.ita_deaths if y >= recent_since.year and n > 0]
+    if ita_recent:
+        n = sum(d for _, d in ita_recent)
+        add("R_ita_deaths", f"Self-reported {n} work-related death(s) on OSHA injury summaries (300A) in "
+            + ", ".join(str(y) for y, _ in sorted(ita_recent, reverse=True))
+            + "; no OSHA fatality investigation on record", "review", deaths=n)
+    if f.inspections_all == 0 and f.visits_without_inspection:
+        add("I_no_inspection", f"OSHA opened {f.visits_without_inspection} file(s) but conducted no inspection "
+            "(e.g. no work in progress); history unknown", "info", count=f.visits_without_inspection)
 
     if any(r.severity == "high" for r in reasons):
         verdict = "high"
     elif any(r.severity == "review" for r in reasons):
         verdict = "review"
-    elif f.matched_establishments == 0:
+    elif f.matched_establishments == 0 or f.inspections_all == 0:  # files with no inspection aren't a record
         verdict = "no_record"
     elif f.inspections_window == 0:
         verdict = "no_recent"

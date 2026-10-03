@@ -34,7 +34,7 @@ round new numbers yourself (a code check rejects any figure that isn't in the to
 - No OSHA record is not a clean record: OSHA inspects few employers, so say the history is unknown and \
 suggest asking the sub for its EMR, TRIR and OSHA 300 logs.
 - A fatality on a shared site doesn't mean this sub caused it: say whether the sub was cited.
-- Open cases are provisional; say so when you mention them.
+- Open cases (citations not final yet) are provisional; say so when you mention them.
 - If the question could mean more than one sub (e.g. "the electrician" with two electrical subs), call \
 ask_which_sub instead of guessing.
 - Never assume a name that only partly matches means a project sub ("Lee Electric" is not "Lee Steel \

@@ -53,8 +53,12 @@ GROUP BY 1;
 -- across ALL industries (5 or fewer full-name variants in any year), long enough (one word of 6+ letters, or
 -- several words), and not a person's name. They are 'related_name': the matcher never counts them on the
 -- name alone (only once confirmed, or at an address the company uses).
+-- The company must also be mainly construction: at least {{RELATED_MIN_CONSTRUCTION_SHARE}} of its inspections
+-- (all years) coded as construction. Big firms write their name one way, so "few variants" alone let in US
+-- Postal (11 of 8,109 inspections construction-coded), Amazon, Dollar Tree... (Tindall: 31 of 61).
 CREATE OR REPLACE TABLE core_variety AS
-SELECT core, count(DISTINCT clean_name) AS variety
+SELECT core, count(DISTINCT clean_name) AS variety,
+       count(*) FILTER (WHERE is_naics23 OR is_sic_construction) / count(*) AS construction_share
 FROM insp_key WHERE NOT is_placeholder AND core <> '' GROUP BY 1;
 
 CREATE OR REPLACE TABLE related_cores AS
@@ -65,6 +69,7 @@ c AS (SELECT DISTINCT k.core, string_split(k.core, ' ') AS tok
 SELECT c.core
 FROM c JOIN core_variety v USING (core), g
 WHERE v.variety <= {{DISTINCTIVE_MAX_VARIETY}}
+  AND v.construction_share >= {{RELATED_MIN_CONSTRUCTION_SHARE}}
   AND CASE WHEN len(c.tok) = 1 THEN length(c.core) >= 6 ELSE length(c.core) >= 5 END
   AND NOT (len(c.tok) BETWEEN 2 AND 4 AND regexp_full_match(c.core, '[A-Z]+( [A-Z]+)*')
            AND (list_contains(g.names, c.tok[1]) OR (len(c.tok) = 2 AND list_contains(g.names, c.tok[2]))));

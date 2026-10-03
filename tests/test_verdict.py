@@ -89,3 +89,34 @@ def test_cited_catastrophe_without_a_death_is_review():
     f = RedFlagFact("catastrophe_cited", 2024, 6, False, when=date(2024, 5, 1))
     v, r = evaluate(facts(as_of=date(2026, 9, 23), red_flags=[f]))
     assert v == "review" and r[0].code == "R_catastrophe_cited"
+
+
+def test_one_visit_is_one_inspection_for_repeats():
+    # OSHA opened a safety and a health inspection for the same visit (same site and day): one visit, Review
+    same_visit = [RedFlagFact("repeat", 2024, 1, False, visit="site-a"), RedFlagFact("repeat", 2024, 2, False, visit="site-a")]
+    v, r = evaluate(facts(red_flags=same_visit))
+    assert v == "review" and r[0].code == "R_repeat"
+    two_visits = [RedFlagFact("repeat", 2024, 1, False, visit="site-a"), RedFlagFact("repeat", 2023, 2, False, visit="site-b")]
+    assert evaluate(facts(red_flags=two_visits))[0] == "high"
+
+
+def test_files_without_an_inspection_are_no_record():
+    # matched records exist, but OSHA never inspected (insp_scope D): unknown, not clean
+    v, r = evaluate(facts(inspections_all=0, inspections_window=0, rated_window=0, serious_plus_window=0,
+                          visits_without_inspection=12))
+    assert v == "no_record" and r[0].code == "I_no_inspection" and r[0].severity == "info"
+
+
+def test_fatcat_file_without_inspection_is_review_while_recent():
+    from datetime import date
+    f = RedFlagFact("fatcat_no_inspection", 2025, 7, False, when=date(2025, 3, 1))
+    v, r = evaluate(facts(as_of=date(2026, 9, 23), red_flags=[f]))
+    assert v == "review" and r[0].code == "R_fatcat_no_inspection"
+
+
+def test_self_reported_deaths_are_review():
+    from datetime import date
+    v, r = evaluate(facts(as_of=date(2026, 9, 23), ita_deaths=[(2023, 6)]))
+    assert v == "review" and r[0].code == "R_ita_deaths" and "6 work-related death" in r[0].label
+    # older than the 10-year recency window: no reason
+    assert evaluate(facts(as_of=date(2026, 9, 23), ita_deaths=[(2014, 1)]))[0] == "no_flags"

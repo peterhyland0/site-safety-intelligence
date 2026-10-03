@@ -6,7 +6,7 @@ import { VERDICT_ORDER, VERDICTS } from "../lib/verdict";
 const RULES: Record<(typeof VERDICT_ORDER)[number], string> = {
   high: "In the last 10 years: a fatality investigation where the sub was cited for serious violations, a willful violation, or a failure to fix a cited hazard. Or, inside the lookback window: repeat violations in two or more separate inspections, or a serious-citation rate in the top 10% of the trade (5+ inspections).",
   review:
-    "Worth a conversation: any of the High events more than 10 years ago; being on a site where a fatality was investigated without being cited; one repeat violation in the window; the same hazard cited in 3+ inspections (or 2+ in the window); an open case with serious citations; a serious rate above the trade's 75th percentile; an unconfirmed possible match carrying red flags; a self-reported DART rate above most peers; or a lapsed licence.",
+    "Worth a conversation: any of the High events more than 10 years ago; being on a site where a fatality was investigated without being cited; one repeat violation in the window; the same hazard cited in 3+ inspections (or 2+ in the window); an open case whose serious citations aren't final yet; a serious rate above the trade's 75th percentile; an unconfirmed possible match carrying red flags; a self-reported DART rate above most peers; work-related deaths the sub reported on its OSHA injury summaries with no OSHA fatality investigation on record; or a lapsed licence.",
   no_record:
     "No inspections matched. OSHA inspects only a small share of workplaces, so this is unknown, not clean. Ask the sub for TRIR, EMR and their safety program.",
   no_recent: "Inspections exist, but none inside the lookback window, and nothing older met a concern rule.",
@@ -118,7 +118,8 @@ export function MethodologyPage() {
       <Block title="Known limits">
         <ul className="list-disc space-y-1 pl-5">
           <li>Most firms are never inspected. No record means unknown.</li>
-          <li>Recent cases are often still open; their citations and penalties can change. They are marked provisional.</li>
+          <li>Recent cases are often still open, and until their citations are final orders (not contested, or settled) the citations and penalties can change. Those cases are marked provisional. OSHA also keeps cases open until penalties are paid, years after the citations became final; those are not provisional.</li>
+          <li>Some OSHA files record a visit where no inspection was conducted (no work in progress, entry refused). They are shown but never counted as inspections, so a sub with only those has no OSHA record.</li>
           <li>OSHA's accident detail lags: coverage thins after 2023 and stops in early 2025, so recent fatality narratives may be missing.</li>
           <li>
             On shared sites, one accident is copied onto every employer inspected; the record can't say whose worker was

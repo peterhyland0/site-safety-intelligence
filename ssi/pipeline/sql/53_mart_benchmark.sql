@@ -8,7 +8,7 @@ CREATE OR REPLACE TABLE as_of AS SELECT max(open_date) AS data_as_of FROM wh.osh
 -- a 10-year window that starts 2016-09-23). Same definitions as mart.establishment_year.
 CREATE OR REPLACE TABLE est_window AS
 SELECT i.establishment_key, w.window_years,
-       count(*) FILTER (WHERE coalesce(i.insp_type, '') NOT IN ('F', 'D', 'E')) AS rated_n,
+       count(*) FILTER (WHERE coalesce(i.insp_type, '') NOT IN ('F', 'D', 'E') AND NOT i.no_inspection) AS rated_n,
        count(*) FILTER (WHERE i.citation_n > 0) AS with_cit_n,
        sum(i.serious_plus_n) AS serious_plus_n, sum(i.citation_n) AS viol_n
 FROM wh.osha.inspection i,

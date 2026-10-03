@@ -9,8 +9,8 @@ from ssi.matching import run as M
 from ssi.queries import core as Q
 
 RED_FLAG_KINDS = ["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-                  "fatcat_site_cited", "catastrophe_cited", "willful", "repeat", "fta"]
-FATALITY_KINDS = RED_FLAG_KINDS[:7]  # the fatality/catastrophe investigations, whatever their outcome
+                  "fatcat_site_cited", "catastrophe_cited", "fatcat_no_inspection", "willful", "repeat", "fta"]
+FATALITY_KINDS = RED_FLAG_KINDS[:8]  # the fatality/catastrophe investigations, whatever their outcome
 
 
 def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
@@ -111,7 +111,7 @@ class Toolbox:
                          "red_flags": c.red_flag_count,
                          "fatality_investigations": dict(Counter(f.label for f in self.data(sid)["flags"]
                                                                  if f.kind in FATALITY_KINDS)),
-                         "open_cases": len(Q.inspections(self.data(sid)["keys"], limit=500, open_only=True)),
+                         "open_cases": len(Q.inspections(self.data(sid)["keys"], limit=500, provisional_only=True)),
                          "possible_records_not_counted": c.possible_inspections,
                          "pending_match_questions": c.pending_questions})
         return {"subs": rows}
@@ -138,8 +138,8 @@ class Toolbox:
         flags = [f for f in self.data(sub_id)["flags"] if not kinds or f.kind in kinds]
         return {"total": len(flags), "shown": min(len(flags), 25), "events": [
             {"kind": f.label, "date": f.event_date, "inspection_id": f.activity_nr, "standard": f.standard,
-             "hazard": f.hazard_label, "penalty_current": f.penalty_current, "case_open": f.case_open,
-             "employers_on_site": f.shared_site_n} for f in flags[:25]]}
+             "hazard": f.hazard_label, "penalty_current": f.penalty_current, "provisional": f.case_provisional,
+             "employers_on_site": f.shared_site_n + 1} for f in flags[:25]]}
 
     def t_citations_by_hazard(self, sub_id: str, hazard: str) -> dict:
         d = self.data(sub_id)
@@ -163,7 +163,7 @@ class Toolbox:
             det = Q.inspection_detail(f.activity_nr)
             acc = det.accidents[0] if det and det.accidents else None
             out.append({"inspection_id": f.activity_nr, "date": f.event_date, "status": f.label,
-                        "employers_on_site": f.shared_site_n,
+                        "employers_on_site": f.shared_site_n + 1,
                         "serious_citations": det.serious_plus if det else None,
                         "narrative": (acc.narrative or acc.description or "")[:400] if acc else "not published"})
         return {"total": len(fat), "events": out,
@@ -183,17 +183,21 @@ class Toolbox:
                 "licences": [l.model_dump() for l in d["licences"][:3]]}
 
     def t_open_cases(self, sub_id: str) -> dict:
-        rows = Q.inspections(self.data(sub_id)["keys"], limit=20, open_only=True)
+        rows = Q.inspections(self.data(sub_id)["keys"], limit=20, provisional_only=True)
         return {"open_cases": len(rows), "cases": [{"inspection_id": r.activity_nr, "opened": r.open_date,
                 "city": r.site_city, "state": r.site_state, "citations": r.citations, "serious": r.serious_plus,
-                "penalty_current": r.penalty_current} for r in rows]}
+                "penalty_current": r.penalty_current} for r in rows],
+                "note": ("Open cases whose citations aren't final yet (contested, or still in the contest period), so "
+                         "citations and penalties may change. Cases OSHA keeps open only until penalties are paid, "
+                         "with every citation final, are not listed.")}
 
     def t_inspection_list(self, sub_id: str, since_year: int) -> dict:
         rows = Q.inspections(self.data(sub_id)["keys"], limit=1000, since_year=since_year or None)
         return {"total": len(rows), "with_citations": sum(1 for r in rows if r.citations), "shown": min(len(rows), 20),
                 "inspections": [{"inspection_id": r.activity_nr, "opened": r.open_date, "type": r.insp_type_label,
                                  "city": r.site_city, "state": r.site_state, "citations": r.citations,
-                                 "serious": r.serious_plus, "open": r.is_open} for r in rows[:20]]}
+                                 "serious": r.serious_plus, "provisional": r.is_provisional,
+                                 "no_inspection_conducted": r.no_inspection} for r in rows[:20]]}
 
     def t_inspection_detail(self, activity_nr: int) -> dict:
         det = Q.inspection_detail(activity_nr)
@@ -203,7 +207,7 @@ class Toolbox:
         owner = Q.warehouse.one("SELECT establishment_key FROM osha.inspection WHERE activity_nr = ?", [activity_nr])
         return {"inspection_id": det.activity_nr, "on_project": bool(owner and owner["establishment_key"] in keys),
                 "employer": det.establishment_name, "opened": det.open_date, "type": det.insp_type_label,
-                "open": det.is_open, "citations": [{"type": c.viol_type_label, "standard": c.standard, "hazard": c.hazard_label,
+                "provisional": det.is_provisional, "no_inspection_conducted": det.no_inspection, "citations": [{"type": c.viol_type_label, "standard": c.standard, "hazard": c.hazard_label,
                                                     "penalty_current": c.penalty_current, "deleted": c.is_deleted}
                                                    for c in det.citation_rows[:30]],
                 "accident": ({"date": det.accidents[0].event_date, "narrative": (det.accidents[0].narrative or "")[:500]}
@@ -215,7 +219,7 @@ class Toolbox:
         keys = [r["establishment_key"] for r in matched]
         flags = Q.red_flags(keys)
         return {"unconfirmed": True, "query": {"name": name, "city": city, "state": state},
-                "matched_records": len(keys), "inspections": sum(r["insp_n"] for r in matched),
+                "matched_records": len(keys), "inspections": sum(r["insp_conducted_n"] for r in matched),
                 "red_flags": [{"kind": f.label, "date": f.event_date, "inspection_id": f.activity_nr} for f in flags[:10]],
                 "note": "Rules-only match for a company not on the project; confirm before relying on it."}
 

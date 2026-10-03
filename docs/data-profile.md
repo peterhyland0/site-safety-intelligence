@@ -189,6 +189,25 @@ Simple normalisation merges only about 11% of variants. What's left:
 | Undocumented violation type `P` | 11 |
 | Null violation type | 16 |
 
+## 7. Values that read wrongly (outlier review, Oct 2026)
+
+Found after the warehouse already reconciled with the raw files, by querying the 10-year warehouse (Sept 2016 – Sept 2026) for values that are stored correctly but mean something else. Fixes are in the README's "Outlier review".
+
+| Trap | Evidence | What it looked like |
+|---|---|---|
+| **Case numbers made of letters and digits in front of the name** | Arizona since mid-2021 (`FCX2024XEG419X0079 - …`, also URX, PPX, CPX, RFX, PRX, ACX, UOX, FUX; `FCX` marks fatality/catastrophe files) and Iowa since March 2026 (`A09CS000013UQXVAA4 - …`): 1,184 records in scope, 2,438 in all industries | The ID-prefix rule only knew digit IDs (`WA317965935 - `), so each record was its own company with the case number in its name |
+| **`insp_scope = 'D'`: no inspection conducted** | 18,550 records (5.5%); 0.1% have citations. `why_no_insp` is filled on every row whatever the scope, so it can't tell them apart; `insp_scope` can | Counted as inspections: 9,010 construction firms have only these |
+| **Open is not provisional** | Of 29,564 open inspections with serious citations, 26,055 have every live citation final-ordered; median final order 28 days after issuance. Cases stay open until penalties are collected | "Still provisional" on citations that can't change |
+| **Deaths after the report** | 10 accidents whose narrative says the employee died (days or weeks later, in hospital) carry injury degree "hospitalized" and no fatality flag | Not a fatality anywhere in the structured data |
+| **Self-reported deaths** | 300A filings linked to 435 construction firms report 533 work-related deaths in years with no OSHA fatality record of any kind (Karvo Companies: 6 in 2023; Capriati Construction: 6 in 2025, possibly a filing error) | Shown in the injury-rate table only |
+| **"Open" fatality investigations that can no longer be cited** | 55 fatality/catastrophe files with no citations, opened up to 10 years ago (OSHA must cite within 6 months) | "Outcome not yet published" forever |
+| **One visit, two inspection numbers** | 2,781 safety + health pairs and 932 other same-site, same-day duplicates | Counted as "separate inspections" for repeat and hazard patterns |
+| **Willful/repeat reclassified in settlement** (not fixed) | `viol_type` is the *settled* classification. 807 S and 129 O federal citations have initial penalties above any federal serious maximum (>$17k, e.g. an O citation at $156,259, the 2023 willful/repeat maximum) | Plain serious; 575 of those firms have no other willful/repeat flag. Detecting it needs yearly penalty maxima per type and jurisdiction |
+| **OSHA's own offices as the employer** | ~900 records like `USDOL OSHA - CINCINNATI AREA OFFICE`: types L/J, no inspection, no citations, some coded NAICS 23 | Searchable "companies" and benchmark peers |
+| Small | `ROOFING CONTRACTOR`, `HOME OWNER`, `UNK`… as employer names (~24); injury age 1 (36 rows) or 99 (23); a 1,000 ft fall; 6 fatal accidents linked to an inspection opened over a year from the event | |
+
+Checked and clean: penalties (no negatives; maximum $165,514, the 2025 statutory maximum), mailing ZIP vs state (8 mismatches), injury persons split by the 2026 line-number restart (25, all genuinely different people), licence status vs expiry (no ACTIVE licence past its expiry), numeric IDs left in names (76, all placeholders).
+
 ## Multi-employer sites
 
 **120,262 construction inspections (31.9%) share a site address, zip and open date with another employer's inspection.** The busiest single site-day has 27 employers. This is OSHA inspecting a GC and its subs together.
