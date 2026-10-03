@@ -3,10 +3,10 @@
     "q": "Which subs had a fatality?",
     "status": "answered",
     "tools": [
-      "red_flags"
+      "compare_subs"
     ],
-    "answer": "Four subs have a fatality in OSHA's record:\n\n- **Jake Marshall LLC** (mechanical) \u2014 fatality on 2020-11-13, employer cited, current penalty $2,400 (#345032692). That case is still open, so details are provisional.\n- **31-W Insulation Co.** \u2014 fatality on 2021-07-08, employer cited, penalty $12,100 (#345406599).\n- **Dixie Roofing, Inc.** \u2014 fatality on 2018-03-23, employer cited, penalty $11,900 (#343042115).\n- **Brasfield & Gorrie** (general contractor) \u2014 a fatality on site on 2023-06-22, but OSHA did not cite them for serious violations (#346784382), so the record doesn't tie the incident to them.\n\nThe other nine subs show no fatalities. Want more detail on any of these?",
-    "seconds": 6.5,
+    "answer": "Five subs were cited after a fatality investigation, one was on a fatality site but not cited:\n\n- **Jake Marshall LLC** \u2013 fatality in 2020, cited for serious violations.\n- **31-W Insulation Co.** \u2013 fatality in 2021, cited for serious violations.\n- **Dixie Roofing, Inc.** \u2013 fatality in 2018, cited for serious violations.\n- **Barnhart Crane & Rigging** \u2013 fatality in 2020, cited for serious violations.\n- **Tindall Corporation** \u2013 fatality in 2023, cited; plus a 2026 fatality/catastrophe investigation still open, outcome not yet published.\n- **Brasfield & Gorrie** \u2013 on a 2023 site where a fatality was investigated, but not cited for serious violations.\n\nNote: Tindall's open cases are provisional \u2014 citations may still change. Want details on any of these?",
+    "seconds": 5.5,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -19,8 +19,8 @@
     "tools": [
       "red_flags"
     ],
-    "answer": "No. OSHA's record shows no repeat violations for Fugate Construction LLC.\n\n- That's zero repeat citations in their history \u2014 nothing in the red-flag category at all.\n- Note: no repeat violations on record doesn't mean a clean safety program \u2014 OSHA inspects few employers, so their history is largely unknown. If you want a fuller picture, ask them for their EMR, TRIR and OSHA 300 logs.",
-    "seconds": 1.8,
+    "answer": "Yes \u2014 Fugate Construction LLC has 3 repeat violations on record, all fall-protection related:\n\n- Repeat citation for unprotected edges/holes \u2014 fall protection standard 1926.501(b)(1), $8,000 penalty (#346746365, 2023-08-25)\n- Repeat citation for fall protection training, 1926.503(a)(1), $3,200 (#346746365, same inspection)\n- Another repeat citation for fall protection training, 1926.503(a)(1), $3,200 (#346746423, 2023-08-03)\n\nAll are final, not provisional. Worth watching fall protection closely on their framing work.",
+    "seconds": 2.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -31,11 +31,10 @@
     "q": "Is Allison-Smith clean?",
     "status": "answered",
     "tools": [
-      "sub_summary",
-      "open_cases"
+      "sub_summary"
     ],
-    "answer": "OSHA's record shows Allison-Smith Company with no red flags and no open cases.\n\n- Verdict: \"No flags\" \u2014 9 inspections all-time (2018\u20132025), 4 in the last 3 years.\n- Serious-citation rate: 0.0 per inspection, equal to the trade median (0.0) for building equipment contractors.\n- No fatalities, willful, repeat, or failure-to-abate events on record.\n- Note: no flags isn't the same as no record \u2014 they've been inspected 4 times recently with no issues found, but OSHA inspects few employers. For a fuller picture, ask them for their EMR, TRIR, and OSHA 300 logs.",
-    "seconds": 2.4,
+    "answer": "Allison-Smith Company (electrical, Smyrna GA) has no flags in OSHA's record \u2014 verdict \"No flags.\"\n\n- 9 inspections all-time (2018\u20132025), 7 in the 5-year project window, all in GA.\n- 0.0 serious citations per inspection, in line with the trade median (0.0) and below the trade 75th percentile (0.67).\n- No fatalities, willful/repeat citations, or open cases in the record.\n- Note: an OSHA record with no citations isn't proof of a clean record \u2014 worth asking them for their EMR, TRIR and OSHA 300 logs.",
+    "seconds": 2.2,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -46,11 +45,10 @@
     "q": "What do we know about Riverbend Glazing?",
     "status": "answered",
     "tools": [
-      "sub_summary",
-      "red_flags"
+      "sub_summary"
     ],
-    "answer": "OSHA's record shows nothing for Riverbend Glazing Co. \u2014 no inspections, citations, or serious-offence events, all-time or in the 3-year lookback window.\n\n- No red flags on file: no fatalities, willful, repeat, or failure-to-abate events.\n- No possible/unconfirmed records waiting on GC review either.\n- No OSHA record is not a clean record \u2014 OSHA inspects only a small share of employers, so its history is simply unknown.\n- Suggest asking Riverbend for its EMR, TRIR and OSHA 300 logs to get a fuller picture.",
-    "seconds": 4.0,
+    "answer": "Riverbend Glazing Co. (Nashville, TN) has no OSHA record \u2014 OSHA's data shows zero matching inspections, all-time or in the 5-year window.\n\n- No inspections means no citations, no fatality investigations, and no open cases in the record.\n- That's an unknown history, not a clean one: OSHA inspects only a small share of employers.\n- Suggest asking them directly for their EMR, TRIR, and OSHA 300/300A logs to get a fuller safety picture.",
+    "seconds": 1.8,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -61,10 +59,10 @@
     "q": "Who has open cases right now?",
     "status": "answered",
     "tools": [
-      "open_cases"
+      "compare_subs"
     ],
-    "answer": "Eight subs have open cases right now \u2014 9 open inspections total. Open cases are provisional, so citations and penalties can still change.\n\n- **Jake Marshall LLC** \u2014 #345032692 (Charleston, TN): 1 citation, 1 serious, $2,400 penalty\n- **31-W Insulation Co.** \u2014 #348975996 (Milton, FL): no citations yet\n- **Cooper Steel Fabricators** \u2014 #344959135 (Suffolk, VA): 4 citations, 4 serious, $9,295 penalty\n- **Dixie Roofing, Inc.** \u2014 #346566110 (Pigeon Forge, TN): 4 citations, 4 serious, $7,000 penalty\n- **McKenney's, Inc.** \u2014 #349123695 (Atlanta, GA): no citations yet\n- **Barnhart Crane & Rigging** \u2014 #347258519 (Seattle, WA): 1 citation, 1 serious, $2,100 penalty\n- **Tindall Corporation** \u2014 #349017442 (Spartanburg, SC): no citations yet\n- **Brasfield & Gorrie** \u2014 #349155689 (Hiram, GA) and #349098517 (Cartersville, GA): no citations yet\n\nNo open cases: Fugate Construction LLC, Allison-Smith Company, Quality Roofing, J & J Drywall, Riverbend Glazing Co.",
-    "seconds": 5.3,
+    "answer": "Six subs have open cases right now \u2014 citations in these cases aren't final yet, so they're provisional:\n\n- **Tindall Corporation** \u2014 4 open cases, including fatality/catastrophe investigations still open\n- **Brasfield & Gorrie** \u2014 2 open cases\n- **Jake Marshall LLC** \u2014 1 open case (with serious citations, not yet final)\n- **Cooper Steel Fabricators** \u2014 1 open case (with serious citations, not yet final)\n- **Dixie Roofing, Inc.** \u2014 1 open case\n- **31-W Insulation Co.** \u2014 1 open case\n- Also **Barnhart Crane & Rigging** and **McKenney's, Inc.** each have 1 open case.\n\nEveryone else (Fugate, Allison-Smith, Quality Roofing, J & J Drywall, Riverbend Glazing) has none. Want details on any of these?",
+    "seconds": 4.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -77,8 +75,8 @@
     "tools": [
       "compare_subs"
     ],
-    "answer": "31-W Insulation Co. stands out on serious citations: **1.57 serious citations per inspection vs its trade median of 0.33** \u2014 the only sub materially above its trade's rate. Barnhart Crane & Rigging is slightly above its median (0.1 vs 0.0) across 77 matched inspections. Everyone else with a record is at 0.0.\n\n- **High concern:** 31-W Insulation (fatality investigation with serious citations, 2021; repeat violation in the last 3 years; 2 red flags); Jake Marshall LLC (fatality cited for serious violations, 2020; 1 open case with serious citations, still provisional); Dixie Roofing (fatality cited for serious violations, 2018; 1 open case with serious citations, still provisional; no inspections in the 3-year window).\n- **Review:** Barnhart (crane/rigging cited in 3 separate inspections 2019\u20132024; 1 open serious case, provisional); Cooper Steel Fabricators (1 open serious case, provisional); Brasfield & Gorrie (on a fatality-investigated site in 2023 but not cited for serious violations).\n- **No flags, 0.0 serious rate:** McKenney's, Allison-Smith, Tindall.\n- **No OSHA record (history unknown):** Fugate Construction, Quality Roofing, J & J Drywall, Riverbend Glazing \u2014 OSHA inspects few employers, so ask them for EMR, TRIR and OSHA 300 logs. Quality Roofing has 2 possible records not counted, J & J Drywall 1, McKenney's 1 \u2014 the GC would need to confirm those possible matches first.",
-    "seconds": 6.3,
+    "answer": "Here's how everyone stacks up on serious citations (serious per inspection, vs trade median):\n\n**High concern:**\n- **Fugate Construction LLC** \u2014 5.33 per inspection (median 1.33); repeat violations in 2 separate inspections in the last 5 years \u2014 worst rate on the job\n- **Dixie Roofing** \u2014 2.5 per inspection (median 1.33); fatality with serious citations (2018), fall protection cited in 6 separate inspections (2018\u20132023)\n- **31-W Insulation Co.** \u2014 1.1 per inspection (median 0.33); fatality with serious citations (2021), plus a repeat violation\n- **Tindall Corporation** \u2014 0.81 per inspection (median 1.33), but fatality cited (2023) and 4 open cases, including a 2026 fatality/catastrophe investigation with citations not yet published (provisional)\n- **Jake Marshall LLC** \u2014 0.5 per inspection (median 0.0); fatality with serious citations (2020), 1 open case (provisional)\n- **Barnhart Crane & Rigging** \u2014 0.08 per inspection (median 0.0) across 36 inspections in the window; fatality cited (2020), cranes/hoists/rigging cited in 3 separate inspections\n\n**Review:**\n- **Cooper Steel Fabricators** \u2014 0.0, but 1 open case with serious citations not yet final (provisional)\n- **Brasfield & Gorrie** \u2014 0.0 across 63 inspections; on a fatality site (2023) but not cited for serious violations\n\n**No flags:**\n- **McKenney's, Inc.** \u2014 0.0; **Allison-Smith Company** \u2014 0.0\n\n**No OSHA record:** Quality Roofing, J & J Drywall, Riverbend Glazing Co. \u2014 no inspections found; history is unknown, so ask them for EMR, TRIR and OSHA 300 logs.",
+    "seconds": 5.2,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -89,11 +87,10 @@
     "q": "Tell me about the fatality at Jake Marshall",
     "status": "answered",
     "tools": [
-      "fatality_history",
-      "red_flags"
+      "fatality_history"
     ],
-    "answer": "Jake Marshall LLC has one fatality on OSHA's record, and they were cited for it (#345032692):\n\n- **Nov. 13, 2020** \u2014 an employee was hot bolting a connection at a chemical production plant (multi-employer site, 2 employers on site) where hydrochloric acid was being generated; an HCl release from a graphite nozzle on an AW234 heat exchanger occurred, and the employee was injured (the published narrative cuts off there).\n- OSHA cited Jake Marshall with 1 serious citation; the current penalty is $2,400.00 (#345032692).\n- The case is still listed as open, so those figures are provisional.\n- This is from 2020, outside the 3-year project lookback window, but it's their only fatality on record since 2016.",
-    "seconds": 2.6,
+    "answer": "Jake Marshall LLC (mechanical, Chattanooga TN) has one fatality on record, and OSHA cited them for it.\n\n- **November 13, 2020** (#345032692): an employee was hot bolting a connection at a chemical production plant \u2014 a multi-employer site with 2 employers present \u2014 when hydrochloric acid released from a graphite nozzle on a heat exchanger and he was injured (the published narrative is cut off).\n- Jake Marshall was cited with 1 serious citation in that inspection.\n- Note: the incident was on a shared site, so Jake Marshall's citation tells you what OSHA attributed to them \u2014 it doesn't automatically mean they were the sole cause.",
+    "seconds": 2.1,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -106,8 +103,8 @@
     "tools": [
       "injury_rates"
     ],
-    "answer": "Dixie Roofing's self-reported rates run below the roofing industry average in every year on file, and the latest is strong: a 2025 TRIR of 0.5 (industry 2.96).\n\n- 2025: TRIR 0.5, DART 0.5 \u2014 industry TRIR 2.96\n- 2024: TRIR 2.35, DART 1.17 \u2014 industry TRIR 3.31\n- 2023: TRIR 1.71, DART 1.14 \u2014 industry TRIR 3.42\n- These are from the sub's own OSHA 300A filings (the LaFollette establishment); no state licence is on file.\n\nIf you want, I can also pull their OSHA inspection and citation history for the 3-year lookback window.",
-    "seconds": 2.1,
+    "answer": "Dixie Roofing's self-reported injury rates run well below the roofing industry average every year:\n\n- 2025: TRIR 0.5, DART 0.5 (industry TRIR 2.96)\n- 2024: TRIR 2.35, DART 1.17 (industry 3.31)\n- 2023: TRIR 1.71, DART 1.14 (industry 3.42)\n- 2022: TRIR 2.16, DART 2.16 (industry 3.52); 2021: TRIR 1.39; 2020: TRIR 1.27\n\nNote these are self-reported from their OSHA 300A filings, so they can verify directly against their logs.",
+    "seconds": 1.8,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -121,7 +118,7 @@
       "ask_which_sub"
     ],
     "answer": "Which sub do you mean?",
-    "seconds": 0.8,
+    "seconds": 0.7,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -134,7 +131,7 @@
     "tools": [
       "lookup_company"
     ],
-    "answer": "OSHA's record shows no inspections or citations for ABC Roofing in Dallas, TX \u2014 but this is an unconfirmed, rules-only match for a company not on this project, so confirm it's the right outfit before relying on it.\n\n- A blank OSHA record isn't a clean record: OSHA inspects few employers, so their history is unknown.\n- Ask them directly for their EMR, TRIR, and OSHA 300 logs to get a real picture.",
+    "answer": "No OSHA record for a rules-only match of ABC Roofing, Dallas, TX \u2014 0 inspections and no red flags in the database (unconfirmed match, since they're not on this project).\n\n- That doesn't mean they have a clean record \u2014 OSHA only inspects a small share of employers, so their history is largely unknown.\n- Best next step: ask them directly for their EMR, TRIR, and OSHA 300 logs, plus any EMR letters from their insurance carrier.\n- If they've worked under a different legal name, I can try that name too.",
     "seconds": 2.1,
     "tool_ok": true,
     "status_ok": true,
@@ -146,8 +143,8 @@
     "q": "What about Smith Electric?",
     "status": "answered",
     "tools": [],
-    "answer": "There's no sub called \"Smith Electric\" on this project \u2014 the closest is **Allison-Smith Company** (Smyrna, GA), the electrical sub. Do you mean them, or is Smith Electric a separate company not on the project?\n\nIf it's a separate company, give me its city and state and I'll look it up (note: results for off-project companies are an unconfirmed, rules-only match).",
-    "seconds": 2.1,
+    "answer": "There's no \"Smith Electric\" on this project's sub list. If you mean a company not on the job, I can look them up \u2014 I just need their city and state. Do you have those?",
+    "seconds": 1.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -158,14 +155,12 @@
     "q": "Has Brasfield had any recent problems?",
     "status": "answered",
     "tools": [
-      "sub_summary",
-      "inspection_list",
-      "open_cases",
-      "red_flags"
+      "compare_subs",
+      "open_cases"
     ],
-    "answer": "OSHA's record shows one notable item in the last 3 years, but it's mostly routine inspections with no citations.\n\n- **2023 fatality investigation**: Brasfield & Gorrie was on a site where a fatality was investigated on 2023-06-22, but was not cited for serious violations (#346784382). This is why their verdict is \"Review.\"\n- **No serious citations**: Their serious-citation rate per inspection is 0.0, matching their trade median of 0.0. Of 56 inspections since 2023, only 1 resulted in citations.\n- **2 open cases**: Inspections opened 2026-09-04 in Hiram, GA (#349155689) and 2026-08-06 in Cartersville, GA (#349098517) are still open, both with 0 citations so far \u2014 provisional, since citations may still change.\n- Overall: 43 inspections in the 3-year window, none with serious citations.",
-    "seconds": 5.0,
-    "tool_ok": true,
+    "answer": "Overall verdict: **Review** \u2014 OSHA's record shows no serious citations from them, but a few recent items:\n\n- In 2023 they were on a site where a fatality was investigated, but they were **not cited** for serious violations.\n- **2 open inspections** right now (both in GA, no citations yet): #349155689 opened 2026-09-04 in Hiram and #349098517 opened 2026-08-06 in Cartersville. These are provisional \u2014 citations may still change.\n- Serious citations per inspection: 0.0, in line with their trade median of 0.0.\n- Nothing in the record shows willful, repeat, or failure-to-abate violations.",
+    "seconds": 4.8,
+    "tool_ok": false,
     "status_ok": true,
     "grounded": true,
     "mentions_ok": true,
@@ -177,8 +172,8 @@
     "tools": [
       "citations_by_hazard"
     ],
-    "answer": "Fugate Construction LLC has no fall protection citations in OSHA's record \u2014 zero citations, zero serious, and no inspections involving fall protection.\n\n- OSHA inspects few employers, so this doesn't guarantee a clean record \u2014 the history here is simply unknown.\n- Worth asking Fugate directly for their fall protection plan, EMR, TRIR, and OSHA 300 logs.",
-    "seconds": 1.3,
+    "answer": "Fugate Construction LLC has 12 fall protection citations, all classified serious, across 4 inspections from 2019 to 2023.\n\n- 2023-05-31, Ooltewah, TN \u2014 8 citations (#346746365)\n- 2023-05-31, Hixson, TN \u2014 3 citations (#346746423)\n- 2021-10-18, Hixson, TN \u2014 5 citations (#345585004)\n- 2019-08-01, Rome, GA \u2014 3 citations (#344201090)\n\nAs a framing sub doing edge and floor-opening work, this is their most cited hazard \u2014 worth a fall protection plan review before they start on this job.",
+    "seconds": 2.2,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -191,8 +186,8 @@
     "tools": [
       "inspection_list"
     ],
-    "answer": "OSHA's record shows 21 Barnhart Crane & Rigging inspections since 2024 \u2014 4 of them resulted in citations. 20 are listed below (one record not shown).\n\n**Tennessee inspections (2):**\n- Memphis, TN \u2014 referral, 2024-04-29, 1 citation, 0 serious (#347444044)\n- Memphis, TN \u2014 planned, 2024-05-03, no citations (#347538506)\n\n**Inspections with citations elsewhere:**\n- Cincinnati, OH \u2014 planned, 2025-04-09, 1 citation, 1 serious (#348169095)\n- Seattle, WA \u2014 prog-related, 2024-02-03, 1 citation, 1 serious \u2014 this one is still open, so results are provisional (#347258519)\n\nThe rest were mostly planned or prog-related inspections in Washington state, plus single stops in Alabama, Kansas, Ohio, and South Dakota \u2014 all with no citations. Want details on any of these?",
-    "seconds": 4.5,
+    "answer": "Barnhart Crane & Rigging has had 21 inspections since 2024, 4 with citations (20 most recent shown):\n\n- Most were in Washington state, mostly planned/programmed and related inspections with no citations.\n- Cincinnati, OH (2025-04-09) \u2014 1 citation, 1 serious (#348169095)\n- Memphis, TN (2024-04-29) \u2014 1 citation, no serious (#347444044)\n- Seattle, WA (2024-02-03) \u2014 1 citation, 1 serious (#347258519) \u2014 this case is still open/provisional, so citations could change.\n- The Memphis, TN inspection from 2024-05-03 (#347538506) shows no inspection was actually conducted.",
+    "seconds": 2.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -203,12 +198,10 @@
     "q": "Why is Quality Roofing flagged?",
     "status": "answered",
     "tools": [
-      "sub_summary",
-      "red_flags",
-      "compare_subs"
+      "sub_summary"
     ],
-    "answer": "Quality Roofing isn't flagged for any violations \u2014 OSHA's record shows no confirmed history for this sub, and it has 0 red flags.\n\n- Verdict is \"No OSHA record\": 0 matched inspections all-time and 0 in the 3-year window; no fatalities, willful, repeat, or failure-to-abate events.\n- There are 2 possible inspections that might be this sub but weren't confirmed, so they don't count toward the verdict (and nothing is currently waiting on the GC to confirm).\n- A lack of OSHA record isn't a clean record \u2014 OSHA inspects only a small share of employers, so the history is simply unknown.\n- To gauge them, ask Quality Roofing directly for its EMR, TRIR, and OSHA 300 logs.",
-    "seconds": 4.8,
+    "answer": "Quality Roofing isn't actually flagged \u2014 OSHA's record shows no confirmed inspections or citations for them (no record at all).\n\n- Verdict: \"No OSHA record\" \u2014 0 inspections all time, 0 in the 5-year window.\n- There are 2 possible inspections that might belong to them but weren't confirmed, so they don't count toward the verdict. None are waiting on GC confirmation right now.\n- No OSHA record is not a clean record: OSHA inspects only a small share of employers. Worth asking Quality Roofing for their EMR, TRIR and OSHA 300 logs.\n\nIf you're thinking of a flagged roofing sub, it may be Dixie Roofing \u2014 want me to pull their history?",
+    "seconds": 10.9,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -221,8 +214,8 @@
     "tools": [
       "report_unanswerable"
     ],
-    "answer": "I can't answer that \u2014 I don't have weather data, only OSHA safety history for the subs on your project. Check your weather app or the site office for tomorrow's forecast in Nashville.\n\nIf you want, I can tell you which subs have OSHA records worth watching when conditions turn rough \u2014 for example, fall-protection or crane-related citations. Just say the word.",
-    "seconds": 1.4,
+    "answer": "I can't answer that \u2014 I only have access to OSHA safety records for the subs on this project, not weather forecasts. Check your local weather app or a service like the National Weather Service for Nashville conditions.\n\nAnything on a sub's safety history I can help with?",
+    "seconds": 1.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -233,11 +226,10 @@
     "q": "Which sub should I worry about most?",
     "status": "answered",
     "tools": [
-      "compare_subs",
-      "sub_summary"
+      "compare_subs"
     ],
-    "answer": "31-W Insulation Co. is the one to watch most \u2014 it's the only sub flagged with 2 red flags.\n\n- Fatality investigation in 2021 where this employer was cited for serious violations (#345406599), plus a repeat violation in the last 3 years (#348216110).\n- OSHA's record shows 1.57 serious citations per inspection vs a trade median of 0.33 (4.8x), with 7 inspections inside the 3-year window.\n- Fall protection cited in 3 separate inspections 2020\u20132024 (#347427262, #347235913, #344554936). One case is still open, so its citations may change.\n- Jake Marshall LLC and Dixie Roofing are also flagged High concern \u2014 each has a past fatality investigation with serious citations and an open case \u2014 so they're worth watching too.",
-    "seconds": 5.9,
+    "answer": "Based on the scorecards, **Tindall Corporation (precast concrete)** is the one to watch most closely. OSHA's record shows:\n\n- **Fatality investigations where it was cited** \u2014 including one in 2023 and a 2026 fatality/catastrophe investigation with serious citations (details not yet published), plus 2 more fatalities on shared sites where it wasn't cited.\n- **4 open cases** right now \u2014 citations provisional and could change.\n- 17 inspections in the last 5 years, 3 red flags, and 2 records not counted in the score.\n\nClose behind:\n- **Fugate Construction LLC (framing)** \u2014 repeat violations in 2 separate inspections, 5.33 serious citations per inspection vs trade median 1.33.\n- **Dixie Roofing** \u2014 cited fatality (2018) and fall protection cited in 6 separate inspections (2018\u20132023).\n- **31-W Insulation** \u2014 cited fatality (2021), a repeat violation in the window, 1.1 serious citations per inspection vs median 0.33.\n\nMcKenney's and Allison-Smith show no flags; Quality Roofing, J & J Drywall and Riverbend Glazing have no OSHA record at all \u2014 that's an unknown, not a clean record, so ask them for their EMR, TRIR and OSHA 300 logs.",
+    "seconds": 4.6,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -250,8 +242,8 @@
     "tools": [
       "red_flags"
     ],
-    "answer": "No. OSHA's record shows no willful violations for Cooper Steel Fabricators (Shelbyville, TN) \u2014 zero willful events on file.\n\nIf you want the broader picture, I can pull their other red-flag history (fatalities, repeat, failure-to-abate) or their full citation record \u2014 just say the word.",
-    "seconds": 2.0,
+    "answer": "No. OSHA's record shows Cooper Steel Fabricators has no willful violations (0 in the data).",
+    "seconds": 1.3,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -262,10 +254,10 @@
     "q": "How many inspections did Tindall have in the last 5 years?",
     "status": "answered",
     "tools": [
-      "inspection_list"
+      "sub_summary"
     ],
-    "answer": "OSHA's record shows Tindall Corporation had **4 inspections**, with 1 resulting in a citation (no serious citations):\n\n- #349017442 (opened 2026-06-23, Spartanburg SC) \u2014 programmed related, 0 citations, still open (open cases are provisional)\n- #346865801 (opened 2023-07-26, Conley GA) \u2014 referral, 1 citation, 0 serious\n- #347007973 (opened 2023-10-03, Conley GA) \u2014 unprogrammed related, 0 citations\n- #346022874 (opened 2022-06-14, Blacksburg VA) \u2014 planned, 0 citations",
-    "seconds": 6.9,
+    "answer": "Tindall Corporation had **17 inspections in the last 5 years** (21 all-time). Of those in the window, 2 are still open with citations not yet final, so numbers may change.",
+    "seconds": 1.5,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,
@@ -278,8 +270,8 @@
     "tools": [
       "injury_rates"
     ],
-    "answer": "OSHA's record shows no state contractor licence on file for McKenney's, Inc. \u2014 so I can't confirm whether their licence is active.\n\n- This system only tracks safety records; licence status isn't verified here.\n- Ask McKenney's directly for their licence number and check it with the TN contractor licensing board.\n- Worth noting: their self-reported injury rates have been below the mechanical-trade industry rate every year filed (2023 TRIR 1.0 vs industry 2.31).",
-    "seconds": 2.0,
+    "answer": "McKenney's, Inc. has no state contractor licence on file in our records \u2014 I can't tell you whether one is active. (The injury-rate data, incidentally, shows TRIR at or below its industry rate every year from 2019\u20132025, but the licence question can't be answered from this data.)\n\nIf you need licence status, you'd want to check with the relevant state licensing board (e.g., Georgia or Tennessee) or ask the sub directly for proof of licence.",
+    "seconds": 1.6,
     "tool_ok": true,
     "status_ok": true,
     "grounded": true,

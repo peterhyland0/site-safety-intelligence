@@ -1,7 +1,7 @@
 [
   {"q": "Which subs had a fatality?", "tools": ["compare_subs", "red_flags", "fatality_history"], "status": "answered", "mentions": ["Jake Marshall", "31-W", "Dixie"]},
   {"q": "Has Fugate had repeat violations?", "tools": ["red_flags", "sub_summary"], "status": "answered", "mentions": ["repeat"]},
-  {"q": "Is Allison-Smith clean?", "tools": ["sub_summary", "compare_subs"], "status": "answered", "mentions": ["no flags"], "must_not": ["is safe", "perfectly safe"]},
+  {"q": "Is Allison-Smith clean?", "tools": ["sub_summary", "compare_subs"], "status": "answered", "mentions": [], "mentions_any": ["no flags", "no red flags"], "must_not": ["is safe", "perfectly safe"]},
   {"q": "What do we know about Riverbend Glazing?", "tools": ["sub_summary", "compare_subs"], "status": "answered", "mentions": ["EMR"]},
   {"q": "Who has open cases right now?", "tools": ["compare_subs", "open_cases", "sub_summary"], "status": "answered", "mentions": ["open"]},
   {"q": "Compare everyone on serious citations", "tools": ["compare_subs"], "status": "answered", "mentions": []},
