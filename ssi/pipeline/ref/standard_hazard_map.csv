@@ -543,3 +543,6 @@ state_other,prefix,VA 16VAC25-160-,,safety_program_training,Virginia constructio
 state_other,prefix,VA 16VAC25-97-,,motor_vehicles_equipment,Virginia reverse signal operation (backup alarms and ground guides)
 state_other,prefix,VA 16VAC25-145-,,fall_protection,Virginia fall protection in steel erection
 state_other,exact,WY 27-11-105,,general_duty,Wyoming Stat. 27-11-105 general duty clause at (b)(vi)(A)
+federal_1926,exact,1926.250,,safety_program_training,Subpart H general requirements for storage (housekeeping; added after the pipeline review)
+federal_1926,exact,1926.252,,safety_program_training,Subpart H disposal of waste materials (housekeeping; added after the pipeline review)
+federal_1910,exact,1910.176,,safety_program_training,"Subpart N handling materials, general (storage and clearances; added after the pipeline review)"

@@ -25,12 +25,13 @@ HIGH_KINDS = {
 }
 
 
-# Fatality investigations this employer wasn't cited in (or not yet): they matter only while recent.
+# Fatality/catastrophe events short of a cited fatality: Review while recent.
 SITE_KINDS = {
     "fatality_inspected_not_cited": ("R_fatality_site", "On a site where a fatality was investigated, but not cited for serious violations"),
     "fatcat_not_cited": ("R_fatcat_site", "Fatality/catastrophe investigation, not cited for serious violations (details not published)"),
     "fatcat_site_cited": ("R_fatcat_site_cited", ("Cited for serious violations on a site where another employer's "
                                                   "fatality/catastrophe investigation is open or unpublished")),
+    "catastrophe_cited": ("R_catastrophe_cited", "Catastrophe investigation (serious injuries, no death) with serious citations"),
 }
 
 

@@ -12,6 +12,8 @@
 --   fatcat_site_cited            another employer's inspection on the same site and day as an undetailed
 --                                fatality/catastrophe inspection, with serious+ citations for this employer
 --                                (before accident detail lagged, the accident link carried this)
+--   catastrophe_cited            fatality/catastrophe inspection whose published detail shows no death
+--                                (serious injuries), with serious+ citations for this employer
 --   accident_outcome_unknown     accident-type inspection (A) without published accident detail
 --   none
 -- OSHA's accident detail lags (it ends 2025-03-28 in the 2026-10 load), so recent investigations land
@@ -50,6 +52,7 @@ SELECT i.*,
          WHEN coalesce(a.has_fatal_accident, false) AND i.is_open AND coalesce(c.citation_n, 0) = 0 THEN 'fatality_pending'
          WHEN coalesce(a.has_fatal_accident, false) THEN 'fatality_inspected_not_cited'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND coalesce(c.serious_plus_n, 0) > 0 THEN 'fatcat_cited'
+         WHEN i.insp_type = 'M' AND a.activity_nr IS NOT NULL AND coalesce(c.serious_plus_n, 0) > 0 THEN 'catastrophe_cited'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND i.is_open THEN 'fatality_pending'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL THEN 'fatcat_not_cited'
          WHEN coalesce(i.insp_type, '') <> 'M' AND a.activity_nr IS NULL AND coalesce(c.serious_plus_n, 0) > 0

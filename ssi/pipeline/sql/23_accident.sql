@@ -1,7 +1,8 @@
 -- Accidents, injuries and the many-to-many link to inspections.
 -- * Injury rows are copied once per employer inspected at the site; a person is (summary_nr, line_nr, person_n).
--- * The 2026 load batch puts the construction-operation code in const_op_cause instead of const_op
---   (matched in 394 of 394 accidents present in both batches); it is moved back here.
+-- * Some rows put the construction-operation code in const_op_cause instead of const_op (the whole 2026
+--   load batch: 394 of 394 accidents present in both batches; and 142 rows loaded 2022-2025, recognised by
+--   the same pattern: const_op empty, nature and body empty); it is moved back here.
 -- * Codes are stored as floats ('12.0'); age 0 means unknown.
 CREATE OR REPLACE TABLE stg_injury_rows AS
 SELECT
@@ -15,7 +16,7 @@ SELECT
   try_cast(try_cast(part_of_body AS DOUBLE) AS INTEGER)      AS body_code,
   try_cast(try_cast(degree_of_inj AS DOUBLE) AS INTEGER)     AS degree_code,
   try_cast(try_cast(fat_cause AS DOUBLE) AS INTEGER)         AS fat_cause_code,
-  CASE WHEN left(load_dt, 4) >= '2026' AND const_op IS NULL
+  CASE WHEN const_op IS NULL AND (left(load_dt, 4) >= '2026' OR (nature_of_inj IS NULL AND part_of_body IS NULL))
        THEN try_cast(try_cast(const_op_cause AS DOUBLE) AS INTEGER)
        ELSE try_cast(try_cast(const_op AS DOUBLE) AS INTEGER) END AS const_op_code,
   try_cast(try_cast(task_assigned AS DOUBLE) AS INTEGER)     AS task_code,
@@ -70,10 +71,21 @@ WHERE r.rel_insp_nr IN (SELECT activity_nr FROM stg_inspection);
 CREATE OR REPLACE TABLE accident_employers AS
 SELECT summary_nr, count(DISTINCT rel_insp_nr) AS employers_on_site FROM stg_injury_rows GROUP BY 1;
 
+-- Narratives come in numbered lines. Before mid-2015 they were hard-wrapped at 80 characters, often
+-- mid-word ("unlo" / "ading"): a full 80-character line that doesn't end in a space joins the next
+-- line directly; every other line break is a space.
 CREATE OR REPLACE TABLE accident_narrative AS
-SELECT try_cast(summary_nr AS BIGINT) AS summary_nr,
-       string_agg(trim(abstract_text), ' ' ORDER BY try_cast(line_nr AS INTEGER), abstract_text) AS narrative
-FROM raw_accident_abstract GROUP BY 1;
+WITH lines AS (
+  SELECT try_cast(summary_nr AS BIGINT) AS summary_nr, try_cast(line_nr AS INTEGER) AS line_nr, abstract_text AS txt,
+         lag(abstract_text) OVER (PARTITION BY summary_nr ORDER BY try_cast(line_nr AS INTEGER), abstract_text) AS prev
+  FROM raw_accident_abstract
+)
+SELECT summary_nr,
+       trim(regexp_replace(string_agg(
+         CASE WHEN prev IS NULL THEN trim(txt)
+              WHEN length(prev) >= 80 AND right(prev, 1) <> ' ' AND left(txt, 1) <> ' ' THEN rtrim(txt)
+              ELSE ' ' || trim(txt) END, '' ORDER BY line_nr, txt), '\s+', ' ', 'g')) AS narrative
+FROM lines GROUP BY 1;
 
 -- injuries whose accident record is missing (about 15%) keep a stub accident row, flagged, so the
 -- link to the inspection (and any fatality) is not lost
@@ -104,9 +116,19 @@ LEFT JOIN accident_employers e ON e.summary_nr = l.summary_nr
 LEFT JOIN lookup pt ON pt.code_family = 'PTYP' AND pt.code_letter = a.project_type
 LEFT JOIN lookup eu ON eu.code_family = 'ENDU' AND eu.code_letter = a.const_end_use;
 
+-- in-scope accidents whose accident record is missing keep a stub row (record_missing) and are listed here
 INSERT INTO quarantine
-SELECT 'accident_injury', summary_nr || '/' || line_nr || '/' || person_n, 'injury references an accident record that does not exist (kept with a stub accident row)'
-FROM stg_injury WHERE summary_nr NOT IN (SELECT try_cast(summary_nr AS BIGINT) FROM raw_accident);
+SELECT 'accident_injury', summary_nr || '/' || line_nr || '/' || person_n,
+       'injury references an accident record that does not exist (kept with a stub accident row)'
+FROM stg_injury
+WHERE summary_nr NOT IN (SELECT try_cast(summary_nr AS BIGINT) FROM raw_accident)
+  AND summary_nr IN (SELECT summary_nr FROM accident_link);
+-- injury rows that point at an inspection that doesn't exist in OSHA's data at all
+INSERT INTO quarantine
+SELECT 'accident_injury', summary_nr || '/' || line_nr || '/' || rel_insp_nr,
+       'injury references an inspection that does not exist'
+FROM stg_injury_rows
+WHERE rel_insp_nr IS NOT NULL AND rel_insp_nr NOT IN (SELECT try_cast(activity_nr AS BIGINT) FROM raw_inspection);
 
 CREATE OR REPLACE TABLE wh.osha.accident AS SELECT * FROM stg_accident;
 CREATE OR REPLACE TABLE wh.osha.accident_inspection AS SELECT * FROM accident_link;

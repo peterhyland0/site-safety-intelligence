@@ -81,6 +81,7 @@ const KIND_LABEL: Record<RedFlag["kind"], string> = {
   fatcat_cited: "Fatality/catastrophe, cited",
   fatcat_not_cited: "Fatality/catastrophe, not cited",
   fatcat_site_cited: "Cited at a fatality/catastrophe site",
+  catastrophe_cited: "Catastrophe, cited",
   willful: "Willful",
   repeat: "Repeat",
   fta: "Failure to abate",

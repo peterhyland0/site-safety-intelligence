@@ -36,6 +36,19 @@ SELECT * FROM (VALUES
           OR k.establishment_key IN (SELECT establishment_key FROM insp_key
                                      WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder)))
       - (SELECT count(*) FROM wh.osha.inspection))::DOUBLE),
+  -- citations recounted from the raw file: every raw citation of an in-scope inspection is in osha.violation
+  ('citations_recount_from_raw', 'error', 0,
+     ((SELECT count(DISTINCT (try_cast(v.activity_nr AS BIGINT), v.citation_id)) FROM raw_violation v
+         WHERE try_cast(v.activity_nr AS BIGINT) IN (SELECT activity_nr FROM wh.osha.inspection))
+      - (SELECT count(*) FROM wh.osha.violation))::DOUBLE),
+  -- red flags recounted from live citations: one per willful, repeat and failure-to-abate citation
+  ('red_flags_recount_from_citations', 'error', 0,
+     ((SELECT count(*) FILTER (WHERE viol_type IN ('W', 'R')) + count(*) FILTER (WHERE is_fta)
+         FROM wh.osha.violation WHERE NOT is_deleted)
+      - (SELECT count(*) FROM wh.mart.red_flag WHERE kind IN ('willful', 'repeat', 'fta')))::DOUBLE),
+  -- OSHA's accident detail lags; warn when it is more than 18 months behind the inspection data
+  ('accident_detail_days_behind', 'warn', 548,
+     (SELECT date_diff('day', (SELECT max(event_date) FROM wh.osha.accident), (SELECT max(open_date) FROM wh.osha.inspection)))::DOUBLE),
   ('hazard_other_share_pct', 'warn', 5,
      (SELECT 100.0 * count(*) FILTER (WHERE hazard_code = 'other') / count(*) FROM wh.osha.violation WHERE NOT is_deleted)::DOUBLE),
   ('orphan_violations_quarantined', 'warn', 374,
@@ -44,7 +57,7 @@ SELECT * FROM (VALUES
 
 ALTER TABLE wh.mart.dq_check ADD COLUMN pass BOOLEAN;
 UPDATE wh.mart.dq_check SET pass = CASE
-  WHEN name = 'hazard_other_share_pct' THEN actual <= expected
+  WHEN name IN ('hazard_other_share_pct', 'accident_detail_days_behind') THEN actual <= expected
   WHEN name = 'orphan_violations_quarantined' THEN abs(actual - expected) <= 50
   ELSE actual = expected END;
 

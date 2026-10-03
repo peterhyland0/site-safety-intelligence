@@ -15,7 +15,7 @@ Method = Literal["rule", "llm", "gc", "llm_rejected"]
 Severity = Literal["high", "review", "info"]
 MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
-                         "fatcat_not_cited", "fatcat_site_cited", "accident_outcome_unknown", "none"]
+                         "fatcat_not_cited", "fatcat_site_cited", "catastrophe_cited", "accident_outcome_unknown", "none"]
 AskStatus = Literal["answered", "clarify", "unanswerable", "guard_failed", "needs_confirmation", "no_api_key"]
 
 # osha.gov numbers inspections differently from the published data (activity 348557646 is inspection
@@ -142,7 +142,7 @@ class QuestionAnswer(BaseModel):
 # --- evidence ------------------------------------------------------------------------------------
 class RedFlag(BaseModel):
     kind: Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-                  "fatcat_site_cited", "willful", "repeat", "fta"]
+                  "fatcat_site_cited", "catastrophe_cited", "willful", "repeat", "fta"]
     label: str
     event_date: str | None
     activity_nr: int

@@ -24,6 +24,7 @@ WITH peers AS (
   JOIN wh.entity.establishment e USING (establishment_key)
   LEFT JOIN ref_trade t ON t.code_type = 'sic4' AND t.code = e.primary_sic4
   WHERE ew.rated_n >= {{MIN_RATED}} AND NOT e.is_placeholder
+    AND e.construction_insp_n > 0  -- peers are construction-coded firms (not farms or hospitals in scope via history)
 ),
 levels AS (
   SELECT 'naics4' AS level, naics4 AS trade_code, * FROM peers WHERE naics4 IS NOT NULL

@@ -3,12 +3,14 @@
 -- for the adjudicator, never an automatic merge (big firms file under many EINs; some EINs are junk).
 CREATE OR REPLACE TABLE ita_raw AS
 SELECT * FROM read_csv('{{REFERENCE_RAW}}/osha_ita/utf8/*.csv', all_varchar = true, header = true,
-                       quote = '"', escape = '"', union_by_name = true, filename = true, ignore_errors = true);
+                       quote = '"', escape = '"', union_by_name = true, filename = true);
+-- No ignore_errors: a malformed row stops the build instead of silently disappearing (0 today). DuckDB can't
+-- log rejected rows while merging files with different columns (union_by_name), so strict is the safe choice.
 
 CREATE OR REPLACE TABLE ita_rows AS
 SELECT try_cast(id AS BIGINT) AS ita_id,
        try_cast(try_cast(year_filing_for AS DOUBLE) AS INTEGER) AS year,
-       establishment_id,
+       regexp_replace(trim(establishment_id), '\.0+$', '') AS establishment_id,  -- the 2019 file writes 447943.00
        company_name, establishment_name,
        regexp_replace(coalesce(ein, ''), '[^0-9]', '', 'g') AS ein_digits,
        street_address, city, nullif(upper(trim(state)), '') AS state, zip5(zip_code) AS zip5,
@@ -22,7 +24,8 @@ SELECT try_cast(id AS BIGINT) AS ita_id,
        coalesce(try_cast(try_cast(total_other_cases AS DOUBLE) AS INTEGER), 0) AS other_cases,
        created_timestamp
 FROM ita_raw
-QUALIFY row_number() OVER (PARTITION BY establishment_id, try_cast(try_cast(year_filing_for AS DOUBLE) AS INTEGER)
+QUALIFY row_number() OVER (PARTITION BY regexp_replace(trim(establishment_id), '\.0+$', ''),
+                                         try_cast(try_cast(year_filing_for AS DOUBLE) AS INTEGER)
                            ORDER BY try_cast(id AS BIGINT) DESC, created_timestamp DESC, hash(ita_raw)) = 1;  -- ids repeat in 2021
 
 -- EINs shared by many unrelated company names are placeholders, not identities

@@ -8,7 +8,7 @@ FROM (
          i.penalty_initial, i.penalty_current, i.is_open AS case_open, i.site_group_n AS shared_site_n, i.dq_flags
   FROM wh.osha.inspection i
   WHERE i.fatality_status IN ('fatality_cited', 'fatality_inspected_not_cited', 'fatality_pending',
-                             'fatcat_cited', 'fatcat_not_cited', 'fatcat_site_cited')
+                             'fatcat_cited', 'fatcat_not_cited', 'fatcat_site_cited', 'catastrophe_cited')
   UNION ALL
   SELECT i.establishment_key, v.activity_nr, v.citation_id,
          CASE v.viol_type WHEN 'W' THEN 'willful' ELSE 'repeat' END,

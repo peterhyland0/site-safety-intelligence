@@ -10,10 +10,11 @@
 CREATE OR REPLACE MACRO ssi_n1_upper(s) AS
   trim(regexp_replace(upper(nfc_normalize(coalesce(s, ''))), '\s+', ' ', 'g'));
 
--- n2: strip per-inspection ID prefixes ("WA317965935 - ", "105314 - "); needs 3+ digits AND a dash,
--- so "84 LUMBER" and "1ST CHOICE ROOFING" are untouched
+-- n2: strip per-inspection ID prefixes ("WA317965935 - ", "105314 - ", "1234 - "): 5+ digits and a dash,
+-- or 3+ digits and a spaced dash. "84 LUMBER", "1ST CHOICE ROOFING" and "561-ROOFING" (a company number)
+-- are untouched.
 CREATE OR REPLACE MACRO ssi_n2_strip_id(s) AS
-  regexp_replace(s, '^[A-Z]{0,3}[0-9]{3,}\s*-\s*', '');
+  regexp_replace(s, '^[A-Z]{0,3}([0-9]{5,}\s*-\s*|[0-9]{3,}\s+-\s+)', '');
 
 -- n3: delete apostrophes and periods without a space (L.L.C. -> LLC, O'BRIEN -> OBRIEN, J.R. -> JR)
 CREATE OR REPLACE MACRO ssi_n3_dots(s) AS
@@ -32,9 +33,10 @@ CREATE OR REPLACE MACRO ssi_n5_state_note(s) AS
 CREATE OR REPLACE MACRO ssi_n6_separators(s) AS
   trim(regexp_replace(regexp_replace(regexp_replace(s, '[^A-Z0-9 ]', ' ', 'g'), '\bAND\b', ' ', 'g'), '\s+', ' ', 'g'));
 
--- n7: drop a leading THE
+-- n7: drop a leading THE, and a trailing one ("CLARK CONSTRUCTION GROUP LLC THE" is how some offices
+--     write "The Clark Construction Group, LLC")
 CREATE OR REPLACE MACRO ssi_n7_the(s) AS
-  regexp_replace(s, '^THE\s+', '');
+  regexp_replace(regexp_replace(s, '^THE\s+', ''), '\s+THE$', '');
 
 -- n8: join spaced-out legal forms (L L C -> LLC, L P -> LP, G P -> GP, P L L C -> PLLC, L L P -> LLP)
 CREATE OR REPLACE MACRO ssi_n8_join_legal(s) AS

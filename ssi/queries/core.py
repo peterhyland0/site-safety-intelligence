@@ -29,6 +29,7 @@ RED_FLAG_LABELS = {
     "fatcat_not_cited": "Fatality/catastrophe investigation, not cited (details not published)",
     "fatality_pending": "Fatality/catastrophe investigation still open, outcome not yet published",
     "fatcat_site_cited": "Cited on a site where a fatality/catastrophe is under investigation",
+    "catastrophe_cited": "Catastrophe investigation (serious injuries, no death), cited",
     "willful": "Willful violation",
     "repeat": "Repeat violation",
     "fta": "Failure to abate",
@@ -198,7 +199,7 @@ def _inspection_row(r: dict, itl: dict) -> S.InspectionRow:
         penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
         fatality_status=r["fatality_status"] if r["fatality_status"] in
         ("fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-         "fatcat_site_cited", "accident_outcome_unknown") else "none",
+         "fatcat_site_cited", "catastrophe_cited", "accident_outcome_unknown") else "none",
         shared_site_n=r["site_group_n"] or 1, dq_flags=list(r["dq_flags"] or []),
         url=osha_search_url(r["estab_name_raw"], r["site_state"], r["open_date"]))
 

@@ -19,6 +19,7 @@ export type FatalityStatus =
   | "fatcat_cited"
   | "fatcat_not_cited"
   | "fatcat_site_cited"
+  | "catastrophe_cited"
   | "accident_outcome_unknown"
   | "none";
 export type AskStatus =
@@ -196,6 +197,7 @@ export interface RedFlag {
     | "fatcat_cited"
     | "fatcat_not_cited"
     | "fatcat_site_cited"
+    | "catastrophe_cited"
     | "willful"
     | "repeat"
     | "fta";

@@ -1,6 +1,6 @@
 # Matching evaluation (silver labels from ITA EINs)
 
-300 pairs (150 positive, 150 negative), 95 s.
+300 pairs (150 positive, 150 negative), 103 s.
 
 | Metric | Value |
 |---|---|
@@ -45,4 +45,4 @@
 | different | HENKEL CONSTRUCTION (MASON CITY, IA) | HENKEL GENERAL CONSTRUCTION (MASON CITY, IA) | matched | M1b |
 | different | DR HORTON (CHARLOTTE, NC) | DR HORTON (RALEIGH, NC) | matched | M1 |
 
-LangSmith experiment: `rules-1d9694f3`
+LangSmith experiment: `rules-6242f4e5`
