@@ -8,7 +8,7 @@ import { IconLogOut, LogoMark } from "./Icons";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-10 items-center rounded-full px-3 text-sm font-semibold sm:px-3.5 ${
+  `inline-flex min-h-10 items-center rounded-full px-2.5 text-sm font-semibold sm:px-3.5 ${
     isActive ? "bg-surface-2 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
   }`;
 
@@ -67,21 +67,24 @@ export function Layout() {
           }`}
         >
           <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-            <Link to="/" className="mr-auto flex min-h-10 items-center gap-2.5 text-ink">
+            {/* On phones the Demo pill sits under the name so it costs no width; under 360px only the mark shows. */}
+            <Link to="/" className="mr-auto flex min-h-10 min-w-0 items-center gap-2.5 text-ink">
               <LogoMark size={32} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
-              <span className="text-[17px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap">
-                Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
+              <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                <span className="max-w-full truncate text-[17px] leading-tight font-bold tracking-[-0.02em] max-[359px]:sr-only">
+                  Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
+                </span>
+                {MOCK_MODE ? (
+                  <span
+                    className="pill border-review-line bg-review-bg px-2 py-0 text-[11px] whitespace-nowrap text-review-fg sm:px-2.5 sm:py-0.5 sm:text-xs"
+                    title="Showing demo fixtures (VITE_MOCK=1)"
+                  >
+                    Demo<span className="hidden sm:inline">&nbsp;data</span>
+                  </span>
+                ) : null}
               </span>
             </Link>
-            {MOCK_MODE ? (
-              <span
-                className="pill border-review-line bg-review-bg whitespace-nowrap text-review-fg"
-                title="Showing demo fixtures (VITE_MOCK=1)"
-              >
-                Demo<span className="hidden sm:inline">&nbsp;data</span>
-              </span>
-            ) : null}
-            <nav aria-label="Main" className="flex items-center gap-1">
+            <nav aria-label="Main" className="flex items-center sm:gap-1">
               <NavLink to="/" end className={navClass}>
                 Projects
               </NavLink>
