@@ -95,6 +95,29 @@ def typo_equal(a: str, b: str) -> bool:
     return jw(a, b) >= 0.94 and abs(len(a) - len(b)) <= 1
 
 
+def one_slip(a: str, b: str) -> bool:
+    """A typing slip safe to search by when a city backs it up: one letter dropped or added, or two
+    neighbours swapped (MCKENNYS / MCKENNEYS), past the first three letters of a name of 7+ letters.
+    A replaced letter is not one: in licence data BORA / KORA and MEND / MEAD are usually other companies.
+    Nor are digits (G6 / G2) or spacing (PLUM LINE / PLUMBLINE)."""
+    if a == b or any(ch.isdigit() for ch in a + b) or min(len(a.replace(" ", "")), len(b.replace(" ", ""))) < 7:
+        return False
+    if len(a) == len(b):  # a swap of two neighbours
+        d = [i for i in range(len(a)) if a[i] != b[i]]
+        if not (len(d) == 2 and d[1] == d[0] + 1 and a[d[0]] == b[d[1]] and a[d[1]] == b[d[0]]):
+            return False
+        pos, chars = d[0], a[d[0]] + a[d[1]]
+    elif abs(len(a) - len(b)) == 1:  # a dropped or added letter
+        s, long_ = sorted((a, b), key=len)
+        pos = next((i for i in range(len(s)) if s[i] != long_[i]), len(s))
+        if s != long_[:pos] + long_[pos + 1:]:
+            return False
+        chars = long_[pos]
+    else:
+        return False
+    return pos >= 3 and " " not in chars
+
+
 def only_generic_difference(a: str, b: str, generic: frozenset[str]) -> bool:
     diff = set(tokens(a)) ^ set(tokens(b))
     return all(t in generic for t in diff)

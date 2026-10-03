@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 from ssi.matching import candidates as C
 from ssi.matching.rules import (
@@ -13,6 +13,8 @@ from ssi.matching.rules import (
     Decision,
     Query,
     decide,
+    norm_city,
+    one_slip,
     typo_equal,
 )
 from ssi.store import pg, warehouse
@@ -45,13 +47,29 @@ def build_query(name: str, city: str | None, state: str | None, trade: str | Non
 
 
 def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
-    """Adopt OSHA's dominant spelling when the GC's spelling is a slip of a distinctive name.
+    """Search OSHA's spelling when the GC's spelling is a slip of a distinctive name. Either test is enough:
 
-    Triggers when a near-identical distinctive core (BRASFIELD GORRIE vs BRASFEILD GORRIE) carries at
-    least SPELLING_MIN_INSPECTIONS inspections and SPELLING_RATIO times those of the GC's spelling,
-    including when OSHA's data contains the same slip on a stray record. Returns the note shown to the GC."""
+    - volume: a near-identical core (BRASFIELD GORRIE vs BRASFEILD GORRIE) carries at least
+      SPELLING_MIN_INSPECTIONS inspections and SPELLING_RATIO times those of the GC's spelling, including
+      when OSHA's data contains the same slip on a stray record;
+    - place: the GC's spelling has no records of its own, and exactly one name a single slip away
+      (rules.one_slip: MCKENNYS vs MCKENNEYS, 9 inspections) has a record in the GC's city.
+
+    Only the misspelt word changes. The GC's other words stay, so the rules still compare trades:
+    "Aboe Board Contracting" is searched as ABOVE BOARD CONTRACTING, not as the most-inspected ABOVE
+    BOARD record (a roofer in another state). Returns the note shown to the GC."""
     if not q.core:
         return q, None
+    best, note = _dominant_spelling(q, rows)
+    if not best:
+        best, note = _spelling_in_city(q, rows)
+    if not best:
+        return q, None
+    clean = q.clean.replace(q.core, best, 1) if q.core in q.clean else best
+    return replace(q, clean=clean, core=best, tier="distinctive", initials_only=False, aliases={clean, q.clean}), note
+
+
+def _dominant_spelling(q: Query, rows: list[dict]) -> tuple[str | None, str | None]:
     totals: dict[str, int] = {}
     sample: dict[str, dict] = {}
     for r in rows:
@@ -61,18 +79,27 @@ def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
             if core not in sample or r["clean_name"] == core or (r["insp_n"] or 0) > (sample[core]["insp_n"] or 0):
                 sample[core] = r
     if not totals:
-        return q, None
+        return None, None
     best = max(totals, key=totals.get)
     if best == q.core or totals[best] < max(SPELLING_MIN_INSPECTIONS, SPELLING_RATIO * max(totals.get(q.core, 0), 1)):
-        return q, None
-    r = sample[best]
-    tier = C.core_tier(best, bool(r["initials_only"]))
-    if tier != "distinctive":
-        return q, None
-    clean = r["clean_name"] if r["name_core"] == best else best
-    q2 = Query(clean=clean, core=best, state=q.state, city=q.city, trade=q.trade, tier=tier, initials_only=False,
-               sibling=r["sibling_suffix"], aliases={clean, q.clean})
-    return q2, f"Searched OSHA's usual spelling '{best}' ({totals[best]} inspections) for '{q.core}'"
+        return None, None
+    if C.core_tier(best, bool(sample[best]["initials_only"])) != "distinctive":
+        return None, None
+    return best, f"Searched OSHA's usual spelling '{best}' ({totals[best]} inspections) for '{q.core}'"
+
+
+def _spelling_in_city(q: Query, rows: list[dict]) -> tuple[str | None, str | None]:
+    if not (q.city and q.state) or any((r["name_core"] or "") == q.core for r in rows):
+        return None, None
+    found = {r["name_core"] for r in rows
+             if r["name_core"] and r["state"] == q.state and norm_city(r["city"]) == norm_city(q.city)
+             and one_slip(q.core, r["name_core"])}
+    if len(found) != 1:  # two names a slip away: no way to tell which one the GC meant
+        return None, None
+    best = found.pop()
+    if C.core_tier(best, False) != "distinctive":
+        return None, None
+    return best, f"Searched OSHA's spelling '{best}' (a record in {q.city.title()}) for '{q.core}'"
 
 
 def licence_links(licence: str | None) -> tuple[set[str], set[str]]:

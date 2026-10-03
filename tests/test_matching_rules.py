@@ -142,9 +142,9 @@ def test_branch_or_division_is_never_a_different_company():
 
 
 # --- spelling correction: only a clearly dominant spelling, never a different small company ---------
-def _row(core, insp, clean=None):
+def _row(core, insp, clean=None, city=None, state=None):
     return {"name_core": core, "clean_name": clean or core, "insp_n": insp, "sim": 0.95, "initials_only": False,
-            "sibling_suffix": None}
+            "sibling_suffix": None, "city": city, "state": state}
 
 
 def test_spelling_correction_needs_a_clearly_dominant_spelling(monkeypatch):
@@ -156,6 +156,52 @@ def test_spelling_correction_needs_a_clearly_dominant_spelling(monkeypatch):
     slip = q("BRASFEILD GORRIE", "BRASFEILD GORRIE")
     q3, note = run.correct_spelling(slip, [_row("BRASFEILD GORRIE", 1), _row("BRASFIELD GORRIE", 300)])
     assert q3.core == "BRASFIELD GORRIE" and note
+
+
+def test_spelling_correction_keeps_the_gcs_other_words(monkeypatch):
+    # "Aboe Board Contracting" must not become the most-inspected ABOVE BOARD record (a California roofer)
+    from ssi.matching import candidates, run
+    monkeypatch.setattr(candidates, "core_tier", lambda core, initials: "distinctive")
+    aboe = q("ABOE BOARD CONTRACTING", "ABOE BOARD", state="RI", city="Portsmouth")
+    q2, note = run.correct_spelling(aboe, [
+        _row("ABOVE BOARD", 14, "ABOVE BOARD CONSTRUCTION ROOFING", city="REDDING", state="CA"),
+        _row("ABOVE BOARD", 3, "ABOVE BOARD CONTRACTING", city="PORTSMOUTH", state="RI")])
+    assert note and q2.core == "ABOVE BOARD" and q2.clean == "ABOVE BOARD CONTRACTING"
+    assert "ABOE BOARD CONTRACTING" in q2.aliases
+
+
+def test_one_slip_is_a_dropped_added_or_swapped_letter():
+    assert rules.one_slip("MCKENNYS", "MCKENNEYS") and rules.one_slip("BRASFEILD", "BRASFIELD")
+    assert not rules.one_slip("MCKENNYS", "MCKENNA")  # two letters apart
+    assert not rules.one_slip("PARMANCO", "HARMANCO") and not rules.one_slip("SANDOBAL", "SANDOVAL")  # replaced letter
+    assert not rules.one_slip("BORA", "KORA") and not rules.one_slip("AECON", "AECOM")  # short names
+    assert not rules.one_slip("STRATTONS", "SRATTONS")  # the first letters are rarely the slip
+    assert not rules.one_slip("NORTH CREEK", "NORTHCREEK") and not rules.one_slip("BUILDERS G6", "BUILDERS G26")
+
+
+def test_slip_with_a_record_in_the_gcs_city_is_searched_by_osha_spelling(monkeypatch):
+    # McKenney's has 9 inspections, below the volume test, but one in Atlanta: "McKennys, Atlanta" is a slip
+    from ssi.matching import candidates, run
+    monkeypatch.setattr(candidates, "core_tier", lambda core, initials: "distinctive")
+    rows = [_row("MCKENNEYS", 7, city="ATLANTA", state="GA"), _row("MCKENNEYS", 1, city="CHARLOTTE", state="NC"),
+            _row("MCKENNA", 3, "MCKENNA CONSTRUCTION", city="PAYSON", state="AZ")]
+    q2, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"), rows)
+    assert q2.core == q2.clean == "MCKENNEYS" and "Atlanta" in note
+    # no record in the GC's city: nothing ties the slip to that company
+    q3, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Savannah"), rows)
+    assert note is None and q3.core == "MCKENNYS"
+    # the GC's spelling has records of its own
+    q4, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
+                                    [*rows, _row("MCKENNYS", 1, city="MACON", state="GA")])
+    assert note is None
+    # two names a slip away in the city: no way to tell which one the GC meant
+    q5, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
+                                    [*rows, _row("MCKENNYSS", 1, city="ATLANTA", state="GA")])
+    assert note is None
+    # a replaced letter is usually another company, even in the same city
+    q6, note = run.correct_spelling(q("SANDOBAL ROOFING", "SANDOBAL", state="MT", city="Billings"),
+                                    [_row("SANDOVAL", 2, "SANDOVAL ROOFING", city="BILLINGS", state="MT")])
+    assert note is None
 
 
 def test_typo_means_about_one_letter():

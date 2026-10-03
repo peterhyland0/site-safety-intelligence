@@ -5,21 +5,30 @@ Labels come from OSHA's injury-tracking filings (ITA 300A), which carry the empl
   negative = two establishments with the same name core in the same state but different EINs
 For each pair we search as the GC would (A's name, city, state) and grade where B lands.
 
+Those searches use OSHA's own spellings, so two more checks cover a GC's typos:
+  typos   = a slip in a distinctive OSHA name (one letter dropped, doubled or swapped): the typo should
+            match what the correct spelling matches, and never more
+  licence = licensed contractors (WA, CA, OR) with no OSHA record whose name is one letter from an OSHA
+            name in the same city: at the same address it is the same company (a slip to catch);
+            elsewhere it is usually another company (a lookalike to keep out)
+
 Labels are "silver", not gold: big firms file under several EINs and sibling companies sometimes share
 one, so a few labels are wrong in both directions. Results: eval/matching/results.md (and LangSmith if a
 LANGSMITH_API_KEY is set).
 
-    uv run python -m eval.matching.run [--n 150]
+    uv run python -m eval.matching.run [--n 150] [--typos 400]
 """
 from __future__ import annotations
 
 import argparse
 import json
+import random
 import time
 from pathlib import Path
 
 from ssi import config
 from ssi.matching import run as M
+from ssi.matching.rules import norm_city, tokens
 from ssi.store import warehouse
 
 OUT = Path(__file__).parent
@@ -60,6 +69,87 @@ def build_pairs(n: int, seed: int = 7) -> list[dict]:
         p.update(query_name=a["display_name"], query_city=a["city"], query_state=a["state"],
                  a_name=a["clean_name"], b_name=b["clean_name"], b_city=b["city"], b_state=b["state"])
     return pairs
+
+
+def matched_keys(name: str, city: str | None, state: str | None) -> dict[str, str]:
+    res = M.match(name, city, state, None)
+    return {x["row"]["establishment_key"]: x["row"]["display_name"] for x in res["decisions"] if x["decision"].bucket == M.MATCHED}
+
+
+def typo_cases(n: int, seed: int = 11) -> list[dict]:
+    """A GC-style slip in the longest word of a distinctive OSHA name, past its third letter."""
+    rows = warehouse.rows("""
+      SELECT e.establishment_key, e.clean_name, e.name_core, e.city, e.state FROM entity.establishment e
+      JOIN entity.core_stats s USING (name_core)
+      WHERE s.tier = 'distinctive' AND NOT e.is_placeholder AND e.city IS NOT NULL AND NOT coalesce(e.related_only, false)
+        AND regexp_matches(e.name_core, '^[A-Z ]+$') AND length(replace(e.name_core, ' ', '')) >= 7
+      ORDER BY md5(e.establishment_key) LIMIT ?""", [n])
+    rnd = random.Random(seed)
+    cases = []
+    for e in rows:
+        words = tokens(e["name_core"])
+        w = max(words, key=len)
+        if len(w) < 5:
+            continue
+        i = rnd.randrange(3, len(w) - 1)
+        kind = rnd.choice(["drop", "double", "swap"])
+        slip = {"drop": w[:i] + w[i + 1:], "double": w[:i] + w[i] + w[i:], "swap": w[:i] + w[i + 1] + w[i] + w[i + 2:]}[kind]
+        if slip != w:
+            typo = " ".join(slip if t == w else t for t in tokens(e["clean_name"]))
+            cases.append({"correct": e["clean_name"], "typo": typo, "city": e["city"], "state": e["state"]})
+    return cases
+
+
+def grade_typos(cases: list[dict]) -> dict:
+    out = {"cases": len(cases), "same_as_correct_spelling": 0, "fewer_matches": 0, "extra_matches": 0, "extra_examples": []}
+    for c in cases:
+        want = matched_keys(c["correct"], c["city"], c["state"])
+        got = matched_keys(c["typo"], c["city"], c["state"])
+        if got == want:
+            out["same_as_correct_spelling"] += 1
+        elif set(got) < set(want):
+            out["fewer_matches"] += 1  # left for the AI reviewer and the GC, as any unsure record
+        else:
+            out["extra_matches"] += 1
+            out["extra_examples"].append(f"{c['typo']} ({c['city']}, {c['state']}) matched "
+                                         + ", ".join(got[k] for k in set(got) - set(want)))
+    return out
+
+
+def licence_cases() -> list[dict]:
+    """Licensed contractors with no OSHA record whose name is one letter (any edit) from exactly one
+    distinctive OSHA name with a record in the same city."""
+    return warehouse.rows("""
+      WITH lic AS (
+        SELECT name_core(clean_name) AS core, upper(city) AS city, state, list(DISTINCT addr_key) AS addrs, any_value(name) AS name
+        FROM ref_ext.licence WHERE clean_name IS NOT NULL AND city IS NOT NULL GROUP BY 1, 2, 3),
+      est AS (
+        SELECT e.name_core AS core, upper(e.city) AS city, e.state, list(DISTINCT e.addr_key) AS addrs
+        FROM entity.establishment e JOIN entity.core_stats s ON s.name_core = e.name_core
+        WHERE s.tier = 'distinctive' AND e.name_core <> '' GROUP BY 1, 2, 3),
+      hits AS (
+        SELECT l.core AS lic_core, l.name, l.city, l.state, x.core AS osha_core,
+               len(list_intersect(l.addrs, x.addrs)) > 0 AS same_address,
+               count(*) OVER (PARTITION BY l.core, l.city, l.state) AS n_names
+        FROM lic l JOIN est x ON x.city = l.city AND x.state = l.state
+         AND abs(length(x.core) - length(l.core)) <= 1 AND damerau_levenshtein(x.core, l.core) = 1
+        WHERE l.core <> '' AND l.core NOT IN (SELECT DISTINCT name_core FROM entity.establishment))
+      SELECT * FROM hits WHERE n_names = 1 ORDER BY lic_core, city""")
+
+
+def grade_licence(cases: list[dict]) -> dict:
+    out = {"slips_same_address": 0, "slips_matched": 0, "lookalikes_other_address": 0, "lookalikes_matched": 0,
+           "lookalike_examples": []}
+    for c in cases:
+        res = M.match(c["name"], c["city"], c["state"], None)
+        hit = any(x["decision"].bucket == M.MATCHED and x["row"]["name_core"] == c["osha_core"]
+                  and norm_city(x["row"]["city"]) == norm_city(c["city"]) for x in res["decisions"])
+        kind = "slips" if c["same_address"] else "lookalikes"
+        out[f"{kind}_{'same_address' if c['same_address'] else 'other_address'}"] += 1
+        out[f"{kind}_matched"] += hit
+        if hit and not c["same_address"]:
+            out["lookalike_examples"].append(f"{c['name']} ({c['city'].title()}, {c['state']}) matched {c['osha_core']}")
+    return out
 
 
 def predict(p: dict) -> dict:
@@ -118,6 +208,7 @@ def to_langsmith(pairs: list[dict]) -> str | None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=150, help="pairs per class")
+    ap.add_argument("--typos", type=int, default=400, help="OSHA names to misspell (0 skips the typo checks)")
     a = ap.parse_args()
     t = time.time()
     pairs = build_pairs(a.n)
@@ -130,7 +221,10 @@ def main() -> None:
         sub = [r for r in rows if r["kind"] == kind]
         by_kind[kind] = {b: sum(r["bucket"] == b for r in sub) for b in ("matched", "uncertain", "excluded", "not_found")}
     wrong = [r for r in rows if (r["label"] == 0 and r["bucket"] == "matched") or (r["label"] == 1 and r["bucket"] == "excluded")]
-    (OUT / "results.json").write_text(json.dumps({"metrics": m, "by_kind": by_kind, "seconds": round(time.time() - t)}, indent=2))
+    typos = grade_typos(typo_cases(a.typos)) if a.typos else None
+    licence = grade_licence(licence_cases()) if a.typos else None
+    (OUT / "results.json").write_text(json.dumps({"metrics": m, "by_kind": by_kind, "typos": typos, "licence": licence,
+                                                  "seconds": round(time.time() - t)}, indent=2))
     lines = ["# Matching evaluation (silver labels from ITA EINs)", "",
              f"{m['pairs']} pairs ({m['positives']} positive, {m['negatives']} negative), {round(time.time() - t)} s.", "",
              "| Metric | Value |", "|---|---|"] + [f"| {k} | {v} |" for k, v in m.items() if k not in ("pairs", "positives", "negatives")]
@@ -139,6 +233,19 @@ def main() -> None:
     lines += ["", "## Disagreements with the silver label (first 20)", "", "| Label | Query (A) | Candidate (B) | Outcome | Rule |", "|---|---|---|---|---|"]
     lines += [f"| {'same' if r['label'] else 'different'} | {r['a_name']} ({r['query_city']}, {r['query_state']}) | "
               f"{r['b_name']} ({r['b_city']}, {r['b_state']}) | {r['bucket']} | {r['rule']} |" for r in wrong[:20]]
+    if typos:
+        lines += ["", "## Typos", "",
+                  f"{typos['cases']} slips in distinctive OSHA names, searched with the name's city and state.", "",
+                  "| Outcome | Count |", "|---|---|",
+                  f"| same matches as the correct spelling | {typos['same_as_correct_spelling']} |",
+                  f"| fewer (the rest left for the AI reviewer and the GC) | {typos['fewer_matches']} |",
+                  f"| a match the correct spelling doesn't make | {typos['extra_matches']} |"]
+        lines += [f"- {x}" for x in typos["extra_examples"][:10]]
+        lines += ["", "Licensed contractors with no OSHA record, one letter from an OSHA name in the same city:", "",
+                  "| Case | Matched automatically |", "|---|---|",
+                  f"| same address (a slip) | {licence['slips_matched']} of {licence['slips_same_address']} |",
+                  f"| another address (usually another company) | {licence['lookalikes_matched']} of {licence['lookalikes_other_address']} |"]
+        lines += [f"- {x}" for x in licence["lookalike_examples"][:10]]
     exp = to_langsmith(pairs)
     if exp:
         lines += ["", f"LangSmith experiment: `{exp}`"]

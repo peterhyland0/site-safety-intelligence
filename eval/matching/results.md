@@ -1,6 +1,6 @@
 # Matching evaluation (silver labels from ITA EINs)
 
-300 pairs (150 positive, 150 negative), 108 s.
+300 pairs (150 positive, 150 negative), 418 s.
 
 | Metric | Value |
 |---|---|
@@ -45,4 +45,25 @@
 | different | HENKEL CONSTRUCTION (MASON CITY, IA) | HENKEL GENERAL CONSTRUCTION (MASON CITY, IA) | matched | M1b |
 | different | DR HORTON (CHARLOTTE, NC) | DR HORTON (RALEIGH, NC) | matched | M1 |
 
-LangSmith experiment: `rules-f5841c6b`
+## Typos
+
+381 slips in distinctive OSHA names, searched with the name's city and state.
+
+| Outcome | Count |
+|---|---|
+| same matches as the correct spelling | 324 |
+| fewer (the rest left for the AI reviewer and the GC) | 57 |
+| a match the correct spelling doesn't make | 0 |
+
+Licensed contractors with no OSHA record, one letter from an OSHA name in the same city:
+
+| Case | Matched automatically |
+|---|---|
+| same address (a slip) | 19 of 75 |
+| another address (usually another company) | 4 of 128 |
+- COLUMBIA CROSSING CONSTRUCTION LLC (Portland, OR) matched COLUMBIA CROSSINGS
+- HUIZENGA BROS CONST INC (Deming, WA) matched HUIZENGA CONSTR
+- PLUMBING TECH REPIPE SPECIALISTS INC (San Jose, CA) matched REPIPE SPECIALIST
+- SANDESSEE ELECTRIC (Pasco, WA) matched SANDESSE
+
+LangSmith experiment: `rules-21041836`

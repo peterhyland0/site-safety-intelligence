@@ -36,5 +36,24 @@
       "not_found": 0
     }
   },
-  "seconds": 108
+  "typos": {
+    "cases": 381,
+    "same_as_correct_spelling": 324,
+    "fewer_matches": 57,
+    "extra_matches": 0,
+    "extra_examples": []
+  },
+  "licence": {
+    "slips_same_address": 75,
+    "slips_matched": 19,
+    "lookalikes_other_address": 128,
+    "lookalikes_matched": 4,
+    "lookalike_examples": [
+      "COLUMBIA CROSSING CONSTRUCTION LLC (Portland, OR) matched COLUMBIA CROSSINGS",
+      "HUIZENGA BROS CONST INC (Deming, WA) matched HUIZENGA CONSTR",
+      "PLUMBING TECH REPIPE SPECIALISTS INC (San Jose, CA) matched REPIPE SPECIALIST",
+      "SANDESSEE ELECTRIC (Pasco, WA) matched SANDESSE"
+    ]
+  },
+  "seconds": 418
 }

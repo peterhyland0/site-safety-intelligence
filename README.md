@@ -162,7 +162,11 @@ GC enters: name, city, state (+ optional trade, licence #)
 - `BRASFIELD GORRIE` has 3, so it's distinctive.
 - `CLARK` has 112 and `ABC` has 114, so they're generic.
 
-Common names and people's names need a city match to auto-match. A GC's typo (`Brasfeild`) adopts OSHA's dominant spelling only when that spelling clearly dominates (≥10 inspections and ≥10× the GC's spelling), and the GC is told. A lower bar "corrected" COLMEX (a real Florida company) to COMEX (an Iowa one).
+Common names and people's names need a city match to auto-match. A GC's typo is searched by OSHA's spelling in two cases, and the GC is told which spelling was searched:
+- **OSHA's spelling clearly dominates** (`Brasfeild`): ≥10 inspections and ≥10× the GC's spelling. A lower bar "corrected" COLMEX (a real Florida company) to COMEX (an Iowa one).
+- **A one-letter slip with a record in the GC's city** (`McKennys, Atlanta` → MCKENNEY'S, 9 inspections). The GC's spelling has no records of its own, one letter is dropped, added or swapped past the third letter of a 7+ letter name, and exactly one such name has a record in that city. A *replaced* letter doesn't count: among 141,727 licensed contractors (WA, CA, OR) with no OSHA record, a name one replaced letter from an OSHA name in the same city was usually another company (BORA/KORA, AECON/AECOM, HB/SB STRUCTURES).
+
+Only the misspelt word changes; the GC's other words stay, so trades are still compared. Until this was tested, the correction took the most-inspected record's whole name: "Aboe Board Contracting, Portsmouth RI" auto-matched a California roofer and left the Portsmouth company "possible".
 
 **What the GC sees:** *Matched* (counted) · *Possible* ("+N inspections if these are yours", not counted) · *Excluded lookalikes* (collapsed). The GC can move any record between buckets; that's stored as `method = 'gc'` and always wins.
 
@@ -292,6 +296,17 @@ The web front end has 40 more (`npm test`).
 | Same-company records left "possible" | 0.27 | 0.33 | Sent to the AI adjudicator or the GC, not counted |
 
 The person-name, branch and red-flag rules added after the pipeline review change no outcome in this sample (run with and without them on the same 300 pairs); their effect is on the cases the review found, below.
+
+**Typos.** The pairs above search with OSHA's own spellings, so two more checks cover a GC's slips (same file):
+
+| Check | Before the city-anchored fix | After |
+|---|---|---|
+| 381 slips in distinctive OSHA names: same matches as the correct spelling | 25 | 324 |
+| … a match the correct spelling doesn't make | 1 (Aboe Board, above) | **0** |
+| Licensed contractors with no OSHA record, one letter from an OSHA name in the same city, at the same address (a slip): auto-matched | 2 of 75 | 19 of 75 |
+| … at another address (usually another company): auto-matched | 0 of 128 | 4 of 128 |
+
+The 4 are SANDESSEE/SANDESSE ELECTRIC (Pasco), HUIZENGA BROS/BROTHERS (Deming), PLUMBING TECH REPIPE SPECIALIST(S) (San Jose), all the same company at another address, and COLUMBIA CROSSING CONSTRUCTION / COLUMBIA CROSSINGS (Portland), which may not be. Slips the fix leaves alone go to the AI reviewer, as before.
 
 **Reading the precision honestly.** I reviewed the disagreements by hand. The auto-matches the labels call "different" are corporate families filing under several tax IDs, not different businesses that happen to share a name:
 - D.R. Horton's regional divisions in NC, TX and CA
