@@ -58,7 +58,7 @@ class OpenAICompatProvider:
                 args = {}
             calls.append(ToolCall(tc.id, tc.function.name, args))
         u = resp.usage
-        return Reply(text=msg.content or "", tool_calls=calls, assistant_message=msg.model_dump(exclude_none=True),
+        return Reply(text=msg.content or "", tool_calls=calls, assistant_message=msg.model_dump(exclude_none=True, warnings=False),
                      stop_reason="tool_use" if calls else (choice.finish_reason or "end_turn"),
                      input_tokens=getattr(u, "prompt_tokens", 0) or 0, output_tokens=getattr(u, "completion_tokens", 0) or 0)
 
