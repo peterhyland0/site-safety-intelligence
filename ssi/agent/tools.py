@@ -2,12 +2,15 @@
 of THIS project's subs, so the model cannot query a company outside the project by accident."""
 from __future__ import annotations
 
+from collections import Counter
+
 from ssi.llm.base import ToolSpec
 from ssi.matching import run as M
 from ssi.queries import core as Q
 
 RED_FLAG_KINDS = ["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
                   "fatcat_site_cited", "catastrophe_cited", "willful", "repeat", "fta"]
+FATALITY_KINDS = RED_FLAG_KINDS[:7]  # the fatality/catastrophe investigations, whatever their outcome
 
 
 def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
@@ -15,7 +18,9 @@ def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
     obj = lambda props, req: {"type": "object", "properties": props, "required": req, "additionalProperties": False}  # noqa: E731
     return [
         ToolSpec("compare_subs", "Scorecard for every sub on the project: verdict, top reasons, inspection counts, "
-                 "serious-citation rate vs the trade median, red-flag counts. Use for 'which subs…' and comparisons.",
+                 "serious-citation rate vs the trade median, red-flag counts, fatality/catastrophe investigations by "
+                 "outcome, open cases. Use for 'which subs…' and comparisons, then the per-sub tools only for the subs "
+                 "you need detail on.",
                  obj({}, [])),
         ToolSpec("sub_summary", "One sub's verdict with reasons (and the inspection IDs behind each), counts all-time "
                  "and in the project window, rate vs trade, states, years active, records not counted.",
@@ -103,7 +108,11 @@ class Toolbox:
                          "top_reasons": [r.label for r in c.reasons[:2]], "matched_inspections": c.matched_inspections,
                          "inspections_last_window": c.inspections_in_window, "window_years": c.window_years,
                          "serious_per_inspection": c.serious_plus_rate, "trade_median": c.trade_p50,
-                         "red_flags": c.red_flag_count, "possible_records_not_counted": c.possible_inspections,
+                         "red_flags": c.red_flag_count,
+                         "fatality_investigations": dict(Counter(f.label for f in self.data(sid)["flags"]
+                                                                 if f.kind in FATALITY_KINDS)),
+                         "open_cases": len(Q.inspections(self.data(sid)["keys"], limit=500, open_only=True)),
+                         "possible_records_not_counted": c.possible_inspections,
                          "pending_match_questions": c.pending_questions})
         return {"subs": rows}
 
@@ -148,9 +157,7 @@ class Toolbox:
 
     def t_fatality_history(self, sub_id: str) -> dict:
         d = self.data(sub_id)
-        fat = [f for f in d["flags"] if f.kind in ("fatality_cited", "fatality_inspected_not_cited", "fatality_pending",
-                                                  "fatcat_cited", "fatcat_not_cited", "fatcat_site_cited",
-                                                  "catastrophe_cited")]
+        fat = [f for f in d["flags"] if f.kind in FATALITY_KINDS]
         out = []
         for f in fat[:10]:
             det = Q.inspection_detail(f.activity_nr)

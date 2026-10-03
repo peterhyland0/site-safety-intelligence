@@ -8,7 +8,10 @@ For an OpenAI-compatible endpoint (e.g. models served on Modal):
   SSI_LLM_PROVIDER=openai_compat
   SSI_LLM_FOREMAN_BASE_URL / SSI_LLM_FOREMAN_MODEL
   SSI_LLM_ADJUDICATOR_BASE_URL / SSI_LLM_ADJUDICATOR_MODEL
-  (SSI_LLM_BASE_URL / SSI_LLM_MODEL are the fallback for either role; a blank model = the one the endpoint serves)
+  SSI_LLM_FOREMAN_REASONING_EFFORT / SSI_LLM_ADJUDICATOR_REASONING_EFFORT = low|high|max, passed to the chat
+  template (the foreman defaults to low for latency, the adjudicator to the server's default)
+  (SSI_LLM_BASE_URL / SSI_LLM_MODEL / SSI_LLM_REASONING_EFFORT are the fallback for either role; a blank model =
+  the one the endpoint serves)
   SSI_LLM_MODAL_KEY / SSI_LLM_MODAL_SECRET for Modal proxy auth (shared by both endpoints)
 For Claude: ANTHROPIC_API_KEY (+ SSI_MODEL)."""
 from __future__ import annotations
@@ -20,6 +23,7 @@ from ssi import config
 from ssi.llm.base import Provider
 
 ROLES = ("foreman", "adjudicator")
+REASONING_EFFORT_DEFAULT = {"foreman": "low", "adjudicator": None}  # None = whatever the server does
 _providers: dict[str, Provider] = {}
 
 
@@ -29,6 +33,10 @@ def provider_name() -> str:
 
 def _role_env(role: str, name: str) -> str | None:
     return os.environ.get(f"SSI_LLM_{role.upper()}_{name}") or os.environ.get(f"SSI_LLM_{name}") or None
+
+
+def reasoning_effort(role: str) -> str | None:
+    return (_role_env(role, "REASONING_EFFORT") or "").strip().lower() or REASONING_EFFORT_DEFAULT[role]
 
 
 def available(role: str = "foreman") -> bool:
@@ -46,7 +54,8 @@ def get(role: str = "foreman") -> Provider:
     if role not in _providers:
         if provider_name() == "openai_compat":
             from ssi.llm.openai_compat_provider import OpenAICompatProvider
-            _providers[role] = OpenAICompatProvider(_role_env(role, "MODEL"), _role_env(role, "BASE_URL"))
+            _providers[role] = OpenAICompatProvider(_role_env(role, "MODEL"), _role_env(role, "BASE_URL"),
+                                                    reasoning_effort=reasoning_effort(role))
         else:
             from ssi.llm.anthropic_provider import AnthropicProvider
             _providers[role] = AnthropicProvider(config.MODEL, effort=os.environ.get("SSI_LLM_EFFORT", "low"))

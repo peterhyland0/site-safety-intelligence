@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore", message="Pydantic serializer warnings", catego
 class OpenAICompatProvider:
     name = "openai_compat"
 
-    def __init__(self, model: str | None, base_url: str):
+    def __init__(self, model: str | None, base_url: str, reasoning_effort: str | None = None):
         headers = {}
         if os.environ.get("SSI_LLM_MODAL_KEY") and os.environ.get("SSI_LLM_MODAL_SECRET"):
             headers = {"Modal-Key": os.environ["SSI_LLM_MODAL_KEY"], "Modal-Secret": os.environ["SSI_LLM_MODAL_SECRET"]}
@@ -29,6 +29,11 @@ class OpenAICompatProvider:
         if not model:  # ask the endpoint which model it serves (vLLM/SGLang-style servers list one)
             model = client.models.list().data[0].id
         self.model = model
+        # Passed to the chat template. GLM 5.3's template reads reasoning_effort (low/high; anything else = max,
+        # its default) and always reasons; max spent thousands of hidden tokens, seconds, on every round.
+        # Don't send enable_thinking=false to it: the template ignores it, but the server then stops separating
+        # the reasoning, which lands in the answer. None leaves the server's default.
+        self.extra_body = {"chat_template_kwargs": {"reasoning_effort": reasoning_effort}} if reasoning_effort else None
         if config.TRACING:
             from langsmith.wrappers import wrap_openai
             client = wrap_openai(client)
@@ -37,7 +42,7 @@ class OpenAICompatProvider:
     def structured(self, system: str, user: str, schema: dict, max_tokens: int = 1024) -> tuple[dict | None, Usage]:
         prompt = f"{user}\n\nReply with ONLY a JSON object matching this schema:\n{json.dumps(schema)}"
         resp = self.client.chat.completions.create(
-            model=self.model, max_tokens=max_tokens,
+            model=self.model, max_tokens=max_tokens, extra_body=self.extra_body,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}])
         u = resp.usage
         usage = Usage(getattr(u, "prompt_tokens", 0) or 0, getattr(u, "completion_tokens", 0) or 0, 1)
@@ -50,7 +55,7 @@ class OpenAICompatProvider:
 
     def chat(self, system: str, messages: list, tools: list[ToolSpec], max_tokens: int = 4000) -> Reply:
         resp = self.client.chat.completions.create(
-            model=self.model, max_tokens=max_tokens, tool_choice="auto",
+            model=self.model, max_tokens=max_tokens, tool_choice="auto", extra_body=self.extra_body,
             tools=[{"type": "function", "function": {"name": t.name, "description": t.description,
                                                       "parameters": t.parameters}} for t in tools],
             messages=[{"role": "system", "content": system}, *messages])
@@ -64,7 +69,8 @@ class OpenAICompatProvider:
                 args = {}
             calls.append(ToolCall(tc.id, tc.function.name, args))
         u = resp.usage
-        return Reply(text=msg.content or "", tool_calls=calls, assistant_message=msg.model_dump(exclude_none=True, warnings=False),
+        text = (msg.content or "").split("</think>")[-1]  # never pass on reasoning a server failed to separate
+        return Reply(text=text, tool_calls=calls, assistant_message=msg.model_dump(exclude_none=True, warnings=False),
                      stop_reason="tool_use" if calls else (choice.finish_reason or "end_turn"),
                      input_tokens=getattr(u, "prompt_tokens", 0) or 0, output_tokens=getattr(u, "completion_tokens", 0) or 0)
 

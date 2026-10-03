@@ -206,7 +206,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
 **Models.** Each role has its own model, chosen in `.env`:
-- **Foreman:** GLM 5.3. It's a multi-step conversation with tool calls.
+- **Foreman:** GLM 5.3, at low reasoning effort (`SSI_LLM_FOREMAN_REASONING_EFFORT`). It's a multi-step conversation with tool calls.
 - **Adjudicator:** DeepSeek V4.1 Flash. It makes many short same/different/unsure calls.
 
 Both are served from Modal as OpenAI-compatible APIs.
@@ -342,6 +342,8 @@ Median 2.6 s per answer, slowest 6.9 s.
 - **Tool results didn't name the sub,** so one answer said "the insulation sub" instead of 31-W Insulation. Every per-sub result now carries the name.
 - **A partial name was assumed to be a project sub:** "Smith Electric" was answered as Allison-Smith. The prompt now says to ask (with an example that isn't in the eval), and the eval forbids "assuming you mean".
 - **"Possible" records read as needing GC action.** The tool now says they only need the GC when they carry red flags.
+- **The slowest answers were hidden reasoning.** GLM 5.3's chat template reasons at maximum effort unless told otherwise: about 80% of output tokens never reached the foreman, and the slowest answers took 20 s. The foreman now runs at low effort. On the same data, the 20 questions went from 17,185 output tokens to 3,643, median 2.9 s to 1.6 s, slowest 10.4 s to 5.6 s, and passed the same checks or more. Turning thinking off (`enable_thinking=false`) doesn't work on this model: the template ignores it, the server stops separating the reasoning, and it lands in the answer. Text before a stray `</think>` is now dropped.
+- **"Which subs…" questions called a per-sub tool once per sub** (13 fatality-history or open-case calls, about four model rounds). The scorecard tool now carries each sub's fatality/catastrophe investigations by outcome and its open cases, so they take one call.
 - **Three expectations were wrong, not the model.** "Smith Electric" may be a clarify; Quality Roofing has no pending question after adjudication, so "why is it flagged?" is a false premise to correct; a "last 5 years" count can come from the year-by-year trend. Each change is in the git history of `questions.json`.
 
 20 questions is a smoke test, not a benchmark: it catches regressions in the guards and the prompt, and it's small enough to read every answer, which is how most of the issues above were found.
