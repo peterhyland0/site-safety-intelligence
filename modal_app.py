@@ -26,6 +26,7 @@ image = (
                     "anthropic>=1.0", "langsmith>=0.3", "httpx>=0.27", "python-dotenv>=1.0", "jellyfish>=1.0", "openai>=1.0")
     .env({"SSI_DATA_DIR": VOL_PATH, "PYTHONPATH": "/root"})
     .add_local_dir(APP_DIR / "ssi", "/root/ssi", ignore=["**/__pycache__"])
+    .add_local_dir(APP_DIR / "scripts", "/root/scripts", ignore=["**/__pycache__"])
     .add_local_dir(APP_DIR / "web" / "dist", "/root/web/dist")
 )
 app = modal.App("site-safety-intelligence", image=image)
@@ -81,3 +82,19 @@ def web():
         warehouse.open_warehouse(local)
     from ssi.api.app import app as fastapi_app
     return fastapi_app
+
+
+@app.function(volumes={VOL_PATH: volume}, secrets=secrets, cpu=2, memory=8192, timeout=1800)
+def seed_demo() -> None:
+    """Create the demo project against the deployed warehouse and Postgres."""
+    import shutil
+
+    from ssi import config
+    from ssi.store import warehouse
+    src = config.current_warehouse()
+    local = Path("/tmp") / src.name
+    if not local.exists():
+        shutil.copy(src, local)
+    warehouse.open_warehouse(local)
+    from scripts import seed_demo as s
+    s.main()

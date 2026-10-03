@@ -128,6 +128,9 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
             return Decision(EXCLUDED, "X1", "Different company name (" + ", ".join(sorted(unmatched)[:3]) + ")")
     if not q.core and not c.name_core and not same_full:
         return Decision(EXCLUDED, "X2", "Different generic name")
+    if not q.core and same_full and q.state and c.state and not same_state and not c.at_matched_address:
+        # a name made only of common words (QUALITY ROOFING) in another state is almost always another company
+        return Decision(EXCLUDED, "X4", f"Common name, different state ({c.state})")
     if not distinctive and not same_full:
         # a common name (CLARK, ABC) plus different trade words: only a same-city record could be related
         if same_state and (same_city or c.at_matched_address):

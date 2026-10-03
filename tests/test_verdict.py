@@ -26,8 +26,9 @@ def test_recent_cited_fatality_is_high_old_one_is_review():
     assert v == "review"
 
 
-def test_fatality_site_not_cited_is_only_review():
+def test_fatality_site_not_cited_is_only_review_and_only_when_recent():
     assert evaluate(facts(red_flags=[RedFlagFact("fatality_inspected_not_cited", 2024, 5, False)]))[0] == "review"
+    assert evaluate(facts(red_flags=[RedFlagFact("fatality_inspected_not_cited", 1985, 5, False)]))[0] == "no_flags"
 
 
 def test_repeat_thresholds():

@@ -32,6 +32,7 @@ DISTINCTIVE_MAX_VARIETY = 5
 GENERIC_MIN_VARIETY = 25
 SHARED_OFFICE_MIN_CORES = 6
 ADJUDICATE_MAX_CLUSTERS = 15
+MAX_QUESTIONS_PER_SUB = 3  # more red-flag lookalikes stay visible as 'possible' (not counted)
 
 
 def current_warehouse() -> Path | None:

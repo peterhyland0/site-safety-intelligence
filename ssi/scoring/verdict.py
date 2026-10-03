@@ -103,7 +103,8 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
         if old:
             add(f"R_old_{kind}", f"{text}, over {config.RED_FLAG_RECENCY_YEARS} years ago ({_years(old)})",
                 "review", old, count=len(old))
-    not_cited = [x for x in f.red_flags if x.kind == "fatality_inspected_not_cited"]
+    # Not this sub's offence, so it only matters while recent (cited fatalities keep the unlimited lookback)
+    not_cited = [x for x in f.red_flags if x.kind == "fatality_inspected_not_cited" and (x.year or 0) > recent_cutoff]
     if not_cited:
         add("R_fatality_site", f"On a site where a fatality was investigated, but not cited for serious violations ({_years(not_cited)})",
             "review", not_cited, count=len(not_cited))

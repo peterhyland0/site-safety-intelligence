@@ -92,3 +92,10 @@ def test_trade_word_difference_is_a_sister_company():
     assert decide(w, c("WAUSAU TILE", "WAUSAU", state="WI"), GENERIC).bucket == UNCERTAIN
     t = q("TURNKEY CONSTRUCTION", "TURNKEY", state="PA")
     assert decide(t, c("TURNKEY ELECTRIC", "TURNKEY", state="PA", at_addr=True), GENERIC).bucket == UNCERTAIN
+
+
+def test_all_generic_name_in_another_state_is_excluded():
+    qr = q("QUALITY ROOFING", "", state="TN", tier="generic", city="NASHVILLE")
+    assert decide(qr, c("QUALITY ROOFING", "", state="OH", city="AKRON"), GENERIC).bucket == EXCLUDED
+    assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="KNOXVILLE"), GENERIC).bucket == UNCERTAIN
+    assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="NASHVILLE"), GENERIC).bucket == MATCHED

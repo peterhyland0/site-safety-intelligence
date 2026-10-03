@@ -64,7 +64,9 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
                         bucket = "matched"
                     elif decision["decision"] == "different" and conf >= 0.80:
                         bucket = "excluded"
-            if has_flags and bucket != "excluded":
+            if has_flags and bucket != "excluded" and stats["questions"] >= config.MAX_QUESTIONS_PER_SUB:
+                bucket = "possible"  # too many lookalikes to ask about: visible, flagged, not counted
+            elif has_flags and bucket != "excluded":
                 bucket = "possible"  # red-flag override: the GC decides
                 c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
                              VALUES (%s, %s, %s, %s, %s)""",
