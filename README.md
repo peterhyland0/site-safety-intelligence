@@ -2,7 +2,7 @@
 
 **Which subs' OSHA histories should worry a general contractor, with the inspections behind every flag.**
 
-A GC bidding a job pastes in its 10–15 subcontractors and gets a ranked scorecard. Each sub gets a verdict built from fixed rules over OSHA enforcement records, with links to the source inspections. The foreman can ask plain-English questions about those subs from a phone on site.
+A GC bidding a job enters its 10–15 subcontractors (one row of fields each, or pasted from a spreadsheet to fill the rows) and gets a ranked scorecard. Each sub gets a verdict built from fixed rules over OSHA enforcement records, with links to the source inspections. The foreman can ask plain-English questions about those subs from a phone on site.
 
 - **The GC's view.** Each sub gets one of five verdicts: High concern, Review, No OSHA record, No recent record, or No flags. Each verdict comes with the reasons and the inspection IDs behind them.
   - Matching is automatic. The GC is only asked yes/no when an uncertain record carries a red flag.

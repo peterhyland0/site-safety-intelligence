@@ -37,6 +37,8 @@ export interface ParsedRow {
   input: SubInput;
   /** State came from the project default rather than the pasted line */
   stateDefaulted: boolean;
+  /** The state text as pasted, when it isn't a recognised state */
+  badState: string | null;
   errors: string[];
   warnings: string[];
 }
@@ -117,9 +119,13 @@ export function parseSubs(text: string, defaultState?: string | null): ParseResu
 
     let state: string | null = null;
     let stateDefaulted = false;
+    let badState: string | null = null;
     if (stateRaw) {
       state = normaliseState(stateRaw);
-      if (!state) errors.push(`State "${stateRaw}" not recognised. Use a 2-letter code like TX.`);
+      if (!state) {
+        badState = stateRaw;
+        errors.push(`State "${stateRaw}" not recognised. Use a 2-letter code like TX.`);
+      }
     } else if (defaultState) {
       state = defaultState;
       stateDefaulted = true;
@@ -137,6 +143,7 @@ export function parseSubs(text: string, defaultState?: string | null): ParseResu
       raw,
       input: { name: name ?? "", city, state, trade, licence },
       stateDefaulted,
+      badState,
       errors,
       warnings,
     });

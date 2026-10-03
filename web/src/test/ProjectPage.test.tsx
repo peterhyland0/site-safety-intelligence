@@ -85,19 +85,46 @@ describe("GC scorecard", () => {
     expect(api.adjudicate).toHaveBeenCalledTimes(1);
   });
 
-  it("previews pasted subs before adding them", async () => {
+  it("adds subs from fields: company name required, state defaults to the project's", async () => {
     const user = userEvent.setup();
     api.getProject.mockResolvedValue({ ...detail(), subs: [] });
     api.addSubs.mockResolvedValue([]);
     renderPage();
 
-    const box = await screen.findByLabelText(/Subs to add/);
-    await user.type(box, "ABC Roofing, Dallas, TX, roofing{enter}Bad Co, Nowhere, ZZ");
-    expect(screen.getByText(/1 sub ready/)).toBeInTheDocument();
-    expect(screen.getByText(/1 line will be skipped/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Add 1 sub" }));
+    await user.type(await screen.findByLabelText("Sub 1: Company name"), "ABC Roofing");
+    await user.type(screen.getByLabelText("Sub 1: City"), "Dallas");
+    await user.selectOptions(screen.getByLabelText("Sub 1: State"), "TX");
+    await user.type(screen.getByLabelText("Sub 1: Trade"), "roofing");
+    await user.click(screen.getByRole("button", { name: "Add another sub" }));
+    await user.type(screen.getByLabelText("Sub 2: Company name"), "Lone Star Framing");
+    await user.click(screen.getByRole("button", { name: "Add 2 subs" }));
+
     expect(api.addSubs).toHaveBeenCalledWith("demo-riverside", [
       { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
+      { name: "Lone Star Framing", city: null, state: detail().project.state, trade: null, licence: null },
+    ]);
+  });
+
+  it("fills rows from a pasted list and holds back a row with an unrecognised state until it's fixed", async () => {
+    const user = userEvent.setup();
+    api.getProject.mockResolvedValue({ ...detail(), subs: [] });
+    api.addSubs.mockResolvedValue([]);
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Paste a list" }));
+    await user.type(screen.getByLabelText(/Paste from a spreadsheet/), "ABC Roofing, Dallas, TX, roofing{enter}Bad Co, Nowhere, ZZ");
+    await user.click(screen.getByRole("button", { name: "Fill in the rows" }));
+
+    expect(screen.getByText(/Filled in 2 rows from your list/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Sub 1: Company name")).toHaveValue("ABC Roofing");
+    expect(screen.getByText(/"ZZ" from your list isn't a state/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add 1 sub" })).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText("Sub 2: State"), "NV");
+    await user.click(screen.getByRole("button", { name: "Add 2 subs" }));
+    expect(api.addSubs).toHaveBeenCalledWith("demo-riverside", [
+      { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
+      { name: "Bad Co", city: "Nowhere", state: "NV", trade: null, licence: null },
     ]);
   });
 
