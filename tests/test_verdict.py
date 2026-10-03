@@ -120,3 +120,28 @@ def test_self_reported_deaths_are_review():
     assert v == "review" and r[0].code == "R_ita_deaths" and "6 work-related death" in r[0].label
     # older than the 10-year recency window: no reason
     assert evaluate(facts(as_of=date(2026, 9, 23), ita_deaths=[(2014, 1)]))[0] == "no_flags"
+
+
+def test_a_fatality_is_one_event_per_visit():
+    # OSHA's fatality inspection (346032436) had no citations; a second inspection of the same visit (346062102)
+    # carried the serious ones. The build marks the fatality cited for the visit, and when both inspections link
+    # to the accident the death counts once
+    from datetime import date
+
+    from ssi.scoring.verdict import one_event_per_visit
+    day = date(2022, 6, 21)
+    m = RedFlagFact("fatality_cited", 2022, 346032436, False, when=day)
+    g = RedFlagFact("fatality_cited", 2022, 346062102, False, when=day)
+    rep = RedFlagFact("repeat", 2022, 346062102, False, when=day)
+    other = RedFlagFact("fatality_inspected_not_cited", 2023, 111, False, when=date(2023, 1, 5))
+    kept = one_event_per_visit([m, g, rep, other], {346032436: "v1", 346062102: "v1", 111: "v2"})
+    assert kept == [m, rep, other]
+    v, r = evaluate(facts(as_of=date(2026, 9, 23), red_flags=kept))
+    high = next(x for x in r if x.code == "H_fatality_cited")
+    assert v == "high" and high.figures["count"] == 1 and high.evidence == [346032436]
+    # the most serious outcome stands for the visit, wherever it is listed
+    site = RedFlagFact("fatcat_site_cited", 2024, 5, False, when=date(2024, 2, 1))
+    own = RedFlagFact("fatcat_cited", 2024, 6, False, when=date(2024, 2, 1))
+    assert one_event_per_visit([site, own], {5: "v3", 6: "v3"}) == [own]
+    # without a known visit, each inspection is its own
+    assert one_event_per_visit([site, own], {}) == [site, own]

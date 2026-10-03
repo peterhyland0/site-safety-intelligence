@@ -30,6 +30,13 @@ SAME = [
     ["WA317965935 - BARNHART CRANE & RIGGING CO", "BARNHART CRANE AND RIGGING CO."],
     # "The Clark Construction Group, LLC" as some offices write it
     ["CLARK CONSTRUCTION GROUP, LLC", "WA317962258 - CLARK CONSTRUCTION GROUP LLC THE", "THE CLARK CONSTRUCTION GROUP INC"],
+    # a GC types accents; OSHA's records don't have them ("Muñoz" was cut to MU OZ)
+    ["Muñoz Construction", "MUNOZ CONSTRUCTION LLC"],
+    ["José Hernández Roofing", "JOSE HERNANDEZ ROOFING"],
+    ["Peña Roofing", "PENA ROOFING INC"],
+    ["Søren Ølsen Builders", "SOREN OLSEN BUILDERS"],
+    # OSHA's lost accents come as ? or U+FFFD for one company; folding accents mustn't split them
+    ["BERM?DEZ, LONGO, D?AZ-MASS?, LLC", "BERM�DEZ, LONGO, D�AZ-MASS�, LLC"],
 ]
 
 DIFFERENT = [
@@ -62,6 +69,7 @@ EXACT = {
     "3M COMPANY": "3M",
     "A1 ROOFING - DIVISION 2": "A1 ROOFING DIVISION 2",
     "B2B CONTRACTING - NORTH": "B2B CONTRACTING NORTH",
+    "Łukasz Straße Bau": "LUKASZ STRASSE BAU",
 }
 
 

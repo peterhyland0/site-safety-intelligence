@@ -28,6 +28,12 @@ def describe_query(name: str) -> dict:
     )
 
 
+def describe_clean(clean: str) -> dict:
+    """describe_query for a name that is already clean (one of the sub's aliases)."""
+    return warehouse.one("SELECT name_core(?) AS core, initials_only(?) AS initials_only, sibling_suffix(?) AS sibling",
+                         [clean] * 3)
+
+
 @cache
 def given_names() -> frozenset[str]:
     path = config.REF_DIR / "given_name.csv"

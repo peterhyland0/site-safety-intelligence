@@ -6,9 +6,15 @@
 -- per-inspection ID prefixes). Never remove trade words, initials, numbers or place words here.
 -- Each step is its own macro so the build can report how many names each rule merges.
 
--- n1: uppercase, unicode-normalise, collapse whitespace
+-- n1: uppercase, unicode-normalise, fold accents (MUÑOZ -> MUNOZ: OSHA's names are typed without them, and
+--     n6 would otherwise cut "MU OZ"), collapse whitespace. Letters strip_accents leaves are spelled out
+--     (Ø Ł Đ Æ Œ ß). OSHA's own lost accents ("BERM?DEZ", "BERM�DEZ": two markers for one company) stay
+--     punctuation, so both still clean to BERM DEZ.
 CREATE OR REPLACE MACRO ssi_n1_upper(s) AS
-  trim(regexp_replace(upper(nfc_normalize(coalesce(s, ''))), '\s+', ' ', 'g'));
+  trim(regexp_replace(
+    replace(replace(replace(translate(upper(strip_accents(nfc_normalize(coalesce(s, '')))), 'ØŁĐ', 'OLD'),
+      'Æ', 'AE'), 'Œ', 'OE'), 'ẞ', 'SS'),
+    '\s+', ' ', 'g'));
 
 -- n2: strip per-inspection ID prefixes ("WA317965935 - ", "105314 - ", "1234 - "): 5+ digits and a dash,
 -- or 3+ digits and a spaced dash. Also the case numbers Arizona (since 2021: "FCX2024XEG419X0079 - ") and

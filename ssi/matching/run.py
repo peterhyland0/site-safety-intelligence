@@ -46,6 +46,18 @@ def build_query(name: str, city: str | None, state: str | None, trade: str | Non
     return q, d
 
 
+def alias_queries(q: Query) -> dict[str, Query]:
+    """The sub's other names (legal name, DBA, licence names), each described on its own: a generic DBA (QUALITY
+    ROOFING) mustn't borrow the legal name's distinctiveness and match every QUALITY ROOFING in the country."""
+    out = {}
+    for a in sorted(q.aliases - {q.clean}):
+        d = C.describe_clean(a)
+        core = d["core"] or ""
+        out[a] = replace(q, clean=a, core=core, tier=C.core_tier(core, bool(d["initials_only"])),
+                         initials_only=bool(d["initials_only"]), sibling=d["sibling"], aliases={a}, alias_queries={})
+    return out
+
+
 def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
     """Search OSHA's spelling when the GC's spelling is a slip of a distinctive name. Either test is enough:
 
@@ -123,6 +135,7 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     q.aliases |= lic_names
     if described["placeholder"] or not q.clean:
         return {"query": q, "note": "Name is empty or a placeholder", "decisions": []}
+    q.alias_queries = alias_queries(q)
     generic = C.generic_tokens()
     descriptors = C.descriptor_tokens()
     rows = C.search(q.clean, q.core, q.state, sorted(q.aliases))

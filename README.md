@@ -142,7 +142,7 @@ GC enters: name, city, state (+ optional trade, licence #)
      (past 3 questions for a sub, one question per OSHA name, so none is dropped)
 ```
 
-**Cleaning** ([ssi/cleaning/macros.sql](ssi/cleaning/macros.sql)). It only removes noise that never distinguishes companies: case, punctuation, legal forms at the end, ID prefixes, `&`/`AND`/`-`, and runs of initials. It keeps trade words, initials, numbers and place words. 42 trap tests cover the edge cases: `C AND A` ≠ `C AND S`, `BRASFIELD CONSTRUCTION` ≠ `BRASFIELD & GORRIE`, `84 LUMBER` unchanged. The cleanup cuts distinct names since 2015 from 265,936 to 195,124 (−27%).
+**Cleaning** ([ssi/cleaning/macros.sql](ssi/cleaning/macros.sql)). It only removes noise that never distinguishes companies: case, accents (a GC's `Muñoz` is OSHA's `MUNOZ`), punctuation, legal forms at the end, ID prefixes, `&`/`AND`/`-`, and runs of initials. It keeps trade words, initials, numbers and place words. 42 trap tests cover the edge cases: `C AND A` ≠ `C AND S`, `BRASFIELD CONSTRUCTION` ≠ `BRASFIELD & GORRIE`, `84 LUMBER` unchanged. The cleanup cuts distinct names since 2015 from 265,936 to 195,124 (−27%).
 
 **Rules** ([ssi/matching/rules.py](ssi/matching/rules.py)):
 
@@ -153,7 +153,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 | M2 | At an already-matched address, name differs only by spelling | Matched |
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
 | L1 | Linked to the licence number the GC entered | Matched |
-| S1 | Differs only by `OF <STATE>` / `AT <project>`: usually a sibling company | Uncertain |
+| S1 | Differs only by `OF <STATE>` / `AT <project>` (HOFFMAN CONSTRUCTION vs HOFFMAN CONSTRUCTION CO OF OREGON): usually a sibling company. A common name only in the same state | Uncertain |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
 | P1 / X5 | A person's name (sole proprietors: "JOSE HERNANDEZ" is 49 records in 17 states): matches only on the same city or a matched address; another city or state is excluded; no city is uncertain | Matched / Excluded / Uncertain |
 | U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE) | Uncertain |
@@ -164,6 +164,8 @@ GC enters: name, city, state (+ optional trade, licence #)
 **Name distinctiveness** is measured from the data, not hand-listed: how many distinct full names share the name's core.
 - `BRASFIELD GORRIE` has 3, so it's distinctive.
 - `CLARK` has 112 and `ABC` has 114, so they're generic.
+
+A sub's other names (the legal name and DBA it was entered with, names on its licence) are rated on their own, so a generic DBA can't borrow a distinctive legal name's rarity: a test sub "… Holdings LLC dba Quality Roofing" in Nashville once auto-matched 15 QUALITY ROOFING records in 11 states.
 
 Common names and people's names need a city match to auto-match. A GC's typo is searched by OSHA's spelling in two cases, and the GC is told which spelling was searched:
 - **OSHA's spelling clearly dominates** (`Brasfeild`): ≥10 inspections and ≥10× the GC's spelling. A lower bar "corrected" COLMEX (a real Florida company) to COMEX (an Iowa one).
@@ -183,7 +185,7 @@ Only the misspelt word changes; the GC's other words stay, so trades are still c
 
 ## 4. Verdicts: flags with evidence, not a score
 
-A GC has to be able to defend turning a sub down, so the tool gives **reasons with inspection IDs** rather than a single number ([ssi/scoring/verdict.py](ssi/scoring/verdict.py)). Recent = within 10 years of the data date; W = the project window (the last 3, 5 or 10 years). Both compare dates, not calendar years, so an event from October 2016 is still recent in data dated September 2026.
+A GC has to be able to defend turning a sub down, so the tool gives **reasons with inspection IDs** rather than a single number ([ssi/scoring/verdict.py](ssi/scoring/verdict.py)). Recent = within 10 years of the data date; W = the project window (the last 3, 5 or 10 years). Both compare dates, not calendar years, so an event from October 2016 is still recent in data dated September 2026. A fatality is *cited* when the employer was cited for serious violations on that visit: OSHA often opens the fatality inspection without citations and a second inspection of the same employer, site and day that carries them. Each fatality/catastrophe counts once per visit, with its most serious outcome.
 
 | Verdict | Triggered by |
 |---|---|
@@ -208,7 +210,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 
 **Guards enforced in code, not in the prompt** ([ssi/agent/foreman.py](ssi/agent/foreman.py)):
 1. **Precondition.** A sub with unanswered match questions returns `needs_confirmation` from every tool.
-2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Queries precompute every figure the model might quote (totals, counts with citations), and the prompt says "quote, never compute". The check accepts a date written out ("November 3, 2025" for `2025-11-03`) and the number of rows a tool returned. A failure gets one retry, then a deterministic fallback rendered from the tool results; an empty reply gets one nudge, then the same fallback.
+2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Inspection IDs must match exactly: an invented or truncated `#ID` is rejected, and only IDs a tool returned become chips. Digits in field names and sub IDs don't count as figures. Queries precompute every figure the model might quote (totals, counts with citations), and the prompt says "quote, never compute". The check accepts a date written out ("November 3, 2025" for `2025-11-03`) and the number of rows a tool returned. A failure gets one retry, then a deterministic fallback rendered from the tool results; an empty reply gets one nudge, then the same fallback.
 3. **Citations.** Inspection IDs become chips that open the inspection's record in the app. Each record also links to osha.gov, but **osha.gov numbers inspections differently from the published data** (activity `348557646` in the data is inspection `1395197.015` on the site, and nothing in the data links the two), so a direct link isn't possible. The link is an OSHA search filtered to the employer, site state and opening day, which lists that one inspection. osha.gov also puts a human-verification step in front of it, so the app never relies on it.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
@@ -260,7 +262,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
                                      └──► LLMs on Modal (GLM 5.3 foreman, DeepSeek V4.1 Flash adjudicator) · LangSmith traces
 ```
 
-- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 210 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 23 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
+- **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 210 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 24 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px. The design uses Inter, the green / forest / concrete palette, pill buttons, and the dark pill tab bar for switches. Light by default, with a dark forest theme on a header toggle that's remembered per browser.
 - **Deploy** ([modal_app.py](modal_app.py), prepared but not deployed: the app currently runs locally): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
@@ -274,7 +276,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 231 test cases:
+**Tests:** `uv run pytest`, 242 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -337,7 +339,7 @@ A GC would most likely treat each as one company. Precision is lower on 10-year 
 | The 2026 load restarts injury line numbers per employer, merging different victims (two deaths shown as one) | A person is split out when sex or age (by more than 2 years) differs; a build check fails on any mixed row |
 | Smaller items | Trailing "THE" stripped ("CLARK CONSTRUCTION GROUP LLC THE" was a "different company"); number prefixes stripped only with 5+ digits or a spaced dash ("561-ROOFING" keeps its number); shifted injury columns fixed by pattern, not load year; injury rows pointing at missing inspections quarantined; 2019 injury-filing ids ("447943.00") normalised and the reader made strict; federal storage/materials-handling codes mapped ("other" 0.55% → 0.45%); benchmarks use construction peers only; cited catastrophe investigations without a death flagged (Review) |
 
-Build checks that re-run the logic they check can't catch its mistakes, so the build now also recounts independently: scope from the keys, citations from the raw file, red flags from live citations; it fails on short SIC codes, unflagged fatality/catastrophe investigations, person names rated distinctive and injury rows mixing two people, warns when accident detail is more than 18 months behind, and compares each build's tables with the previous build of the same inputs.
+Build checks that re-run the logic they check can't catch its mistakes, so the build now also recounts independently: scope from the keys, citations from the raw file, red flags from live citations; it fails on short SIC codes, unflagged fatality/catastrophe investigations, a "not cited" fatality on a visit where the employer was cited, person names rated distinctive and injury rows mixing two people, warns when accident detail is more than 18 months behind, and compares each build's tables with the previous build of the same inputs.
 
 **Outlier review.** Everything above reconciles, so a second pass looked for records that are kept correctly but *read* wrongly. It ran queries over the whole warehouse and the real matcher on the companies involved. Each fix has a test and, where the data can regress, a build check:
 
@@ -354,6 +356,16 @@ Build checks that re-run the logic they check can't catch its mistakes, so the b
 | Smaller items | OSHA's own offices as the employer ("USDOL OSHA – Cincinnati Area Office", no inspection) and phrases like `ROOFING CONTRACTOR`, `HOME OWNER` are placeholders; injury ages 1 and 99 are unknown; a future-dated inspection fails the build (it would move every window); the app showed "Shared site: +1 employer" on every inspection (the count included the employer itself) |
 
 Not fixed: 936 federal citations recorded as serious or other-than-serious carry willful/repeat-level initial penalties (above any federal serious maximum), the mark of a willful or repeat citation reclassified in settlement. That's an inference from penalties, so it's documented ([docs/data-profile.md](docs/data-profile.md)) rather than flagged.
+
+**Code review.** A review of the code on top (matching, verdicts, the foreman's guards) found these, each fixed with a test that fails on the old code:
+
+| Found | Fixed |
+|---|---|
+| A cited fatality split across two inspections of one visit read "not cited": the fatality inspection (346032436) had no citations, a second inspection of the same employer, site and day (346062102) had 5 serious. Review, with a false reason, instead of High | Cited means cited on the visit; each fatality/catastrophe counts once per visit, with its most serious outcome (12 statuses corrected, 6 duplicate site flags gone). A build check recounts it from the citations |
+| A DBA borrowed the legal name's distinctiveness: "… Holdings LLC dba Quality Roofing", Nashville, auto-matched 15 QUALITY ROOFING records in 11 states | Each of a sub's names is rated on its own; that sub now gets what plain "Quality Roofing" gets (1 possible, 14 excluded) |
+| `OF <STATE>` siblings were excluded, not "possible": the place word stays in the name core (HOFFMAN OREGON), so S1 never fired. Hoffman Construction, Portland: its OF OREGON records were among 48 excluded | Cores compared without the suffix: Hoffman's Oregon, Washington and California companies and 20 regional Pulte records are possible; a common name only in the same state |
+| Accents were cut out of a GC's names: `Muñoz` cleaned to `MU OZ`, `José Hernández` to a "distinctive" `JOS HERN NDEZ` that skipped the person-name rule | Accents folded in the cleaning macros and in city comparison. OSHA's records have none, so no establishment changes |
+| The foreman's grounding check skipped `#` inspection IDs and made chips by substring: an invented `(#9999999)` passed, a truncated real ID became a chip | IDs checked whole against the IDs the tools returned. Digits in field names (other than a percentile's) and sub IDs no longer count as figures. Replaying the 20 eval answers, it passes and fails the same ones as before |
 
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 

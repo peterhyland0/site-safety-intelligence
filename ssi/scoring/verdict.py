@@ -36,6 +36,25 @@ SITE_KINDS = {
 }
 
 
+# A fatality/catastrophe is one event per visit, however many inspections OSHA opened for it (often a safety and a
+# health inspection, both linked to the accident): the most serious outcome stands for the visit.
+FATALITY_ORDER = ("fatality_cited", "fatcat_cited", "catastrophe_cited", "fatality_pending", "fatcat_site_cited",
+                  "fatality_inspected_not_cited", "fatcat_not_cited", "fatcat_no_inspection")
+
+
+def one_event_per_visit(flags: list, visit: dict[int, str]) -> list:
+    """Keep one fatality/catastrophe flag per visit: the most serious outcome, then the first listed. Willful,
+    repeat and failure-to-abate flags are per citation and all stay."""
+    best: dict[str, object] = {}
+    for f in flags:
+        if f.kind in FATALITY_ORDER:
+            v = visit.get(f.activity_nr) or str(f.activity_nr)
+            if v not in best or FATALITY_ORDER.index(f.kind) < FATALITY_ORDER.index(best[v].kind):
+                best[v] = f
+    keep = {id(f) for f in best.values()}
+    return [f for f in flags if f.kind not in FATALITY_ORDER or id(f) in keep]
+
+
 def years_before(d: date, years: int) -> date:
     try:
         return d.replace(year=d.year - years)

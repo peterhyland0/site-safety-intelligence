@@ -11,7 +11,15 @@ from urllib.parse import quote, urlencode
 from ssi import config
 from ssi.api import schemas as S
 from ssi.matching.trades import NAICS4_LABELS, trade_naics4
-from ssi.scoring.verdict import VERDICT_LABELS, Facts, HazardFact, RedFlagFact, evaluate, years_before
+from ssi.scoring.verdict import (
+    VERDICT_LABELS,
+    Facts,
+    HazardFact,
+    RedFlagFact,
+    evaluate,
+    one_event_per_visit,
+    years_before,
+)
 from ssi.store import pg, warehouse
 
 HAZARD_FALLBACK = {"other": "Other / unmapped"}
@@ -133,7 +141,8 @@ def red_flags(keys: list[str]) -> list[S.RedFlag]:
     rs = warehouse.rows(
         f"""SELECT r.*, i.estab_name_raw AS establishment_name, i.site_state AS insp_state, i.open_date AS insp_open
             FROM mart.red_flag r JOIN osha.inspection i USING (activity_nr)
-            WHERE r.establishment_key IN {_in(keys)} ORDER BY r.event_date DESC NULLS LAST""")
+            WHERE r.establishment_key IN {_in(keys)}
+            ORDER BY r.event_date DESC NULLS LAST, r.activity_nr, r.citation_id NULLS FIRST""")
     return [S.RedFlag(kind=r["kind"], label=RED_FLAG_LABELS.get(r["kind"], r["kind"]),
                       event_date=str(r["event_date"]) if r["event_date"] else None, activity_nr=r["activity_nr"],
                       citation_id=r["citation_id"], standard=r["standard_cite"],
@@ -314,6 +323,13 @@ def compute(sub: dict, project: dict) -> dict:
         for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n"):
             tot["w_" + k] = int(w[k] or 0)
     flags = red_flags(keys)
+    # the visit of each flagged inspection (same site and day): a safety and a health inspection of one visit are
+    # one visit, for repeat patterns and for fatality/catastrophe events
+    flagged = {f.activity_nr for f in flags}
+    visit = {r["activity_nr"]: r["visit_id"] for r in warehouse.rows(
+        f"SELECT activity_nr, visit_id FROM osha.inspection WHERE activity_nr IN ({','.join(map(str, flagged))})")
+    } if flagged else {}
+    flags = one_event_per_visit(flags, visit)
     hz = hazards(keys, window)
     open_serious = [i.activity_nr for i in inspections(keys, limit=50, provisional_only=True) if i.serious_plus > 0]
     n4 = primary_trade(keys, sub.get("trade"))
@@ -331,10 +347,6 @@ def compute(sub: dict, project: dict) -> dict:
             h.insp_window = int(vmap[h.hazard_code]["n_window"]) if h.hazard_code in vmap else 0
             if h.hazard_code != "other" and (h.insp_all >= 3 or h.insp_window >= 2):
                 h.evidence = hazard_evidence(keys, h.hazard_code)
-    repeats = [f.activity_nr for f in flags if f.kind == "repeat"]
-    visit = {r["activity_nr"]: r["visit_id"] for r in warehouse.rows(
-        f"SELECT activity_nr, visit_id FROM osha.inspection WHERE activity_nr IN ({','.join(map(str, set(repeats)))})")
-    } if repeats else {}
     rates = injury_rates(keys, n4)
     lics = licences(keys)
     # deaths the company reported on its 300A summaries, in years with no OSHA fatality investigation (±1 year)

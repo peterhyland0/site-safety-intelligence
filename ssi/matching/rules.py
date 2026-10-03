@@ -5,6 +5,7 @@ a wrong split costs a little review, a wrong merge attaches someone else's histo
 """
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 
 import jellyfish
@@ -35,6 +36,9 @@ class Query:
     initials_only: bool
     sibling: str | None
     aliases: set[str] = field(default_factory=set)
+    # the sub's other names (legal name, DBA, licence names), each described on its own: a record that matches
+    # only one of them is judged by that name's distinctiveness
+    alias_queries: dict[str, Query] = field(default_factory=dict)
 
 
 @dataclass
@@ -66,8 +70,10 @@ _CITY_ABBREV = (("SAINT ", "ST "), ("MOUNT ", "MT "), ("FORT ", "FT "), ("SAINTE
 
 
 def norm_city(city: str | None) -> str:
-    """LaFollette = LA FOLLETTE, St. Louis = Saint Louis: compare cities without spaces or punctuation."""
-    c = " " + (city or "").upper().strip() + " "
+    """LaFollette = LA FOLLETTE, St. Louis = Saint Louis, San José = SAN JOSE: compare cities without spaces,
+    punctuation or accents."""
+    folded = "".join(ch for ch in unicodedata.normalize("NFKD", city or "") if not unicodedata.combining(ch))
+    c = " " + folded.upper().strip() + " "
     for long, short in _CITY_ABBREV:
         c = c.replace(" " + long, " " + short)
     return "".join(ch for ch in c if ch.isalnum())
@@ -134,7 +140,21 @@ def only_descriptor_difference(a: str, b: str, descriptors: frozenset[str] | Non
     return all(t in d for t in diff)
 
 
+def without_suffix(core: str, suffix: str | None, generic: frozenset[str]) -> str:
+    """The core without its sibling suffix's place or project words (HOFFMAN OREGON + " OF OREGON" -> HOFFMAN):
+    OF and AT are generic, but the place word stays in the core."""
+    words = [t for t in tokens(suffix) if t not in generic]
+    ct = tokens(core)
+    if words and len(ct) > len(words) and ct[-len(words):] == words:
+        return " ".join(ct[:-len(words)])
+    return core
+
+
 def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozenset[str] | None = None) -> Decision:
+    if c.clean_name != q.clean and c.clean_name in q.aliases and c.clean_name in q.alias_queries:
+        # the record carries one of the sub's other names: judge it as that name. "QORVANEX HOLDINGS DBA QUALITY
+        # ROOFING" is distinctive, but a record named QUALITY ROOFING in another state is another company
+        q = q.alias_queries[c.clean_name]
     same_full = c.clean_name == q.clean or c.clean_name in q.aliases or q.clean in {c.legal_name, c.dba_name}
     core_equal = bool(q.core) and c.name_core == q.core
     same_state = bool(q.state) and c.state == q.state
@@ -144,9 +164,14 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     descriptor_diff = core_equal and only_descriptor_difference(c.clean_name, q.clean, descriptors)
     conflict = trade_conflict(q.trade, c.primary_naics4)
 
-    # S1: "… OF OREGON" vs "… OF AMERICA", "… AT ELAN" vs "… AT MERIDIAN": usually sibling companies
-    if (q.sibling or c.sibling_suffix) and q.sibling != c.sibling_suffix and (core_equal or same_full or typo_equal(q.core, c.name_core)):
-        return Decision(UNCERTAIN, "S1", "Names differ only by a location/project suffix, which usually means a sibling company")
+    # S1: "… OF OREGON" vs "… OF AMERICA", "… AT ELAN" vs "… AT MERIDIAN": usually sibling companies. The cores
+    # are compared without the suffix (HOFFMAN, not HOFFMAN OREGON); a common name or a person's only in the
+    # same state, as with the same name in another state (X4, X5)
+    if (q.sibling or c.sibling_suffix) and q.sibling != c.sibling_suffix:
+        qb, cb = without_suffix(q.core, q.sibling, generic), without_suffix(c.name_core, c.sibling_suffix, generic)
+        if core_equal or same_full or typo_equal(q.core, c.name_core) or (
+                typo_equal(qb, cb) and (q.tier in ("distinctive", "medium") or same_state)):
+            return Decision(UNCERTAIN, "S1", "Names differ only by a location/project suffix, which usually means a sibling company")
 
     # S2: the sub's full name plus a branch/division suffix: likely the same company, never "different"
     rest = next((c.clean_name[len(a):].split() for a in {q.clean, *q.aliases}

@@ -68,6 +68,14 @@ SELECT * FROM (VALUES
         JOIN wh.osha.inspection i USING (activity_nr)
       WHERE a.death_in_narrative AND i.fatality_status NOT IN ('fatality_cited', 'fatality_inspected_not_cited',
                                                                'fatality_pending', 'fatcat_no_inspection'))::DOUBLE),
+  -- "not cited" can't stand on a visit where the same employer was cited for serious violations (recounted from
+  -- the citations: the fatality inspection and the cited one are often two inspections of one visit)
+  ('fatality_not_cited_on_cited_visit', 'error', 0,
+     (SELECT count(*) FROM wh.osha.inspection i
+      WHERE i.fatality_status IN ('fatality_inspected_not_cited', 'fatcat_not_cited', 'fatcat_no_inspection')
+        AND EXISTS (SELECT 1 FROM wh.osha.inspection s JOIN wh.osha.violation v ON v.activity_nr = s.activity_nr
+                    WHERE s.establishment_key = i.establishment_key AND s.visit_id = i.visit_id
+                      AND NOT v.is_deleted AND v.is_serious_plus))::DOUBLE),
   -- deaths known only from the narrative (the employee died later); a jump means a new pattern to read
   ('deaths_only_in_narrative', 'warn', 10,
      (SELECT count(*) FROM wh.osha.accident WHERE list_contains(dq_flags, 'death_only_in_narrative'))::DOUBLE),

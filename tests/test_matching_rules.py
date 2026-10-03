@@ -77,7 +77,44 @@ def test_initials_names():
 def test_sibling_suffix_uncertain():
     h = q("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "HOFFMAN AMERICA", state="OR", sibling=" OF AMERICA")
     d = decide(h, c("HOFFMAN CONSTRUCTION COMPANY OF OREGON", "HOFFMAN OREGON", state="OR", sibling=" OF OREGON"), GENERIC)
-    assert d.bucket != MATCHED
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S1")
+
+
+def test_sibling_suffix_against_the_plain_name_is_uncertain_not_excluded():
+    # the place word stays in the core (HOFFMAN OREGON), so the cores are compared without it; this was X1
+    hoffman = q("HOFFMAN CONSTRUCTION", "HOFFMAN", state="OR", tier="medium", city="PORTLAND")
+    d = decide(hoffman, c("HOFFMAN CONSTRUCTION CO OF OREGON", "HOFFMAN OREGON", state="OR", city="PORTLAND",
+                          sibling=" OF OREGON"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S1")
+    pulte = q("PULTE HOMES", "PULTE", state="GA", tier="medium", city="ATLANTA")
+    d = decide(pulte, c("PULTE HOMES OF MINNESOTA", "PULTE MINNESOTA", state="MN", sibling=" OF MINNESOTA"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S1")
+    # another name with the same suffix is still another company
+    d = decide(hoffman, c("SMITH CONSTRUCTION OF OREGON", "SMITH OREGON", state="OR", sibling=" OF OREGON"), GENERIC)
+    assert (d.bucket, d.rule_id) == (EXCLUDED, "X1")
+    # a common name with a place suffix in another state is another company, as the plain name would be
+    abc = q("ABC ROOFING", "ABC", state="TX", tier="generic", city="DALLAS")
+    d = decide(abc, c("ABC ROOFING OF OKLAHOMA", "ABC OKLAHOMA", state="OK", sibling=" OF OKLAHOMA"), GENERIC)
+    assert d.bucket == EXCLUDED
+    d = decide(abc, c("ABC ROOFING OF TEXAS", "ABC TEXAS", state="TX", city="HOUSTON", sibling=" OF TEXAS"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S1")
+
+
+def test_a_generic_dba_is_judged_as_its_own_name():
+    # "Qorvanex Holdings LLC dba Quality Roofing": the legal name is distinctive, the DBA isn't. A record named only
+    # QUALITY ROOFING used to borrow the legal name's rarity and auto-match in 11 states
+    full = q("QORVANEX HOLDINGS DBA QUALITY ROOFING", "QORVANEX", state="TN", city="NASHVILLE")
+    full.aliases = {full.clean, "QORVANEX HOLDINGS", "QUALITY ROOFING"}
+    full.alias_queries = {"QORVANEX HOLDINGS": q("QORVANEX HOLDINGS", "QORVANEX", state="TN", city="NASHVILLE"),
+                          "QUALITY ROOFING": q("QUALITY ROOFING", "", state="TN", tier="generic", city="NASHVILLE")}
+    d = decide(full, c("QUALITY ROOFING", "", state="CO", city="GREELEY"), GENERIC)
+    assert (d.bucket, d.rule_id) == (EXCLUDED, "X4")
+    d = decide(full, c("QUALITY ROOFING", "", state="TN", city="NASHVILLE"), GENERIC)
+    assert (d.bucket, d.rule_id) == (MATCHED, "M1")
+    assert decide(full, c("QUALITY ROOFING", "", state="TN", city="KNOXVILLE"), GENERIC).bucket == UNCERTAIN
+    # the legal name is still distinctive, in any state
+    d = decide(full, c("QORVANEX HOLDINGS", "QORVANEX", state="GA"), GENERIC)
+    assert (d.bucket, d.rule_id) == (MATCHED, "M3")
 
 
 def test_trade_conflict_demotes():
@@ -106,6 +143,8 @@ def test_city_spelling_variants_match():
     assert norm_city("LaFollette") == norm_city("LA FOLLETTE")
     assert norm_city("St. Louis") == norm_city("SAINT LOUIS")
     assert norm_city("Fort Worth") == norm_city("FT WORTH")
+    assert norm_city("San José") == norm_city("SAN JOSE")
+    assert norm_city("Peñasco") == norm_city("PENASCO")
     d = q("DIXIE ROOFING", "DIXIE", state="TN", tier="medium", city="LaFollette")
     assert decide(d, c("DIXIE ROOFING", "DIXIE", state="TN", city="LA FOLLETTE"), GENERIC).bucket == MATCHED
 

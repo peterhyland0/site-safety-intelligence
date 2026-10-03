@@ -16,7 +16,8 @@
 --   fatcat_not_cited             the same, case closed, no serious+ citations for this employer
 --   fatcat_site_cited            another employer's inspection on the same site and day as an undetailed
 --                                fatality/catastrophe inspection, with serious+ citations for this employer
---                                (before accident detail lagged, the accident link carried this)
+--                                (before accident detail lagged, the accident link carried this); not when
+--                                this employer has its own fatality/catastrophe inspection of the visit
 --   catastrophe_cited            fatality/catastrophe inspection whose published detail shows no death
 --                                (serious injuries), with serious+ citations for this employer
 --   accident_outcome_unknown     accident-type inspection (A) without published accident detail
@@ -24,6 +25,8 @@
 -- OSHA's accident detail lags (it ends 2025-03-28 in the 2026-10 load), so recent investigations land
 -- in fatality_pending / fatcat_* rather than going unflagged.
 -- A death reported only in the narrative (the employee died later in hospital) counts as a fatal accident.
+-- "Cited" means cited on that visit: OSHA often opens the fatality/catastrophe inspection without citations and
+-- a second inspection of the same employer, same site and day, that carries them (346032436 / 346062102).
 CREATE OR REPLACE TABLE insp_accident AS
 SELECT l.activity_nr,
        count(*) AS accident_n,
@@ -40,6 +43,15 @@ SELECT activity_nr,
        sum(penalty_initial) FILTER (WHERE NOT is_deleted) AS penalty_initial,
        sum(penalty_current) FILTER (WHERE NOT is_deleted) AS penalty_current
 FROM wh.osha.violation GROUP BY 1;
+
+-- each employer's serious+ citations across a visit (same site and day), and whether the visit has its own
+-- fatality/catastrophe inspection (then that inspection carries the event, not a site-cited flag)
+CREATE OR REPLACE TABLE visit_citations AS
+SELECT i.establishment_key, coalesce(i.site_group_id, i.activity_nr::VARCHAR) AS visit_id,
+       sum(coalesce(c.serious_plus_n, 0)) AS serious_plus_n,
+       bool_or(coalesce(i.insp_type, '') = 'M') AS has_fatcat_inspection
+FROM stg_inspection i LEFT JOIN insp_citations c USING (activity_nr)
+GROUP BY 1, 2;
 
 -- citations can still be issued for inspections opened within the last 7 months (6-month limit + load lag)
 CREATE OR REPLACE TABLE citation_deadline AS
@@ -67,19 +79,20 @@ SELECT i.*,
                       OR (coalesce(c.citation_n, 0) = 0 AND i.open_date >= d.can_still_cite_since)) AS is_provisional,
        coalesce(a.accident_n, 0) AS accident_n,
        CASE
-         WHEN coalesce(a.has_fatal_accident, false) AND coalesce(c.serious_plus_n, 0) > 0 THEN 'fatality_cited'
+         WHEN coalesce(a.has_fatal_accident, false) AND coalesce(v.serious_plus_n, 0) > 0 THEN 'fatality_cited'
          WHEN (coalesce(a.has_fatal_accident, false) OR i.insp_type = 'M') AND i.no_inspection
-              AND coalesce(c.serious_plus_n, 0) = 0 THEN 'fatcat_no_inspection'
+              AND coalesce(v.serious_plus_n, 0) = 0 THEN 'fatcat_no_inspection'
          WHEN coalesce(a.has_fatal_accident, false) AND i.is_open AND coalesce(c.citation_n, 0) = 0
               AND i.open_date >= d.can_still_cite_since THEN 'fatality_pending'
          WHEN coalesce(a.has_fatal_accident, false) THEN 'fatality_inspected_not_cited'
-         WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND coalesce(c.serious_plus_n, 0) > 0 THEN 'fatcat_cited'
-         WHEN i.insp_type = 'M' AND a.activity_nr IS NOT NULL AND coalesce(c.serious_plus_n, 0) > 0 THEN 'catastrophe_cited'
+         WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND coalesce(v.serious_plus_n, 0) > 0 THEN 'fatcat_cited'
+         WHEN i.insp_type = 'M' AND a.activity_nr IS NOT NULL AND coalesce(v.serious_plus_n, 0) > 0 THEN 'catastrophe_cited'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND i.is_open
               AND i.open_date >= d.can_still_cite_since THEN 'fatality_pending'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL THEN 'fatcat_not_cited'
          WHEN coalesce(i.insp_type, '') <> 'M' AND a.activity_nr IS NULL AND coalesce(c.serious_plus_n, 0) > 0
-              AND i.site_group_id IN (SELECT site_group_id FROM site_fatcat) THEN 'fatcat_site_cited'
+              AND i.site_group_id IN (SELECT site_group_id FROM site_fatcat)
+              AND NOT coalesce(v.has_fatcat_inspection, false) THEN 'fatcat_site_cited'
          WHEN i.insp_type = 'A' AND a.activity_nr IS NULL THEN 'accident_outcome_unknown'
          ELSE 'none'
        END AS fatality_status
@@ -87,4 +100,6 @@ FROM stg_inspection i
 CROSS JOIN citation_deadline d
 LEFT JOIN site_groups g USING (site_group_id)
 LEFT JOIN insp_citations c USING (activity_nr)
-LEFT JOIN insp_accident a USING (activity_nr);
+LEFT JOIN insp_accident a USING (activity_nr)
+LEFT JOIN visit_citations v ON v.establishment_key = i.establishment_key
+                           AND v.visit_id = coalesce(i.site_group_id, i.activity_nr::VARCHAR);
