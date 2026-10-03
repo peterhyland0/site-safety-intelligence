@@ -4,13 +4,12 @@ never decided by machine, in either direction. It becomes a yes/no question to t
 lean as a suggestion) and is not counted until answered; past a few, questions are grouped by name."""
 from __future__ import annotations
 
-import json
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 from ssi import config
 from ssi.matching import candidates as C
-from ssi.store import pg, warehouse
+from ssi.store import pg
 
 # llm(packet) -> {"decision": same|different|unsure, "confidence": float, "rationale": str} or None
 LLMFn = Callable[[dict], dict | None]
@@ -50,8 +49,8 @@ def question_text(sub: dict, ev_rows: list[dict]) -> str:
                 f"{facility} Is this the same company as your sub '{sub['entered_name']}'?")
     where = "; ".join(p or "no address" for p in places[:5]) + (f" and {len(places) - 5} more places" if len(places) > 5 else "")
     return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' in {where} that include serious red flags."
-            f"{facility} Are these the same company as your sub '{sub['entered_name']}'? If only some are, mark those "
-            f"individually under Matches instead.")
+            f"{facility} Are these the same company as your sub '{sub['entered_name']}'? If only some are, answer each "
+            f"record below.")
 
 
 RedCluster = tuple[list[dict], dict | None, str | None, int]  # rows, AI decision, rationale, red-flag count
@@ -61,8 +60,9 @@ def questions_for(sub: dict, red: list[RedCluster]) -> list[tuple[str, list[str]
     """Every red-flagged uncertain cluster reaches the GC. Up to QUESTION_GROUP_THRESHOLD clusters get a
     question each; past that, one question per OSHA name (all its states), so none is dropped.
     Returns (text, establishment keys, AI suggestion, AI rationale), most red flags first."""
-    if len(red) <= config.QUESTION_GROUP_THRESHOLD:
-        groups = [[c] for c in red]
+    person = any(((r["evidence"] or {}).get("query") or {}).get("tier") == "person" for c in red for r in c[0])
+    if person or len(red) <= config.QUESTION_GROUP_THRESHOLD:
+        groups = [[c] for c in red]  # a person's name is never grouped: each record is likely a different person
     else:
         by_name: dict[str | None, list[RedCluster]] = defaultdict(list)
         for c in red:
@@ -123,7 +123,11 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
                          WHERE sub_id = %s AND establishment_key = ANY(%s)""",
                       [bucket, method, conf, rationale, _ai_label() if method.startswith("llm") else "rules",
                        sub_id, keys])
+        open_keys = {k for r in c.execute("SELECT establishment_keys FROM app.match_question WHERE sub_id = %s AND answer IS NULL",
+                                          [sub_id]).fetchall() for k in r["establishment_keys"]}
         for text, keys, suggestion, rationale in questions:
+            if set(keys) <= open_keys:
+                continue  # already waiting for the GC
             c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
                          VALUES (%s, %s, %s, %s, %s)""", [sub_id, keys, text, suggestion, rationale])
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])

@@ -157,8 +157,9 @@ export function SubDetailPage() {
                 key={q.question_id}
                 question={q}
                 establishments={[...d.possible, ...d.matched, ...d.excluded]}
-                busy={busyQuestion === q.question_id}
+                busy={busyQuestion === q.question_id || busyEst !== null}
                 onAnswer={(a) => answer(q.question_id, a)}
+                onRecord={(key, bucket) => void move(key, bucket)}
               />
             ))}
           </ul>

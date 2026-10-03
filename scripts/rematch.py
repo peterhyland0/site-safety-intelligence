@@ -56,6 +56,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--project", help="project name (default: every project)")
     ap.add_argument("--apply", action="store_true", help="write the new decisions (default: dry run)")
+    ap.add_argument("--retry-ai-rejections", action="store_true",
+                    help="also re-check records whose AI answer was rejected (after a fix to the answer checks)")
     a = ap.parse_args()
     warehouse.open_warehouse()
     with pg.conn() as c:
@@ -71,14 +73,25 @@ def main() -> None:
         print(f"\n== {p['name']} ({len(subs)} subs){'' if a.apply else '  [dry run]'}")
         for s in subs:
             changes = plan(s, p["state"])
-            if not changes:
+            retry = 0
+            if a.retry_ai_rejections:
+                with pg.conn() as c:
+                    retry = c.execute("SELECT count(*) AS n FROM app.sub_match WHERE sub_id = %s AND method = 'llm_rejected'",
+                                      [s["sub_id"]]).fetchone()["n"]
+            if not changes and not retry:
                 continue
             print(f"  {s['entered_name']}")
             for ch in changes:
                 flag = f"  [{ch['red_flags']} red flags]" if ch["red_flags"] else ""
                 print(f"    {ch['name'][:48]:48s} {ch['place'][:24]:24s} {ch['old']:>16s} -> {ch['new']}{flag}")
+            if retry:
+                print(f"    {retry} record(s) whose AI answer was rejected will be re-checked")
             if a.apply:
                 match_and_persist(s, p["state"])
+                if retry:
+                    with pg.conn() as c:
+                        c.execute("UPDATE app.sub_match SET needs_adjudication = true WHERE sub_id = %s AND method = 'llm_rejected'",
+                                  [s["sub_id"]])
                 stats = ADJ.adjudicate(s, llm=llm, packet_fn=ADJ.evidence_packet)
                 print(f"    applied; adjudicated {stats['clusters']} uncertain group(s), {stats['questions']} new GC question(s)")
 

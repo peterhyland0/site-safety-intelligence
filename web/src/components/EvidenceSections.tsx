@@ -14,27 +14,56 @@ export function QuestionCard({
   question,
   establishments,
   onAnswer,
+  onRecord,
   busy,
 }: {
   question: MatchQuestion;
   establishments: MatchedEstablishment[];
   onAnswer: (answer: "yes" | "no") => void;
+  /** a grouped question can be answered record by record (the record then leaves the question) */
+  onRecord?: (establishmentKey: string, bucket: "matched" | "excluded") => void;
   busy: boolean;
 }) {
   const ests = establishments.filter((e) => question.establishment_keys.includes(e.establishment_key));
+  const grouped = ests.length > 1;
   return (
     <li className="rounded-xl border-2 border-accent/40 bg-accent-soft p-4">
       <p className="text-[17px] leading-snug font-semibold text-ink">{question.text}</p>
       {ests.length ? (
         <ul className="mt-2 space-y-1 text-sm text-ink-2">
           {ests.map((e) => (
-            <li key={e.establishment_key}>
-              {e.display_name}
-              {e.address ? ` · ${[e.address, e.city, e.state].filter(Boolean).join(", ")}` : ""}
-              {` · ${plural(e.inspections, "inspection")}`}
-              {e.has_red_flags ? (
-                <span className="ml-1 inline-flex items-center gap-1 font-medium text-high-fg">
-                  <IconFlag size={13} /> carries red flags
+            <li
+              key={e.establishment_key}
+              className={grouped ? "flex flex-wrap items-center justify-between gap-2 py-1" : undefined}
+            >
+              <span>
+                {e.display_name}
+                {e.address ? ` · ${[e.address, e.city, e.state].filter(Boolean).join(", ")}` : ""}
+                {` · ${plural(e.inspections, "inspection")}`}
+                {e.has_red_flags ? (
+                  <span className="ml-1 inline-flex items-center gap-1 font-medium text-high-fg">
+                    <IconFlag size={13} /> carries red flags
+                  </span>
+                ) : null}
+              </span>
+              {grouped && onRecord ? (
+                <span className="flex gap-1.5" role="group" aria-label={`Is the record in ${e.city ?? "this place"} your sub?`}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    disabled={busy}
+                    onClick={() => onRecord(e.establishment_key, "matched")}
+                  >
+                    Mine
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={busy}
+                    onClick={() => onRecord(e.establishment_key, "excluded")}
+                  >
+                    Not mine
+                  </button>
                 </span>
               ) : null}
             </li>
@@ -58,7 +87,7 @@ export function QuestionCard({
           onClick={() => onAnswer("yes")}
           disabled={busy}
         >
-          Yes, same company
+          {grouped ? "All of these are my sub" : "Yes, same company"}
         </button>
         <button
           type="button"
@@ -66,7 +95,7 @@ export function QuestionCard({
           onClick={() => onAnswer("no")}
           disabled={busy}
         >
-          No, different
+          {grouped ? "None of these" : "No, different"}
         </button>
       </div>
     </li>

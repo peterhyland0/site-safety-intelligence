@@ -51,7 +51,7 @@ def test_many_red_flag_clusters_are_grouped_by_name_not_dropped():
     assert len(qs) == 2  # one per OSHA name
     assert sorted(k for q in qs for k in q[1]) == ["q0", "q1", "q2", "s1", "s2"]  # nothing dropped
     assert qs[0][1] == ["s1", "s2"]  # most red flags first
-    assert "ATLANTA, GA; MACON, GA" in qs[0][0] and "mark those individually under Matches" in qs[0][0]
+    assert "ATLANTA, GA; MACON, GA" in qs[0][0] and "answer each record below" in qs[0][0]
     assert qs[1][2] is None  # the AI leaned both ways across the group: no single suggestion
 
 
@@ -62,3 +62,27 @@ def test_question_says_when_a_facility_isnt_coded_as_construction():
                                                      "related_only": True, "naics4": "3273"}}]
     text = question_text({"entered_name": "Tindall Corporation"}, rows)
     assert "isn't coded as construction (industry code 3273)" in text and "Tindall Corporation" in text
+
+
+def test_ordinary_capitalised_words_and_spelled_out_states_are_not_invented_places():
+    tn = {"lines": [{"id": "E1", "text": "GC's sub: name 'Jake Marshall LLC', city 'heuston', state 'TN'"},
+                    {"id": "E2", "text": "Candidate OSHA record: 'JAKE MARSHALL SERVICE' at 1 MAIN ST, NASHVILLE TN 37201"}]}
+    for rationale in ["Although the names match, the cities differ.",            # sentence-initial word
+                      "Thin evidence: only the name matches.",                    # sentence-initial word
+                      "Both records are in Tennessee, but in different cities.",  # spelled-out state = TN
+                      "The sub is in Houston per the GC, the record in Nashville."]:  # GC typed 'heuston'
+        assert validate({"decision": "unsure", "confidence": 0.5, "evidence_ids": ["E1", "E2"], "rationale": rationale}, tn)[0], rationale
+    # still strict about places that appear nowhere
+    assert not validate({"decision": "same", "confidence": 0.9, "evidence_ids": ["E2"],
+                         "rationale": "Both offices are in Memphis."}, tn)[0]
+
+
+def test_peoples_names_are_never_grouped():
+    from ssi.matching.adjudicate import questions_for
+    red = []
+    for i, city in enumerate(["KATY", "CANUTILLO", "EL PASO", "SAN ANTONIO"]):
+        rows, d, r, f = _cluster("JOEL HERNANDEZ", city, "TX", f"k{i}")
+        rows[0]["evidence"]["query"] = {"tier": "person"}
+        red.append((rows, d, r, f))
+    qs = questions_for({"entered_name": "Jose Hernandez"}, red)
+    assert len(qs) == 4 and all(len(q[1]) == 1 for q in qs)  # one question per record, past the threshold too

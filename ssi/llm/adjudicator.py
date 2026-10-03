@@ -11,6 +11,7 @@ import json
 import re
 
 from ssi.llm import client as llm
+from ssi.matching.rules import near_spelling
 from ssi.store import pg
 
 SYSTEM = """You decide whether OSHA inspection records belong to the same company as a general contractor's \
@@ -71,13 +72,43 @@ def validate(result: dict | None, packet: dict) -> tuple[bool, str]:
     for num in re.findall(r"\d[\d,.]*", rationale):
         if num.strip(".,").replace(",", "") not in text.replace(",", ""):
             return False, f"mentions {num}, which is not in the evidence"
-    for word in re.findall(r"\b[A-Z][A-Za-z]{2,}\b", rationale):
-        w = word.upper()
+    evidence_words = set(re.findall(r"[A-Z]{3,}", text))
+    checked = _states_to_codes(rationale)  # "Tennessee" is the evidence's "TN"
+    for m in re.finditer(r"\b[A-Z][A-Za-z]{2,}\b", checked):
+        word, w = m.group(), m.group().upper()
         if w in COMMON_WORDS or w.startswith("E") and w[1:].isdigit():
             continue
-        if w not in text:
-            return False, f"mentions '{word}', which is not in the evidence"
+        if _starts_sentence(checked, m.start()):  # "Although", "Thin", "Given": capitalised, not a name
+            continue
+        if w in text or any(near_spelling(w, e) for e in evidence_words):  # "Houston" for the GC's "heuston"
+            continue
+        return False, f"mentions '{word}', which is not in the evidence"
     return True, "ok"
+
+
+US_STATES = {
+    "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR", "CALIFORNIA": "CA", "COLORADO": "CO",
+    "CONNECTICUT": "CT", "DELAWARE": "DE", "FLORIDA": "FL", "GEORGIA": "GA", "HAWAII": "HI", "IDAHO": "ID",
+    "ILLINOIS": "IL", "INDIANA": "IN", "IOWA": "IA", "KANSAS": "KS", "KENTUCKY": "KY", "LOUISIANA": "LA", "MAINE": "ME",
+    "MARYLAND": "MD", "MASSACHUSETTS": "MA", "MICHIGAN": "MI", "MINNESOTA": "MN", "MISSISSIPPI": "MS", "MISSOURI": "MO",
+    "MONTANA": "MT", "NEBRASKA": "NE", "NEVADA": "NV", "NEW HAMPSHIRE": "NH", "NEW JERSEY": "NJ", "NEW MEXICO": "NM",
+    "NEW YORK": "NY", "NORTH CAROLINA": "NC", "NORTH DAKOTA": "ND", "OHIO": "OH", "OKLAHOMA": "OK", "OREGON": "OR",
+    "PENNSYLVANIA": "PA", "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC", "SOUTH DAKOTA": "SD", "TENNESSEE": "TN",
+    "TEXAS": "TX", "UTAH": "UT", "VERMONT": "VT", "VIRGINIA": "VA", "WASHINGTON": "WA", "WEST VIRGINIA": "WV",
+    "WISCONSIN": "WI", "WYOMING": "WY", "DISTRICT OF COLUMBIA": "DC",
+}
+
+
+def _states_to_codes(s: str) -> str:
+    """Write state names as the 2-letter codes the evidence uses (codes are too short to be checked)."""
+    for name in sorted(US_STATES, key=len, reverse=True):
+        s = re.sub(rf"\b{name}\b", US_STATES[name], s, flags=re.IGNORECASE)
+    return s
+
+
+def _starts_sentence(s: str, i: int) -> bool:
+    before = s[:i].rstrip()
+    return not before or before[-1] in ".!?:;(\"'\u2014-"
 
 
 COMMON_WORDS = {
@@ -85,7 +116,7 @@ COMMON_WORDS = {
     "NAMES", "ADDRESS", "ADDRESSES", "STATE", "CITY", "TRADE", "CODE", "YEARS", "YEAR", "SUB", "SUBCONTRACTOR", "GC",
     "BOTH", "THIS", "THESE", "THAT", "THEY", "NO", "NOT", "LIKELY", "SIMILAR", "MATCHED", "MATCH", "SHARED", "SHARE",
     "OVERLAPPING", "OVERLAP", "ALREADY", "SPELLING", "VARIANT", "LEGAL", "SUFFIX", "SIBLING", "EVIDENCE", "WITH", "BUT",
-    "AND", "THE", "ONE", "TWO", "ACTIVE", "ONLY", "ALSO", "COMMON", "GENERIC", "LOCATION", "PROJECT", "INC", "LLC",
+    "AND", "ONE", "TWO", "ACTIVE", "ONLY", "ALSO", "COMMON", "GENERIC", "LOCATION", "PROJECT", "INC", "LLC",
 }
 
 
@@ -97,16 +128,26 @@ def decide(packet: dict) -> dict | None:
     key = hashlib.sha256((provider.model + "|" + json.dumps(packet["lines"], sort_keys=True)).encode()).hexdigest()
     with pg.conn() as c:
         hit = c.execute("SELECT response FROM app.adjudication_cache WHERE packet_hash = %s", [key]).fetchone()
+    # The cache keeps the model's raw answer and the checks run on every read, so a fix to validate()
+    # applies to cached answers without new model calls. (Older entries stored only a rejection: ask again.)
     if hit:
-        return hit["response"]
+        resp = hit["response"] or {}
+        if "raw" in resp:
+            return _checked(resp["raw"], packet)
+        if not resp.get("rejected"):
+            return _checked(resp, packet)
     user = (f"Sub: {packet['sub']}\n\nEvidence:\n{packet_text(packet)}\n\n"
             "Are the candidate records the same company as the sub?")
     result, usage = provider.structured(SYSTEM, user, SCHEMA, max_tokens=1024)
     llm.record_usage(usage.input_tokens, usage.output_tokens)
-    ok, why = validate(result, packet)
-    out = result if ok else {"rejected": True, "decision": "unsure", "confidence": 0.0,
-                             "rationale": f"AI answer rejected by validation ({why})", "evidence_ids": []}
     with pg.conn() as c:
-        c.execute("INSERT INTO app.adjudication_cache (packet_hash, model, response) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                  [key, provider.model, json.dumps(out)])
-    return out
+        c.execute("""INSERT INTO app.adjudication_cache (packet_hash, model, response) VALUES (%s, %s, %s)
+                     ON CONFLICT (packet_hash) DO UPDATE SET response = EXCLUDED.response""",
+                  [key, provider.model, json.dumps({"raw": result})])
+    return _checked(result, packet)
+
+
+def _checked(result: dict | None, packet: dict) -> dict:
+    ok, why = validate(result, packet)
+    return result if ok else {"rejected": True, "decision": "unsure", "confidence": 0.0,
+                              "rationale": f"AI answer rejected by validation ({why})", "evidence_ids": []}

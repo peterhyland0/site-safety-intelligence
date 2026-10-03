@@ -5,16 +5,23 @@ import { IconChevronDown, IconFlag } from "./Icons";
 
 const METHOD_LABEL: Record<Method, string> = {
   rule: "Rule",
-  llm: "AI",
-  gc: "GC",
-  llm_rejected: "AI (rejected)",
+  llm: "AI review",
+  gc: "Your decision",
+  llm_rejected: "Undecided",
+};
+
+// The GC's own decision is shown in plain words; the AI's old confidence and rule codes don't apply to it.
+const GC_DECISION: Record<Bucket, string> = {
+  matched: "You confirmed this record is your sub.",
+  possible: "You left this record as possible.",
+  excluded: "You marked this record as a different company.",
 };
 
 const METHOD_HINT: Record<Method, string> = {
   rule: "Decided by a deterministic matching rule",
   llm: "Decided by the AI adjudicator from identity evidence only (it never sees safety history)",
-  gc: "Decided by the GC",
-  llm_rejected: "The AI's answer failed validation, so the rules' default applies",
+  gc: "Decided by you (the GC). Your decision always wins, including after data refreshes",
+  llm_rejected: "The AI's answer failed its checks, so the record stays possible until someone decides",
 };
 
 const BUCKET_LABEL: Record<Bucket, string> = {
@@ -74,11 +81,15 @@ export function EstablishmentItem({
           title={METHOD_HINT[est.method]}
         >
           {METHOD_LABEL[est.method]}
-          {est.confidence != null ? ` · ${Math.round(est.confidence * 100)}%` : ""}
+          {est.method === "llm" && est.confidence != null ? ` · ${Math.round(est.confidence * 100)}%` : ""}
         </span>
         <span className="sr-only">{METHOD_HINT[est.method]}. </span>
-        {est.rationale ?? "No rationale recorded."}
-        {est.rule_id ? <span className="ml-1 font-mono text-xs text-muted">{est.rule_id}</span> : null}
+        {est.method === "gc" ? GC_DECISION[est.bucket] : (est.rationale ?? "No rationale recorded.")}
+        {est.method === "rule" && est.rule_id ? (
+          <span className="ml-1 font-mono text-xs text-muted" title="Matching rule (see Method)">
+            {est.rule_id}
+          </span>
+        ) : null}
       </p>
       {onMove ? (
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
