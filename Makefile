@@ -1,5 +1,5 @@
 # Site Safety Intelligence — common tasks
-.PHONY: setup download build dev api web test eval seed-demo deploy refresh
+.PHONY: setup download build dev api web test eval seed-demo add-user deploy refresh
 
 setup:            ## Python env, local Postgres databases, web deps
 	uv sync
@@ -31,6 +31,9 @@ eval:             ## Matching + foreman evals (foreman eval spends API credit)
 
 seed-demo:        ## Create the demo project through the real API
 	uv run python -m scripts.seed_demo
+
+add-user:         ## Create a sign-in account: make add-user EMAIL=pat@example.com NAME="Pat Lee"
+	uv run python -m scripts.add_user "$(EMAIL)" $(if $(NAME),--name "$(NAME)")
 
 refresh:          ## Download + build on Modal
 	cd web && npm run build

@@ -84,3 +84,51 @@ CREATE TABLE IF NOT EXISTS app.llm_usage_daily (
   input_tokens  bigint NOT NULL DEFAULT 0,
   output_tokens bigint NOT NULL DEFAULT 0
 );
+
+-- People who can sign in. Invite-only: accounts are made with scripts/add_user.py, never from the web.
+CREATE TABLE IF NOT EXISTS app.app_user (
+  user_id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         text NOT NULL,
+  name          text,
+  password_hash text NOT NULL,
+  disabled_at   timestamptz,
+  last_login_at timestamptz,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS app_user_email ON app.app_user (lower(email));
+
+-- One row per signed-in browser. Only a hash of the cookie is stored, so a leaked table can't sign anyone in.
+CREATE TABLE IF NOT EXISTS app.user_session (
+  token_hash bytea PRIMARY KEY,
+  user_id    uuid NOT NULL REFERENCES app.app_user ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS user_session_user ON app.user_session (user_id);
+
+-- A user's conversations with the foreman assistant, one project each, private to that user.
+CREATE TABLE IF NOT EXISTS app.chat (
+  chat_id    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid NOT NULL REFERENCES app.app_user ON DELETE CASCADE,
+  project_id uuid NOT NULL REFERENCES app.project ON DELETE CASCADE,
+  title      text NOT NULL,                       -- the first question, shortened
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()   -- last message: orders the past-chats list
+);
+CREATE INDEX IF NOT EXISTS chat_user_project ON app.chat (user_id, project_id, updated_at DESC);
+
+-- The history the foreman sees comes from here, never from the browser: figures in earlier turns count as
+-- grounded, so client-sent history could slip an invented number past the check.
+CREATE TABLE IF NOT EXISTS app.chat_message (
+  message_id bigserial PRIMARY KEY,
+  chat_id    uuid NOT NULL REFERENCES app.chat ON DELETE CASCADE,
+  role       text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content    text NOT NULL,   -- the question, or the answer's markdown
+  response   jsonb,           -- assistant only: the whole AskResponse, so a reopened chat renders as it did
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS chat_message_chat ON app.chat_message (chat_id, message_id);
+
+-- No foreign keys: the log outlives deleted chats and users.
+ALTER TABLE app.question_log ADD COLUMN IF NOT EXISTS chat_id uuid;
+ALTER TABLE app.question_log ADD COLUMN IF NOT EXISTS user_id uuid;

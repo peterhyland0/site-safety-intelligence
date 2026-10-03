@@ -89,8 +89,9 @@ rules), so the scorecard, detail pages and answers always agree:
 Pasting one of these names into any project finds the same record; any other name comes back as "No OSHA record".
 The mock assistant answers the four suggested questions, sub names and trades ("the roofer"), hazards (falls,
 ladders, scaffolds, trenching), "Dallas" (clarify), and returns `needs_confirmation` for Trinity until its question
-is answered. Add `#nokey` or `#guard` to a question to see the `no_api_key` and `guard_failed` states. Mock state
-resets on reload.
+is answered. Add `#nokey` or `#guard` to a question to see the `no_api_key` and `guard_failed` states. Mock mode
+starts signed in as a demo user; after signing out, any email and password signs back in. Mock state (including
+saved chats) resets on reload.
 
 ## Contract notes
 
@@ -100,5 +101,9 @@ resets on reload.
 - `GET …/inspections?offset=&limit=` pages after the first page embedded in `SubDetail` (25 per page); the list
   stops when a page comes back short or `coverage.inspections_all_time` is reached.
 - `ItaYear.peer_trir` is the pooled industry rate (all filers' cases ÷ hours), labelled "Industry rate".
-- Chat history sent to `/ask` is the last 12 text turns as `{role, content}`; the conversation is kept per project
-  in `sessionStorage`.
+- Chats live on the server, one per conversation and private to the signed-in user. The first question creates
+  the chat (`POST /api/projects/{id}/chats`), later ones go to `POST /api/chats/{id}/messages`, and the browser
+  sends only the question: the server adds the earlier turns. `sessionStorage` keeps just the id of the chat each
+  project has open in this tab, so a reload, the docked panel and the `/ask` page reopen the same one.
+- Every request carries `X-SSI-Client: web` (the API refuses writes without it). A 401 from any request means the
+  session ended and shows the sign-in page.

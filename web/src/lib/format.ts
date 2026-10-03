@@ -68,3 +68,18 @@ export function yearRange(first: number | null | undefined, last: number | null 
 export function formatPercent(n: number | null | undefined, digits = 0): string {
   return n == null ? "—" : `${(n * 100).toFixed(digits)}%`;
 }
+
+const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+const localDayFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const localDateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+/** When something happened, in the viewer's time zone: "Today, 2:14 PM", "Yesterday", "Sep 28", "Sep 28, 2025". */
+export function formatWhen(value: string, now: Date = new Date()): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const daysAgo = Math.round((day(now) - day(d)) / 86_400_000);
+  if (daysAgo === 0) return `Today, ${timeFmt.format(d)}`;
+  if (daysAgo === 1) return "Yesterday";
+  return d.getFullYear() === now.getFullYear() ? localDayFmt.format(d) : localDateFmt.format(d);
+}

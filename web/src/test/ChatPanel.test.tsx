@@ -14,7 +14,9 @@ const api = vi.hoisted(() => ({
   addSubs: vi.fn(),
   adjudicate: vi.fn(),
   health: vi.fn(),
-  ask: vi.fn(),
+  listChats: vi.fn(),
+  getChat: vi.fn(),
+  createChat: vi.fn(),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
 }));
 
@@ -52,6 +54,7 @@ describe("Foreman chat docked beside the scorecard", () => {
     api.getProject.mockResolvedValue(toProjectDetail(structuredClone(seedProjects()[0])));
     api.adjudicate.mockImplementation(() => new Promise(() => {}));
     api.health.mockResolvedValue({ status: "ok", data_as_of: "2026-10-02", build_id: null, llm_enabled: true, db_ok: true });
+    api.listChats.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -61,7 +64,7 @@ describe("Foreman chat docked beside the scorecard", () => {
   it("opens beside the scorecard on wide screens, and closing it returns focus to the button", async () => {
     setScreen(true);
     const user = userEvent.setup();
-    api.ask.mockImplementation(() => new Promise(() => {}));
+    api.createChat.mockImplementation(() => new Promise(() => {}));
     renderApp();
 
     const toggle = await screen.findByRole("button", { name: /Ask the foreman assistant/ });
@@ -77,7 +80,7 @@ describe("Foreman chat docked beside the scorecard", () => {
     expect(screen.getByRole("textbox", { name: "Your question" })).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "Which subs had a fatality?" }));
-    expect(api.ask).toHaveBeenCalledWith("demo-riverside", { question: "Which subs had a fatality?", history: [] });
+    expect(api.createChat).toHaveBeenCalledWith("demo-riverside", { question: "Which subs had a fatality?" });
 
     await user.click(screen.getByRole("button", { name: "Close the foreman assistant" }));
     expect(panel).not.toBeInTheDocument();

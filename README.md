@@ -10,6 +10,7 @@ A GC bidding a job enters its 10–15 subcontractors (one row of fields each, or
 - **The foreman's view.** A phone chat that answers only from a fixed set of named queries.
   - Every figure is checked against the query results, and every cited inspection opens its record (citations, penalties, accident narrative), with a link to find it on osha.gov.
   - If "the mechanical sub" could mean two subs, it asks which one.
+  - Each person signs in (accounts are invite-only), and their conversations are saved, private to them, to reopen later.
 - **Data:** the last 10 years of OSHA construction enforcement: 319,689 inspections (plus 18,550 files where OSHA didn't inspect) and 585,758 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
 > Demo project: *Hospital expansion, Nashville TN*, 13 real Southeast subs (`make seed-demo`). All facts come from public OSHA records; verdicts are mechanical summaries of those records, not judgements about any company.
@@ -56,7 +57,7 @@ flowchart LR
     mart["mart<br/>establishment_year · hazard_year ·<br/>red_flag · trade_benchmark · ita_benchmark"]
   end
   subgraph Postgres["Postgres (permanent: human and AI decisions)"]
-    app["app<br/>project · project_sub · sub_match ·<br/>match_question · adjudication_cache · question_log"]
+    app["app<br/>project · project_sub · sub_match ·<br/>match_question · adjudication_cache · question_log ·<br/>app_user · user_session · chat · chat_message"]
   end
   osha --> entity --> mart
   refext --> entity
@@ -70,7 +71,7 @@ flowchart LR
 | `entity` | Inspections grouped into **establishments**: identical cleaned name + address key + zip + state. Plus name variants, distinctiveness stats, shared-office stats, and links to reference data | Yes |
 | `ref_ext` | Outside data: ITA 300A injury summaries and WA/OR/CA contractor licences | Yes |
 | `mart` | Precomputed figures, additive at establishment-year grain, plus an event-level red-flag table with lineage back to the inspection | Yes |
-| `app` | The GC's projects, subs and every match decision (bucket, method, rule, confidence, rationale, who decided), plus question logs | **No: it's the only layer that can't be regenerated** |
+| `app` | The GC's projects, subs and every match decision (bucket, method, rule, confidence, rationale, who decided), question logs, and the people who sign in with their saved chats | **No: it's the only layer that can't be regenerated** |
 
 ### Why this shape
 
@@ -214,6 +215,8 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 3. **Citations.** Inspection IDs become chips that open the inspection's record in the app. Each record also links to osha.gov, but **osha.gov numbers inspections differently from the published data** (activity `348557646` in the data is inspection `1395197.015` on the site, and nothing in the data links the two), so a direct link isn't possible. The link is an OSHA search filtered to the employer, site state and opening day, which lists that one inspection. osha.gov also puts a human-verification step in front of it, so the app never relies on it.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
+**Chats are saved per person** ([ssi/api/chats.py](ssi/api/chats.py)). Each conversation is a row in `app.chat`, private to the user who started it, with its questions and full answers in `app.chat_message`. Reopening one shows it exactly as it was, and a reload, the docked panel and the phone's full-page chat all pick up the same conversation. **The earlier turns the model sees are read from the database, never sent by the browser:** figures in earlier turns count as grounded, so a client-supplied history could slip an invented number past the grounding check.
+
 **Models.** Each role has its own model, chosen in `.env`:
 - **Foreman:** GLM 5.3, at low reasoning effort (`SSI_LLM_FOREMAN_REASONING_EFFORT`). It's a multi-step conversation with tool calls.
 - **Adjudicator:** DeepSeek V4.1 Flash. It makes many short same/different/unsure calls.
@@ -263,7 +266,8 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 ```
 
 - **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 210 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 24 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
-- **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
+- **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`.
+- **Sign-in** ([ssi/api/auth.py](ssi/api/auth.py)): invite-only accounts, made with `scripts/add_user.py`; there is no sign-up page. Passwords are hashed with scrypt. A sign-in sets a random token in an HttpOnly, SameSite=Lax cookie, and Postgres keeps only its SHA-256, so the sessions table can't be used to sign in. Sessions last 30 days from last use. Every `/api` route except health and sign-in needs a session, and writes must also carry the app's `X-SSI-Client` header, which a form on another site can't send. Ten failed sign-ins lock an email for 15 minutes (per container).
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px. The design uses Inter, the green / forest / concrete palette, pill buttons, and the dark pill tab bar for switches. Light by default, with a dark forest theme on a header toggle that's remembered per browser.
 - **Deploy** ([modal_app.py](modal_app.py), prepared but not deployed: the app currently runs locally): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
 
@@ -276,15 +280,17 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 242 test cases:
+**Tests:** `uv run pytest`, 258 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
 - the adjudicator validator
 - the grounding checker
 - a fake-model end-to-end foreman loop
+- sign-in, sessions and lockout, and that chats stay private to their user and use the stored history, not the browser's
+- the adjudicator eval's thresholds, packets and Jev client
 
-The web front end has 40 more (`npm test`).
+The web front end has 51 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
@@ -405,8 +411,11 @@ make setup          # Python env, local databases ssi/ssi_test, web deps
 make download       # OSHA enforcement zips (~3.6 GB) + WA/OR licence lists
 make build          # warehouse in ~1-2 minutes
 make seed-demo      # demo project through the real API code
+make add-user EMAIL=you@example.com NAME="Your Name"   # asks for a password (accounts are invite-only)
 cd web && npm run build && cd .. && make api   # http://localhost:8000
 ```
+
+`uv run python -m scripts.add_user you@example.com --reset` sets a new password, and `--disable` blocks an account; both sign it out everywhere.
 
 **Optional manual downloads:**
 - OSHA ITA files from <https://www.osha.gov/Establishment-Specific-Injury-and-Illness-Data>, saved to `data/raw/reference/osha_ita/utf8/`
@@ -467,11 +476,11 @@ ssi/queries/       named queries shared by the GC view and the foreman
 ssi/scoring/       verdict rules
 ssi/agent/         foreman tools, grounding, loop
 ssi/llm/           provider switch (Anthropic / OpenAI-compatible), adjudicator
-ssi/api/           FastAPI app + API contract
+ssi/api/           FastAPI app + API contract, sign-in and sessions, chats
 ssi/store/         DuckDB reader, Postgres pool, app schema
 web/               React SPA
 eval/              matching (silver labels) and foreman evaluations
-scripts/           demo seed
+scripts/           demo seed, account management (add_user)
 docs/              decision log, data profile, glossary
 modal_app.py       nightly build + web deployment
 ```

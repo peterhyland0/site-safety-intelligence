@@ -5,7 +5,7 @@
  *
  * Test hooks: include "#nokey" in a question to see the no_api_key state, "#guard" for guard_failed.
  */
-import { OSHA_SEARCH_PAGE, type AskRequest, type AskResponse, type Citation } from "../api/types";
+import { OSHA_SEARCH_PAGE, type AskResponse, type Citation } from "../api/types";
 import { toCard, toDetail } from "./derive";
 import type { FxProject, FxSub } from "./model";
 
@@ -136,8 +136,8 @@ function hazardAnswer(p: FxProject, subs: FxSub[], hazardCode: string, hazardNam
   });
 }
 
-export function answerQuestion(p: FxProject, req: AskRequest): AskResponse {
-  const q = req.question.trim();
+export function answerQuestion(p: FxProject, question: string): AskResponse {
+  const q = question.trim();
   const lower = q.toLowerCase();
 
   if (lower.includes("#nokey")) {

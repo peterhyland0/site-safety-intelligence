@@ -33,6 +33,36 @@ export function knownProjectName(projectId: string): string | null {
   return knownNames.get(projectId) ?? null;
 }
 
+// The chat each project had open in this tab, so a reload, the docked panel and the full-page /ask route all
+// pick up the same conversation. Only the id: the messages themselves live on the server.
+const OPEN_CHAT_PREFIX = "ssi-chat-open-";
+
+export function openChatId(projectId: string): string | null {
+  try {
+    return sessionStorage.getItem(OPEN_CHAT_PREFIX + projectId);
+  } catch {
+    return null;
+  }
+}
+
+export function rememberOpenChat(projectId: string, chatId: string | null) {
+  try {
+    if (chatId) sessionStorage.setItem(OPEN_CHAT_PREFIX + projectId, chatId);
+    else sessionStorage.removeItem(OPEN_CHAT_PREFIX + projectId);
+  } catch {
+    /* storage unavailable: a reload just starts a new chat */
+  }
+}
+
+/** On sign-out, so the next person in this tab doesn't reopen someone else's chat. */
+export function forgetOpenChats() {
+  try {
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith(OPEN_CHAT_PREFIX)) sessionStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {

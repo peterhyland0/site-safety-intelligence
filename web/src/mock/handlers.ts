@@ -4,12 +4,16 @@
  */
 import { ApiError, friendlyMessage, type HttpMethod } from "../api/client";
 import type {
-  AskRequest,
   Bucket,
+  ChatAsk,
+  ChatMessage,
+  ChatSummary,
   Health,
+  LoginRequest,
   ProjectCreate,
   ProjectUpdate,
   SubInput,
+  User,
 } from "../api/types";
 import { answerQuestion as askAnswer } from "./ask";
 import { matchedInspectionRows, toCard, toDetail, toInspectionDetail, toProject, toProjectDetail } from "./derive";
@@ -19,6 +23,14 @@ import type { FxProject, FxSub } from "./model";
 const projects: FxProject[] = seedProjects();
 /** Catalogue of known companies: pasting one of these names into any project finds its record. */
 const catalogue: FxSub[] = structuredClone(projects.flatMap((p) => p.subs));
+
+/** Demo mode starts signed in; signing out shows the sign-in page, which accepts any email and password. */
+const DEMO_USER: User = { user_id: "user-demo", email: "demo@example.com", name: "Demo GC" };
+let signedIn = true;
+
+type FxChat = ChatSummary & { messages: ChatMessage[] };
+const chats: FxChat[] = [];
+let messageSeq = 1;
 
 let idSeq = 1;
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${idSeq++}`;
@@ -39,6 +51,30 @@ function findSub(p: FxProject, subId: string): FxSub {
   const s = p.subs.find((x) => x.sub_id === subId);
   if (!s) fail(404, "Sub not found in this project.");
   return s;
+}
+
+function findChat(id: string): FxChat {
+  const c = chats.find((x) => x.chat_id === id);
+  if (!c) fail(404, "Chat not found");
+  return c;
+}
+
+const summary = ({ messages, ...c }: FxChat): ChatSummary => ({ ...c, message_count: messages.length });
+
+async function askInChat(chat: FxChat, body: unknown) {
+  const question = ((body as ChatAsk)?.question ?? "").trim();
+  if (!question) fail(422, "Question is required.");
+  const p = findProject(chat.project_id);
+  await sleep(900 + Math.random() * 700);
+  const now = new Date().toISOString();
+  const response = askAnswer(p, question);
+  const added: ChatMessage[] = [
+    { message_id: messageSeq++, role: "user", content: question, response: null, created_at: now },
+    { message_id: messageSeq++, role: "assistant", content: response.answer, response, created_at: now },
+  ];
+  chat.messages.push(...added);
+  chat.updated_at = now;
+  return { chat: summary(chat), messages: added };
 }
 
 function allSubs(): FxSub[] {
@@ -113,6 +149,28 @@ type Route = {
 };
 
 const routes: Route[] = [
+  {
+    method: "GET",
+    pattern: /^\/api\/me$/,
+    run: () => (signedIn ? DEMO_USER : fail(401, "Sign in to continue.")),
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/auth\/login$/,
+    run: (_m, body) => {
+      const email = (body as LoginRequest)?.email?.trim();
+      signedIn = true;
+      return { ...DEMO_USER, email: email || DEMO_USER.email };
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/auth\/logout$/,
+    run: () => {
+      signedIn = false;
+      return undefined;
+    },
+  },
   {
     method: "GET",
     pattern: /^\/api\/health$/,
@@ -270,14 +328,50 @@ const routes: Route[] = [
     },
   },
   {
-    method: "POST",
-    pattern: /^\/api\/projects\/([^/]+)\/ask$/,
-    run: async (m, body) => {
+    method: "GET",
+    pattern: /^\/api\/projects\/([^/]+)\/chats$/,
+    run: (m) => {
       const p = findProject(decodeURIComponent(m[1]));
-      const req = body as AskRequest;
-      if (!req?.question?.trim()) fail(422, "Question is required.");
-      await sleep(900 + Math.random() * 700);
-      return askAnswer(p, req);
+      return chats
+        .filter((c) => c.project_id === p.project_id)
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+        .map(summary);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/projects\/([^/]+)\/chats$/,
+    run: (m, body) => {
+      const p = findProject(decodeURIComponent(m[1]));
+      const question = ((body as ChatAsk)?.question ?? "").trim();
+      const now = new Date().toISOString();
+      const title = question.length > 80 ? `${question.slice(0, 79).replace(/\s+\S*$/, "")}…` : question;
+      const chat: FxChat = { chat_id: newId("chat"), project_id: p.project_id, title, created_at: now, updated_at: now, message_count: 0, messages: [] };
+      const reply = askInChat(chat, body);
+      if (question) chats.push(chat);
+      return reply;
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/chats\/([^/]+)$/,
+    run: (m) => {
+      const c = findChat(decodeURIComponent(m[1]));
+      return { ...summary(c), messages: c.messages };
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/chats\/([^/]+)\/messages$/,
+    run: (m, body) => askInChat(findChat(decodeURIComponent(m[1])), body),
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/api\/chats\/([^/]+)$/,
+    run: (m) => {
+      const i = chats.indexOf(findChat(decodeURIComponent(m[1])));
+      chats.splice(i, 1);
+      return undefined;
     },
   },
 ];

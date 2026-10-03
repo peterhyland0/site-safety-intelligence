@@ -1,21 +1,18 @@
-"""FastAPI app: the GC scorecard API, the foreman's ask endpoint, and the static SPA (web/dist)."""
+"""FastAPI app: sign-in, the GC scorecard API, the foreman's chats, and the static SPA (web/dist)."""
 from __future__ import annotations
 
-import base64
 import csv
 import io
-import os
-import secrets
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from ssi import config
-from ssi.api import duplicates
+from ssi.api import auth, chats, duplicates
 from ssi.api import schemas as S
 from ssi.llm import client as llm_client
 from ssi.matching import adjudicate as ADJ
@@ -38,20 +35,29 @@ app = FastAPI(title="Site Safety Intelligence", version="0.1.0", lifespan=lifesp
 
 
 @app.middleware("http")
-async def basic_auth(request: Request, call_next):
-    user, pw = os.environ.get("BASIC_AUTH_USER"), os.environ.get("BASIC_AUTH_PASS")
-    if user and pw and request.url.path != "/api/health":
-        header = request.headers.get("authorization", "")
-        ok = False
-        if header.lower().startswith("basic "):
-            try:
-                u, _, p = base64.b64decode(header[6:]).decode().partition(":")
-                ok = secrets.compare_digest(u, user) and secrets.compare_digest(p, pw)
-            except Exception:
-                ok = False
-        if not ok:
-            return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="Site Safety Intelligence"'})
-    return await call_next(request)
+async def require_session(request: Request, call_next):
+    """Every /api route needs a signed-in user except PUBLIC_PATHS; the SPA's own files are public so the sign-in
+    page can load. Writes must also carry the SPA's client header (see auth.CLIENT_HEADER)."""
+    path = request.url.path
+    if not path.startswith("/api/"):
+        return await call_next(request)
+    if request.method not in auth.SAFE_METHODS and auth.CLIENT_HEADER not in request.headers:
+        return JSONResponse({"detail": "Requests that change data must come from the app."}, status_code=403)
+    if path in auth.PUBLIC_PATHS:
+        return await call_next(request)
+    token = request.cookies.get(auth.COOKIE)
+    user, refreshed = await run_in_threadpool(auth.session_user, token)
+    if user is None:
+        return JSONResponse({"detail": "Sign in to continue."}, status_code=401)
+    request.state.user = user
+    response = await call_next(request)
+    if refreshed:
+        auth.set_cookie(response, token, request)
+    return response
+
+
+app.include_router(auth.router)
+app.include_router(chats.router)
 
 
 # --- helpers ---------------------------------------------------------------------------------------
@@ -274,13 +280,6 @@ def inspection(activity_nr: int):
     if not d:
         raise HTTPException(404, "Inspection not found")
     return d
-
-
-@app.post("/api/projects/{project_id}/ask", response_model=S.AskResponse)
-def ask(project_id: str, body: S.AskRequest):
-    p = _project(project_id)
-    from ssi.agent import foreman
-    return foreman.answer(p, body.question, body.history)
 
 
 @app.get("/api/projects/{project_id}/export.csv")

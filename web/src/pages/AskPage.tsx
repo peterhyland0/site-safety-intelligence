@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useParams } from "react-router";
-import { api, errorMessage } from "../api/client";
-import type { AskResponse, ChatTurn } from "../api/types";
+import { ApiError, api, errorMessage } from "../api/client";
+import type { AskResponse, ChatMessage, ChatSummary } from "../api/types";
 import { useApi } from "../api/useApi";
-import { IconArrowLeft, IconInfo, IconSend, IconX } from "../components/Icons";
+import { IconArrowLeft, IconChevronRight, IconHistory, IconInfo, IconSend, IconX } from "../components/Icons";
 import { EvidenceChip } from "../components/InspectionSheet";
-import { knownProjectName } from "../lib/chatPanel";
+import { PastChatsSheet } from "../components/PastChats";
+import { Loading } from "../components/ui";
+import { knownProjectName, openChatId, rememberOpenChat } from "../lib/chatPanel";
+import { formatWhen } from "../lib/format";
 import { Markdown } from "../lib/markdown";
 import { useTitle } from "../lib/useTitle";
 
@@ -21,28 +24,14 @@ type Msg =
   | { id: string; role: "assistant"; response: AskResponse }
   | { id: string; role: "error"; text: string; question: string };
 
-const MAX_HISTORY_TURNS = 12;
-const storageKey = (projectId: string) => `ssi-chat-${projectId}`;
-
-function loadMessages(projectId: string): Msg[] {
-  try {
-    const raw = sessionStorage.getItem(storageKey(projectId));
-    return raw ? (JSON.parse(raw) as Msg[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveMessages(projectId: string, msgs: Msg[]) {
-  try {
-    sessionStorage.setItem(storageKey(projectId), JSON.stringify(msgs.slice(-60)));
-  } catch {
-    /* storage unavailable: conversation just won't survive a reload */
-  }
+function toMsg(m: ChatMessage): Msg {
+  if (m.role === "user") return { id: `m${m.message_id}`, role: "user", text: m.content };
+  const response = m.response ?? { status: "answered", answer: m.content, citations: [], coverage: null, clarify_options: [], tools_used: [] };
+  return { id: `m${m.message_id}`, role: "assistant", response };
 }
 
 let seq = 0;
-const newId = () => `m${Date.now().toString(36)}${seq++}`;
+const tempId = () => `t${Date.now().toString(36)}${seq++}`;
 
 export function AskPage() {
   const { projectId = "" } = useParams();
@@ -53,7 +42,8 @@ export function AskPage() {
 
 /**
  * The foreman's chat. "page" is the full-screen /ask route (phones, the foreman on site); "panel" docks beside the
- * scorecard on wide screens so the GC can check answers against the data. Both read and write the same conversation.
+ * scorecard on wide screens so the GC can check answers against the data. Chats are saved on the server, one per
+ * conversation; both variants reopen the chat this tab last had open on the project.
  */
 export function ForemanChat({
   projectId,
@@ -66,13 +56,60 @@ export function ForemanChat({
 }) {
   const project = useApi((signal) => api.getProject(projectId, signal), [projectId]);
   const health = useApi(() => api.health(), []);
-  const [messages, setMessages] = useState<Msg[]>(() => loadMessages(projectId));
+  // null: a new chat, created on the server by its first question
+  const [chatId, setChatId] = useState<string | null>(() => openChatId(projectId));
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [loadingChat, setLoadingChat] = useState(() => openChatId(projectId) !== null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const [showPast, setShowPast] = useState(false);
+  const loadSeq = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => saveMessages(projectId, messages), [projectId, messages]);
+  function selectChat(id: string | null) {
+    setChatId(id);
+    rememberOpenChat(projectId, id);
+  }
+
+  async function loadChat(id: string) {
+    const n = ++loadSeq.current;
+    selectChat(id);
+    setMessages([]);
+    setLoadError(null);
+    setLoadingChat(true);
+    try {
+      const chat = await api.getChat(id);
+      if (n === loadSeq.current) setMessages(chat.messages.map(toMsg));
+    } catch (err) {
+      if (n !== loadSeq.current) return;
+      if (err instanceof ApiError && err.isNotFound) selectChat(null); // deleted elsewhere: start a new one
+      else setLoadError(errorMessage(err));
+    } finally {
+      if (n === loadSeq.current) setLoadingChat(false);
+    }
+  }
+
+  function newChat() {
+    loadSeq.current++;
+    selectChat(null);
+    setMessages([]);
+    setLoadError(null);
+    setLoadingChat(false);
+    inputRef.current?.focus();
+  }
+
+  // Reopen the chat this tab last had open on this project (the component is keyed by project).
+  useEffect(() => {
+    const id = openChatId(projectId);
+    if (id) void loadChat(id);
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      loadSeq.current++;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -88,27 +125,23 @@ export function ForemanChat({
     el.style.overflowY = el.scrollHeight > 160 ? "auto" : "hidden";
   }, [input]);
 
-  function historyFrom(msgs: Msg[]): ChatTurn[] {
-    const turns: ChatTurn[] = [];
-    for (const m of msgs) {
-      if (m.role === "user") turns.push({ role: "user", content: m.text });
-      else if (m.role === "assistant") turns.push({ role: "assistant", content: m.response.answer });
-    }
-    return turns.slice(-MAX_HISTORY_TURNS);
-  }
-
   async function send(question: string) {
     const q = question.trim();
-    if (!q || pending) return;
-    const history = historyFrom(messages);
-    setMessages((m) => [...m, { id: newId(), role: "user", text: q }]);
+    if (!q || pending || loadingChat) return;
+    const temp = tempId();
+    setMessages((m) => [...m, { id: temp, role: "user", text: q }]);
     setInput("");
     setPending(true);
     try {
-      const response = await api.ask(projectId, { question: q, history });
-      setMessages((m) => [...m, { id: newId(), role: "assistant", response }]);
+      // the server adds the chat's earlier messages as context; the browser sends only the question
+      const reply = chatId ? await api.sendMessage(chatId, { question: q }) : await api.createChat(projectId, { question: q });
+      selectChat(reply.chat.chat_id);
+      setMessages((m) => [...m.filter((x) => x.id !== temp), ...reply.messages.map(toMsg)]);
     } catch (err) {
-      setMessages((m) => [...m, { id: newId(), role: "error", text: errorMessage(err), question: q }]);
+      const gone = chatId !== null && err instanceof ApiError && err.isNotFound;
+      if (gone) selectChat(null); // deleted in another tab: trying again starts a new chat
+      const text = gone ? "This chat was deleted, so that question wasn't saved. Try again to start a new chat with it." : errorMessage(err);
+      setMessages((m) => [...m, { id: tempId(), role: "error", text, question: q }]);
     } finally {
       setPending(false);
     }
@@ -130,6 +163,7 @@ export function ForemanChat({
   const projectName = project.data?.project.name ?? knownProjectName(projectId);
   const llmOff = health.data && !health.data.llm_enabled;
   const Heading = variant === "page" ? "h1" : "h2";
+  const empty = messages.length === 0 && !loadingChat && !loadError;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -143,15 +177,18 @@ export function ForemanChat({
           <Heading className="text-base leading-tight font-extrabold tracking-[-0.02em] text-ink">Foreman assistant</Heading>
           <p className="truncate text-xs text-muted">{projectName ?? (project.error ? "Project unavailable" : "Loading project…")}</p>
         </div>
-        {messages.length ? (
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              setMessages([]);
-              inputRef.current?.focus();
-            }}
-          >
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm px-2"
+          onClick={() => setShowPast(true)}
+          disabled={pending}
+          aria-label="Past chats"
+          title="Past chats"
+        >
+          <IconHistory size={20} />
+        </button>
+        {chatId || messages.length ? (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={newChat} disabled={pending}>
             New chat
           </button>
         ) : null}
@@ -171,7 +208,24 @@ export function ForemanChat({
           </p>
         ) : null}
 
-        {messages.length === 0 ? (
+        {loadingChat ? <Loading label="Opening your chat…" /> : null}
+
+        {loadError ? (
+          <div role="alert" className="mx-auto max-w-xl rounded-xl border border-high-line bg-high-bg p-4 text-sm text-ink">
+            <p className="font-medium">Couldn't open this chat.</p>
+            <p className="text-ink-2">{loadError}</p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => chatId && void loadChat(chatId)}>
+                Try again
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={newChat}>
+                Start a new chat
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {empty ? (
           <div className="mx-auto max-w-xl py-4">
             <p className="text-lg font-semibold text-ink">Ask about the subs on this job</p>
             <p className="mt-1 text-ink-2">
@@ -191,6 +245,7 @@ export function ForemanChat({
                 </li>
               ))}
             </ul>
+            <RecentChats projectId={projectId} onOpen={(id) => void loadChat(id)} onShowAll={() => setShowPast(true)} />
           </div>
         ) : null}
 
@@ -264,13 +319,80 @@ export function ForemanChat({
           <button
             type="submit"
             className="btn btn-primary h-12 w-12 shrink-0 px-0"
-            disabled={pending || !input.trim()}
+            disabled={pending || loadingChat || !input.trim()}
             aria-label="Send question"
           >
             <IconSend size={20} />
           </button>
         </form>
       </div>
+
+      {showPast ? (
+        <PastChatsSheet
+          projectId={projectId}
+          currentChatId={chatId}
+          onOpen={(id) => {
+            setShowPast(false);
+            if (id !== chatId || loadError) void loadChat(id);
+          }}
+          onDeleted={(id) => id === chatId && newChat()}
+          onClose={() => setShowPast(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** The three most recent chats on the project, under the suggestions of an empty chat. */
+function RecentChats({
+  projectId,
+  onOpen,
+  onShowAll,
+}: {
+  projectId: string;
+  onOpen: (chatId: string) => void;
+  onShowAll: () => void;
+}) {
+  const [chats, setChats] = useState<ChatSummary[]>([]);
+  const labelId = useId();
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    // optional: an empty chat works without it, so a failed load just shows nothing
+    api.listChats(projectId, ctrl.signal).then(setChats, () => {});
+    return () => ctrl.abort();
+  }, [projectId]);
+
+  if (!chats.length) return null;
+  return (
+    <div className="mt-6">
+      <div className="flex items-baseline justify-between gap-2">
+        <p id={labelId} className="eyebrow">
+          Pick up a past chat
+        </p>
+        {chats.length > 3 ? (
+          <button type="button" className="link text-sm" onClick={onShowAll}>
+            All {chats.length} chats
+          </button>
+        ) : null}
+      </div>
+      <ul className="mt-2 space-y-2" aria-labelledby={labelId}>
+        {chats.slice(0, 3).map((c) => (
+          <li key={c.chat_id}>
+            <button
+              type="button"
+              className="card flex min-h-12 w-full items-center gap-2 px-4 py-3 text-left hover:border-accent hover:bg-accent-soft"
+              onClick={() => onOpen(c.chat_id)}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] text-ink">{c.title}</span>
+                <span className="block text-xs text-muted">{formatWhen(c.updated_at)}</span>
+              </span>
+              <IconChevronRight size={16} className="shrink-0 text-muted" />
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

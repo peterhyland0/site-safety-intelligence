@@ -50,7 +50,7 @@ def project():
         c.execute("DELETE FROM app.project WHERE project_id = %s", [p.project_id])
 
 
-def run(monkeypatch, project, script, question="How is Brasfield doing?"):
+def run(monkeypatch, project, script, question="How is Brasfield doing?", **ids):
     from ssi.agent import foreman
     from ssi.llm import client as llm
     fake = Fake(script)
@@ -59,7 +59,7 @@ def run(monkeypatch, project, script, question="How is Brasfield doing?"):
     monkeypatch.setattr(llm, "get", lambda role="foreman": fake)
     monkeypatch.setattr(llm, "record_usage", lambda *a: None)
     monkeypatch.setattr(llm, "model_label", lambda role="foreman": "fake")
-    return foreman.answer(project[0], question, []), fake
+    return foreman.answer(project[0], question, [], **ids), fake
 
 
 def summary_call(sub_id):
@@ -84,3 +84,15 @@ def test_clarify(monkeypatch, project):
     ask = Reply("", [ToolCall("t1", "ask_which_sub", {"sub_ids": [project[1]]})], {"role": "assistant", "content": "x"}, "tool_use")
     resp, _ = run(monkeypatch, project, [ask], question="How's the electrician?")
     assert resp.status == "clarify" and resp.clarify_options[0].sub_id == project[1]
+
+
+def test_question_log_names_the_chat_and_user(monkeypatch, project):
+    import uuid
+
+    from ssi.store import pg
+    chat_id, user_id = str(uuid.uuid4()), str(uuid.uuid4())  # the log has no foreign keys: it outlives both
+    final = Reply("Brasfield & Gorrie: Review.", [], {"role": "assistant", "content": "x"}, "end_turn")
+    run(monkeypatch, project, [summary_call(project[1]), final], chat_id=chat_id, user_id=user_id)
+    with pg.conn() as c:
+        row = c.execute("SELECT user_id::text, status FROM app.question_log WHERE chat_id = %s", [chat_id]).fetchone()
+    assert row == {"user_id": user_id, "status": "answered"}

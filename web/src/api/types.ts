@@ -359,18 +359,19 @@ export interface SubDetail {
   dq_warnings: string[];
 }
 
+// --- accounts ------------------------------------------------------------------------------------
+export interface User {
+  user_id: string;
+  email: string;
+  name: string | null;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 // --- foreman -------------------------------------------------------------------------------------
-export interface ChatTurn {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface AskRequest {
-  question: string;
-  /** [{role, content}] prior turns (text only) */
-  history?: ChatTurn[];
-}
-
 export interface Citation {
   activity_nr: number;
   url: string;
@@ -389,6 +390,42 @@ export interface AskResponse {
   coverage: string | null;
   clarify_options: ClarifyOption[];
   tools_used: string[];
+}
+
+export interface ChatAsk {
+  question: string;
+}
+
+export interface ChatSummary {
+  chat_id: string;
+  project_id: string;
+  /** the first question, shortened */
+  title: string;
+  created_at: string;
+  /** last message */
+  updated_at: string;
+  message_count: number;
+}
+
+export interface ChatMessage {
+  message_id: number;
+  role: "user" | "assistant";
+  /** the question, or the answer's markdown */
+  content: string;
+  /** assistant only */
+  response: AskResponse | null;
+  created_at: string;
+}
+
+export interface ChatDetail extends ChatSummary {
+  /** oldest first */
+  messages: ChatMessage[];
+}
+
+export interface ChatReply {
+  chat: ChatSummary;
+  /** the question and its answer, as stored */
+  messages: ChatMessage[];
 }
 
 export interface Health {

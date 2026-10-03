@@ -7,7 +7,8 @@ Secrets (created by you, never committed):
     modal secret create ssi-db DATABASE_URL=postgresql://...      (Postgres for the app layer)
     modal secret create ssi-anthropic ANTHROPIC_API_KEY=...       (optional: AI matcher + foreman)
     modal secret create ssi-langsmith LANGSMITH_API_KEY=... LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
-    modal secret create ssi-auth BASIC_AUTH_USER=... BASIC_AUTH_PASS=...
+
+Sign-in accounts live in the app database: create them with scripts/add_user.py (see docs/deploy.md).
 """
 from __future__ import annotations
 
@@ -34,14 +35,13 @@ app = modal.App("site-safety-intelligence", image=image)
 # Secrets are opt-in at deploy time, so the data job can run before they exist (Modal refuses to start an
 # app that names a missing secret):
 #   SSI_WITH_DB=1         -> ssi-db (DATABASE_URL: Postgres for the app layer; required by `web`)
-#   SSI_WITH_AUTH=1       -> ssi-auth (BASIC_AUTH_USER / BASIC_AUTH_PASS)
 #   SSI_WITH_GLM=1        -> ssi-glm (SSI_LLM_PROVIDER=openai_compat, SSI_LLM_FOREMAN_BASE_URL,
 #                                     SSI_LLM_ADJUDICATOR_BASE_URL, SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET)
 #   SSI_WITH_ANTHROPIC=1  -> ssi-anthropic (ANTHROPIC_API_KEY)
 #   SSI_WITH_LANGSMITH=1  -> ssi-langsmith (LANGSMITH_API_KEY, LANGSMITH_PROJECT, LANGSMITH_TRACING)
 web_secrets = [modal.Secret.from_name(name) for name, flag in
-               (("ssi-db", "SSI_WITH_DB"), ("ssi-auth", "SSI_WITH_AUTH"), ("ssi-glm", "SSI_WITH_GLM"),
-                ("ssi-anthropic", "SSI_WITH_ANTHROPIC"), ("ssi-langsmith", "SSI_WITH_LANGSMITH"))
+               (("ssi-db", "SSI_WITH_DB"), ("ssi-glm", "SSI_WITH_GLM"), ("ssi-anthropic", "SSI_WITH_ANTHROPIC"),
+                ("ssi-langsmith", "SSI_WITH_LANGSMITH"))
                if os.environ.get(flag) == "1"]
 
 

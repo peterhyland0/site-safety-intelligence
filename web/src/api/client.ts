@@ -5,12 +5,15 @@
  * so the UI can be developed and demoed without the backend.
  */
 import type {
-  AskRequest,
-  AskResponse,
   Bucket,
+  ChatAsk,
+  ChatDetail,
+  ChatReply,
+  ChatSummary,
   Health,
   InspectionDetail,
   InspectionRow,
+  LoginRequest,
   Project,
   ProjectCreate,
   ProjectDetail,
@@ -18,6 +21,7 @@ import type {
   SubCard,
   SubDetail,
   SubInput,
+  User,
 } from "./types";
 
 export const MOCK_MODE = import.meta.env.VITE_MOCK === "1";
@@ -64,7 +68,7 @@ function detailMessage(body: unknown): string | null {
 
 export function friendlyMessage(status: number, body?: unknown): string {
   if (status === 401 || status === 403) {
-    return "Access required. This deployment is password-protected: reload the page and sign in, then try again.";
+    return "Access required. You've been signed out: reload the page and sign in, then try again.";
   }
   if (status === 404) return detailMessage(body) ?? "Not found. It may have been removed.";
   if (status === 409) return detailMessage(body) ?? "That conflicts with a change someone else just made. Refresh and try again.";
@@ -83,6 +87,19 @@ export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error && err.name === "AbortError") return "Request cancelled.";
   return "Can't reach the server. Check your connection and try again.";
+}
+
+/**
+ * Sent on every request. The API refuses writes without it: a form on another site can't set a custom header,
+ * so it can't change data through a signed-in browser.
+ */
+export const CLIENT_HEADER = "X-SSI-Client";
+
+// The sign-in gate registers here, so a 401 from any request (the session ended) shows the sign-in page.
+let onSignedOut: (() => void) | null = null;
+
+export function setSignedOutHandler(handler: (() => void) | null) {
+  onSignedOut = handler;
 }
 
 type MockHandler = (method: HttpMethod, path: string, body: unknown) => Promise<unknown>;
@@ -115,6 +132,7 @@ export async function request<T>(
       credentials: "same-origin",
       headers: {
         Accept: "application/json",
+        [CLIENT_HEADER]: "web",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -136,7 +154,11 @@ export async function request<T>(
     }
   }
 
-  if (!res.ok) throw new ApiError(res.status, friendlyMessage(res.status, parsed), parsed);
+  if (!res.ok) {
+    // a 401 from sign-in is a wrong password, not an ended session
+    if (res.status === 401 && path !== "/api/auth/login") onSignedOut?.();
+    throw new ApiError(res.status, friendlyMessage(res.status, parsed), parsed);
+  }
   return parsed as T;
 }
 
@@ -149,6 +171,10 @@ export function isSubCard(x: unknown): x is SubCard {
 
 export const api = {
   health: () => request<Health>("GET", "/api/health"),
+
+  me: () => request<User>("GET", "/api/me"),
+  login: (body: LoginRequest) => request<User>("POST", "/api/auth/login", body),
+  logout: () => request<void>("POST", "/api/auth/logout"),
 
   listProjects: () => request<Project[]>("GET", "/api/projects"),
   createProject: (body: ProjectCreate) => request<Project>("POST", "/api/projects", body),
@@ -186,8 +212,18 @@ export const api = {
   getInspection: (activityNr: number) =>
     request<InspectionDetail>("GET", `/api/inspections/${activityNr}`),
 
-  ask: (projectId: string, body: AskRequest) =>
-    request<AskResponse>("POST", `/api/projects/${enc(projectId)}/ask`, body),
+  /** This user's chats on the project, most recent first. */
+  listChats: (projectId: string, signal?: AbortSignal) =>
+    request<ChatSummary[]>("GET", `/api/projects/${enc(projectId)}/chats`, undefined, signal),
+  /** Starts a chat with its first question; returns the chat and the stored question and answer. */
+  createChat: (projectId: string, body: ChatAsk) =>
+    request<ChatReply>("POST", `/api/projects/${enc(projectId)}/chats`, body),
+  getChat: (chatId: string, signal?: AbortSignal) =>
+    request<ChatDetail>("GET", `/api/chats/${enc(chatId)}`, undefined, signal),
+  /** Asks within a chat; the server supplies the earlier messages as context. */
+  sendMessage: (chatId: string, body: ChatAsk) =>
+    request<ChatReply>("POST", `/api/chats/${enc(chatId)}/messages`, body),
+  deleteChat: (chatId: string) => request<void>("DELETE", `/api/chats/${enc(chatId)}`),
 
   exportCsvUrl: (projectId: string) => `/api/projects/${enc(projectId)}/export.csv`,
 };

@@ -5,9 +5,9 @@ The SPA (web/) mirrors these as TypeScript types in web/src/api/types.ts. Change
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 Verdict = Literal["high", "review", "no_record", "no_recent", "no_flags"]
 Bucket = Literal["matched", "possible", "excluded"]
@@ -295,12 +295,19 @@ class SubDetail(BaseModel):
     dq_warnings: list[str]
 
 
+# --- accounts ------------------------------------------------------------------------------------
+class User(BaseModel):
+    user_id: str
+    email: str
+    name: str | None
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=1024)
+
+
 # --- foreman -------------------------------------------------------------------------------------
-class AskRequest(BaseModel):
-    question: str
-    history: list[dict] = []  # [{role, content}] prior turns (text only)
-
-
 class Citation(BaseModel):
     activity_nr: int
     url: str
@@ -318,6 +325,36 @@ class AskResponse(BaseModel):
     coverage: str | None = None
     clarify_options: list[ClarifyOption] = []
     tools_used: list[str] = []
+
+
+class ChatAsk(BaseModel):
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
+
+class ChatSummary(BaseModel):
+    chat_id: str
+    project_id: str
+    title: str  # the first question, shortened
+    created_at: str
+    updated_at: str  # last message
+    message_count: int
+
+
+class ChatMessage(BaseModel):
+    message_id: int
+    role: Literal["user", "assistant"]
+    content: str  # the question, or the answer's markdown
+    response: AskResponse | None = None  # assistant only
+    created_at: str
+
+
+class ChatDetail(ChatSummary):
+    messages: list[ChatMessage]  # oldest first
+
+
+class ChatReply(BaseModel):
+    chat: ChatSummary
+    messages: list[ChatMessage]  # the question and its answer, as stored
 
 
 class Health(BaseModel):

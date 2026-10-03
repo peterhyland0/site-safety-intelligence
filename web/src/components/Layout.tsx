@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Link, matchPath, NavLink, Outlet, useLocation } from "react-router";
 import { MOCK_MODE } from "../api/client";
+import { useAuth } from "../lib/auth";
 import { ASK_TOGGLE_ID, CHAT_PANEL_ID, ChatPanelContext, DOCK_QUERY, useMediaQuery, type ChatPanel } from "../lib/chatPanel";
 import { ForemanChat } from "../pages/AskPage";
-import { LogoMark } from "./Icons";
+import { IconLogOut, LogoMark } from "./Icons";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -12,6 +13,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function Layout() {
+  const auth = useAuth();
   const { pathname } = useLocation();
   const isChat = /\/ask$/.test(pathname);
   const projectId = matchPath("/projects/:projectId/*", pathname)?.params.projectId ?? null;
@@ -88,6 +90,23 @@ export function Layout() {
               </NavLink>
               <ThemeToggle />
             </nav>
+            {auth ? (
+              // phones have no room for it here: they get the line under the page instead
+              <div className="hidden items-center gap-1 border-l border-line pl-2 sm:flex">
+                <span className="hidden max-w-40 truncate text-sm text-muted md:inline" title={auth.user.email}>
+                  {auth.user.name ?? auth.user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void auth.signOut()}
+                  className="grid min-h-10 min-w-10 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  aria-label="Sign out"
+                  title={`Sign out ${auth.user.email}`}
+                >
+                  <IconLogOut size={18} />
+                </button>
+              </div>
+            ) : null}
           </div>
         </header>
         <div className={`flex flex-1 ${isChat ? "min-h-0" : ""}`}>
@@ -96,6 +115,15 @@ export function Layout() {
             className={`mx-auto w-full max-w-5xl min-w-0 flex-1 ${isChat ? "flex min-h-0 flex-col" : "px-4 pt-4 pb-16 sm:pt-6"}`}
           >
             <Outlet />
+            {auth && !isChat ? (
+              <p className="mt-12 flex items-center justify-center gap-2 text-sm text-muted sm:hidden">
+                <span className="min-w-0 truncate">Signed in as {auth.user.name ?? auth.user.email}</span>
+                <button type="button" className="btn btn-ghost btn-sm shrink-0" onClick={() => void auth.signOut()}>
+                  <IconLogOut size={16} />
+                  Sign out
+                </button>
+              </p>
+            ) : null}
           </main>
           {panelProjectId ? (
             <aside

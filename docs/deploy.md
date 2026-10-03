@@ -13,13 +13,19 @@ forwards `/api/*` to Modal, so the browser sees one site. The GC's decisions liv
 3. **Secrets** (created by you; values never go in the repo):
    ```bash
    uv run modal secret create ssi-db DATABASE_URL='postgresql://...'
-   uv run modal secret create ssi-auth BASIC_AUTH_USER=reviewer BASIC_AUTH_PASS='...'
    uv run modal secret create ssi-glm SSI_LLM_PROVIDER=openai_compat \
        SSI_LLM_FOREMAN_BASE_URL='https://<workspace>--ep-glm-5-3-server.us-west.modal.direct/v1' \
        SSI_LLM_ADJUDICATOR_BASE_URL='https://<workspace>--ep-deepseek-v4-1-flash-server.us-west.modal.direct/v1' \
        SSI_LLM_MODAL_KEY='wk-...' SSI_LLM_MODAL_SECRET='ws-...'
    uv run modal secret create ssi-langsmith LANGSMITH_API_KEY='...' LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
    ```
+4. **Accounts.** Sign-in is invite-only (there is no sign-up page), and accounts live in the app database. Create
+   them from your machine against the hosted database; the password is asked for at the prompt:
+   ```bash
+   DATABASE_URL='postgresql://...' uv run python -m scripts.add_user reviewer@example.com --name "Reviewer"
+   ```
+   `--reset` sets a new password and `--disable` blocks an account; both sign it out everywhere. Each person's
+   foreman chats are private to their account, so reviewers sharing one account share its chats.
 
 ## Data on Modal
 ```bash
@@ -44,4 +50,4 @@ Set `SSI_MIN_CONTAINERS=1` on deploy while reviewers are looking, to avoid cold 
 2. In the Vercel dashboard: **Add New → Project → import `peterhyland0/site-safety-intelligence`**, set
    **Root Directory = `web`** (framework: Vite). Deploy.
 3. Settings → Deployment Protection: turn off Vercel Authentication if reviewers should only see the app's own
-   login (the API's basic auth).
+   sign-in page.

@@ -96,17 +96,20 @@ def _fallback_text(outputs: list) -> str:
     return "I couldn't verify the figures for that answer. Please check the sub's detail page."
 
 
-def _log(project_id, question, status, answer, tool_log, ungrounded, usage, started):
+def _log(project_id, question, status, answer, tool_log, ungrounded, usage, started, chat_id, user_id):
     with pg.conn() as c:
         c.execute("""INSERT INTO app.question_log (project_id, question, status, answer, tools, ungrounded, model,
-                                                    input_tokens, output_tokens, latency_ms)
-                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                                    input_tokens, output_tokens, latency_ms, chat_id, user_id)
+                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                   [project_id, question, status, answer, json.dumps(tool_log, default=str), json.dumps(ungrounded),
-                   llm.model_label("foreman"), usage[0], usage[1], int((time.time() - started) * 1000)])
+                   llm.model_label("foreman"), usage[0], usage[1], int((time.time() - started) * 1000), chat_id,
+                   user_id])
 
 
 @_traceable
-def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
+def answer(project: dict, question: str, history: list[dict], *, chat_id: str | None = None,
+           user_id: str | None = None) -> S.AskResponse:
+    """`history` is the chat's earlier messages ({role, content}, oldest first), read from the database."""
     started = time.time()
     if not llm.available("foreman"):
         return S.AskResponse(status="no_api_key", answer="The question assistant needs an AI key, which isn't set up "
@@ -194,7 +197,7 @@ def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
         coverage = (f"Covers {len(tb.used_subs)} subs' matched OSHA records; data as of {m['data_as_of']}; "
                     f"accident details published through {m['accident_detail_through']}.")
     llm.record_usage(*usage)
-    _log(project["project_id"], question, status, final, tool_log, ungrounded, usage, started)
+    _log(project["project_id"], question, status, final, tool_log, ungrounded, usage, started, chat_id, user_id)
     return S.AskResponse(status=status, answer=final, coverage=coverage,
                          citations=[S.Citation(activity_nr=i, url=Q.url(i)) for i in ids],
                          clarify_options=[S.ClarifyOption(sub_id=c["sub_id"], name=c["name"]) for c in clarify],
