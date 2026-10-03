@@ -1,13 +1,19 @@
 """End-to-end foreman loop with a scripted fake model (no API spend): tools run against the real
 warehouse and Postgres; checks the grounding retry, the deterministic fallback and clarify."""
 import json
+from urllib.parse import urlsplit
 
 import pytest
 
 from ssi import config
 from ssi.llm.base import Reply, ToolCall
 
-pytestmark = pytest.mark.skipif(config.current_warehouse() is None, reason="needs a built warehouse")
+pytestmark = [
+    pytest.mark.skipif(config.current_warehouse() is None, reason="needs a built warehouse"),
+    # this test creates tables and writes rows: never point it at a hosted database
+    pytest.mark.skipif(urlsplit(config.DATABASE_URL).hostname not in ("localhost", "127.0.0.1", "::1"),
+                       reason="writes to the app database; runs only against a local Postgres"),
+]
 
 
 class Fake:
