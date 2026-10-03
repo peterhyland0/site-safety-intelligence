@@ -457,5 +457,5 @@ export function toProjectDetail(p: FxProject): ProjectDetail {
       (b.serious_plus_rate ?? -1) - (a.serious_plus_rate ?? -1) ||
       a.entered_name.localeCompare(b.entered_name),
   );
-  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF };
+  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF, history_since: "2016-09-23" };
 }

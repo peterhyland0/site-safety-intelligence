@@ -171,7 +171,9 @@ def create_project(body: S.ProjectCreate):
 @app.get("/api/projects/{project_id}", response_model=S.ProjectDetail)
 def get_project(project_id: str):
     p = _project(project_id)
-    return S.ProjectDetail(project=_project_model(p), subs=_cards(p), data_as_of=warehouse.meta()["data_as_of"])
+    m = warehouse.meta()
+    return S.ProjectDetail(project=_project_model(p), subs=_cards(p), data_as_of=m["data_as_of"],
+                           history_since=m.get("history_since"))
 
 
 @app.patch("/api/projects/{project_id}", response_model=S.Project)

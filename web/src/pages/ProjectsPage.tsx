@@ -1,10 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, errorMessage } from "../api/client";
-import type { LookbackYears, Project } from "../api/types";
+import type { Project } from "../api/types";
 import { useApi } from "../api/useApi";
 import { IconChevronRight, IconPlus } from "../components/Icons";
-import { LookbackToggle } from "../components/LookbackToggle";
 import { ErrorBanner, InlineError, Loading } from "../components/ui";
 import { formatDate, plural } from "../lib/format";
 import { US_STATES } from "../lib/parseSubs";
@@ -16,29 +15,20 @@ export function ProjectsPage() {
   const [showForm, setShowForm] = useState(false);
 
   const list = projects.data ?? [];
-  const formOpen =
-    showForm || (!projects.loading && !projects.error && list.length === 0);
+  const formOpen = showForm || (!projects.loading && !projects.error && list.length === 0);
 
   return (
     <div className="space-y-8">
-      <section
-        className="flex flex-col items-center gap-4 pt-4 text-center sm:pt-8"
-        aria-labelledby="projects-title"
-      >
+      <section className="flex flex-col items-center gap-4 pt-4 text-center sm:pt-8" aria-labelledby="projects-title">
         <p className="eyebrow">OSHA history for every sub on your bid</p>
         <h1 id="projects-title" className="page-title max-w-2xl sm:text-[42px]">
-          Know which subs to worry about{" "}
-          <span className="text-gradient">before you sign</span>
+          Know which subs to worry about <span className="text-gradient">before you sign</span>
         </h1>
         <p className="max-w-xl text-[15.5px] leading-relaxed text-muted">
-          One project per bid. Paste the subs you're considering and get a
-          ranked view of their OSHA safety history, with the inspections behind
-          every flag. Your foreman can ask about them from the site.
+          One project per bid. Paste the subs you're considering and get a ranked view of their OSHA safety history,
+          with the inspections behind every flag. Your foreman can ask about them from the site.
         </p>
-        <ul
-          className="flex flex-wrap justify-center gap-2"
-          aria-label="What you get"
-        >
+        <ul className="flex flex-wrap justify-center gap-2" aria-label="What you get">
           {[
             ["Ranked", "scorecard"],
             ["Evidence", "on every flag"],
@@ -53,31 +43,19 @@ export function ProjectsPage() {
           ))}
         </ul>
         {!formOpen ? (
-          <button
-            type="button"
-            className="btn btn-primary mt-1 min-h-12 px-7"
-            onClick={() => setShowForm(true)}
-          >
+          <button type="button" className="btn btn-primary mt-1 min-h-12 px-7" onClick={() => setShowForm(true)}>
             <IconPlus size={18} />
             New project
           </button>
         ) : null}
       </section>
 
-      {formOpen ? (
-        <NewProjectForm
-          onCancel={list.length ? () => setShowForm(false) : undefined}
-        />
-      ) : null}
+      {formOpen ? <NewProjectForm onCancel={list.length ? () => setShowForm(false) : undefined} /> : null}
 
       {projects.loading ? (
         <Loading label="Loading projects…" />
       ) : projects.error ? (
-        <ErrorBanner
-          message={projects.error}
-          status={projects.errorStatus}
-          onRetry={projects.reload}
-        />
+        <ErrorBanner message={projects.error} status={projects.errorStatus} onRetry={projects.reload} />
       ) : list.length ? (
         <section aria-labelledby="your-projects" className="space-y-3">
           <h2 id="your-projects" className="eyebrow">
@@ -103,9 +81,7 @@ function ProjectRow({ project: p }: { project: Project }) {
       className="card flex min-h-20 items-center gap-3 p-4 transition-shadow hover:border-line-strong hover:shadow-md"
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate font-bold tracking-[-0.01em] text-ink">
-          {p.name}
-        </p>
+        <p className="truncate font-bold tracking-[-0.01em] text-ink">{p.name}</p>
         <p className="mt-0.5 text-sm text-muted">
           {[
             p.state ? (US_STATES[p.state] ?? p.state) : null,
@@ -126,7 +102,6 @@ function NewProjectForm({ onCancel }: { onCancel?: () => void }) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [state, setState] = useState("");
-  const [lookback, setLookback] = useState<LookbackYears>(5);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,7 +117,7 @@ function NewProjectForm({ onCancel }: { onCancel?: () => void }) {
       const p = await api.createProject({
         name: name.trim(),
         state: state || null,
-        lookback_years: lookback,
+        lookback_years: 5, // the usual prequalification window; changed on the scorecard
       });
       navigate(`/projects/${encodeURIComponent(p.project_id)}`);
     } catch (err) {
@@ -152,12 +127,7 @@ function NewProjectForm({ onCancel }: { onCancel?: () => void }) {
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="card space-y-4 p-4 sm:p-5"
-      aria-labelledby="new-project-title"
-      noValidate
-    >
+    <form onSubmit={submit} className="card space-y-4 p-4 sm:p-5" aria-labelledby="new-project-title" noValidate>
       <h2 id="new-project-title" className="section-title">
         New project
       </h2>
@@ -181,12 +151,7 @@ function NewProjectForm({ onCancel }: { onCancel?: () => void }) {
           <label htmlFor="project-state" className="label">
             Job-site state
           </label>
-          <select
-            id="project-state"
-            className="field"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-          >
+          <select id="project-state" className="field" value={state} onChange={(e) => setState(e.target.value)}>
             <option value="">Not set</option>
             {Object.entries(US_STATES).map(([code, label]) => (
               <option key={code} value={code}>
@@ -194,22 +159,8 @@ function NewProjectForm({ onCancel }: { onCancel?: () => void }) {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-muted">
-            Used as the default state for subs you paste without one.
-          </p>
+          <p className="mt-1 text-xs text-muted">Used as the default state for subs you paste without one.</p>
         </div>
-      </div>
-      <div>
-        <LookbackToggle
-          value={lookback}
-          onChange={setLookback}
-          label="Lookback"
-        />
-        <p className="mt-1 text-xs text-muted">
-          Rates, trends and repeat violations use this window. Cited fatalities,
-          willful violations and failures to abate are flagged whatever their
-          age.
-        </p>
       </div>
       <InlineError message={error} />
       <div className="flex flex-wrap gap-2">

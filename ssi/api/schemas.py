@@ -98,6 +98,7 @@ class ProjectDetail(BaseModel):
     project: Project
     subs: list[SubCard]  # sorted by concern
     data_as_of: str
+    history_since: str | None = None  # first inspection date kept by the build (None = every year)
 
 
 # --- matching ------------------------------------------------------------------------------------

@@ -142,6 +142,8 @@ export interface ProjectDetail {
   /** sorted by concern */
   subs: SubCard[];
   data_as_of: string;
+  /** first inspection date the data holds (the last 10 years by default); null = every year */
+  history_since?: string | null;
 }
 
 // --- matching ------------------------------------------------------------------------------------

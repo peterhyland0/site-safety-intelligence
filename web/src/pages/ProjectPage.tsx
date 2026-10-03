@@ -60,7 +60,7 @@ export function ProjectPage() {
     );
   }
 
-  const { project, subs, data_as_of } = detail.data;
+  const { project, subs, data_as_of, history_since } = detail.data;
   const showAdd = adding || subs.length === 0;
   const askHref = `/projects/${encodeURIComponent(project.project_id)}/ask`;
 
@@ -89,6 +89,10 @@ export function ProjectPage() {
             <ExportLink projectId={project.project_id} disabled={!subs.length} />
           </div>
         </div>
+        <p className="mt-2 text-xs text-muted">
+          The window applies to rates, trends and repeat violations. Cited fatalities, willful violations and failures to
+          abate count whatever the window{history_since ? `, from every record since ${formatDate(history_since)}` : ""}.
+        </p>
         <InlineError message={lookbackError} />
       </div>
 

@@ -51,10 +51,11 @@ export function MethodologyPage() {
 
       <Block title="Lookback window and rates">
         <p>
-          Rates, trends and repeat violations use the project's lookback window (3, 5 or 10 years). Cited fatalities,
-          willful violations and failures to abate count as High concern for 10 years and are still flagged for review
-          after that, because a GC wants to know about them however old they are. The red-flag table always lists every
-          year.
+          Rates, trends and repeat violations use the project's lookback window (3, 5 or 10 years), set on the
+          scorecard. Cited fatalities, willful violations and failures to abate don't depend on that window: they count
+          as High concern if they're from the last 10 years, and are flagged for review if older. By default the app
+          holds the last 10 years of OSHA records, so older events aren't in it at all; the scorecard shows the date the
+          records start.
         </p>
         <p>
           <strong className="font-semibold text-ink">Serious+ rate</strong> is serious, willful and repeat citations per
