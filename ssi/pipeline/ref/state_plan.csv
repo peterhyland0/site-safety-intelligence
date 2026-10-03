@@ -1,0 +1,30 @@
+state,plan_scope,plan_name
+AK,private_and_public,Alaska Occupational Safety and Health (AKOSH)
+AZ,private_and_public,Arizona Division of Occupational Safety and Health (ADOSH)
+CA,private_and_public,Cal/OSHA
+HI,private_and_public,Hawaii Occupational Safety and Health (HIOSH)
+IN,private_and_public,Indiana OSHA (IOSHA)
+IA,private_and_public,Iowa OSHA
+KY,private_and_public,Kentucky OSH
+MD,private_and_public,Maryland Occupational Safety and Health (MOSH)
+MI,private_and_public,Michigan OSHA (MIOSHA)
+MN,private_and_public,Minnesota OSHA (MNOSHA)
+NV,private_and_public,Nevada OSHA
+NM,private_and_public,New Mexico Occupational Health and Safety Bureau (NM OSHA)
+NC,private_and_public,North Carolina OSH Division
+OR,private_and_public,Oregon OSHA
+PR,private_and_public,Puerto Rico OSHA (PR OSHA)
+SC,private_and_public,South Carolina OSHA (SC OSHA)
+TN,private_and_public,Tennessee OSHA (TOSHA)
+UT,private_and_public,Utah Occupational Safety and Health (UOSH)
+VT,private_and_public,Vermont OSHA (VOSHA)
+VA,private_and_public,Virginia Occupational Safety and Health (VOSH)
+WA,private_and_public,Washington Division of Occupational Safety and Health (DOSH)
+WY,private_and_public,Wyoming OSHA
+CT,public_only,Connecticut OSHA (CONN-OSHA)
+IL,public_only,Illinois OSHA (IL OSHA)
+ME,public_only,Maine Department of Labor public sector plan
+MA,public_only,Massachusetts Department of Labor Standards public employee plan (approved 2022)
+NJ,public_only,New Jersey Public Employees OSH (NJ PEOSH)
+NY,public_only,New York Public Employee Safety and Health (NY PESH)
+VI,public_only,Virgin Islands Division of Occupational Safety and Health (VIDOSH)

@@ -1,0 +1,545 @@
+family,match_type,pattern,range_to,hazard_code,note
+federal_1926,range,1926.1,1926.49,safety_program_training,Subparts A-C general provisions (1926.20 program/inspections; 1926.21 training; 1926.25 housekeeping)
+federal_1926,exact,1926.24,,fire_explosion,Subpart C fire protection and prevention
+federal_1926,exact,1926.28,,ppe,Subpart C personal protective equipment
+federal_1926,exact,1926.33,,recordkeeping,Subpart C access to exposure and medical records
+federal_1926,exact,1926.34,,fire_explosion,Subpart C means of egress
+federal_1926,exact,1926.35,,fire_explosion,Subpart C employee emergency action plans
+federal_1926,range,1926.50,1926.66,health_silica_lead_asbestos_noise,"Subpart D occupational health and environmental controls (noise, radiation, gases, ventilation, lead 1926.62, HAZWOPER 1926.65)"
+federal_1926,exact,1926.50,,safety_program_training,Subpart D medical services and first aid
+federal_1926,exact,1926.51,,safety_program_training,Subpart D sanitation
+federal_1926,exact,1926.56,,safety_program_training,Subpart D illumination
+federal_1926,exact,1926.59,,hazcom,Subpart D hazard communication
+federal_1926,exact,1926.61,,hazcom,Subpart D retention of DOT markings and labels
+federal_1926,exact,1926.64,,fire_explosion,Subpart D process safety management
+federal_1926,exact,1926.66,,fire_explosion,Subpart D spray finishing (flammable)
+federal_1926,range,1926.95,1926.107,ppe,Subpart E personal protective and life saving equipment
+federal_1926,exact,1926.101,,health_silica_lead_asbestos_noise,Subpart E hearing protection (noise)
+federal_1926,exact,1926.103,,health_silica_lead_asbestos_noise,Subpart E respiratory protection
+federal_1926,exact,1926.104,,fall_protection,"Subpart E safety belts, lifelines and lanyards"
+federal_1926,exact,1926.105,,fall_protection,Subpart E safety nets
+federal_1926,range,1926.150,1926.159,fire_explosion,Subpart F fire protection and prevention
+federal_1926,range,1926.200,1926.203,motor_vehicles_equipment,"Subpart G signs, signals (flaggers) and barricades"
+federal_1926,exact,1926.251,,cranes_rigging,Subpart H rigging equipment for material handling
+federal_1926,range,1926.300,1926.307,tools_machine_guarding,Subpart I tools - hand and power
+federal_1926,range,1926.350,1926.354,fire_explosion,Subpart J welding and cutting
+federal_1926,range,1926.400,1926.449,electrical,Subpart K electrical
+federal_1926,range,1926.450,1926.454,scaffolds,Subpart L scaffolds (incl. 1926.453 aerial lifts)
+federal_1926,range,1926.500,1926.503,fall_protection,Subpart M fall protection
+federal_1926,range,1926.550,1926.555,cranes_rigging,"Subpart N (pre-2010) cranes, derricks, hoists, elevators"
+federal_1926,exact,1926.555,,tools_machine_guarding,Subpart N conveyors
+federal_1926,exact,1926.556,,scaffolds,Subpart N aerial lifts (moved to 1926.453)
+federal_1926,range,1926.600,1926.606,motor_vehicles_equipment,"Subpart O motor vehicles, mechanized equipment and marine operations"
+federal_1926,range,1926.650,1926.652,excavation_trenching,Subpart P excavations
+federal_1926,range,1926.700,1926.706,steel_concrete_masonry,Subpart Q concrete and masonry construction
+federal_1926,range,1926.750,1926.761,steel_concrete_masonry,Subpart R steel erection
+federal_1926,exact,1926.760,,fall_protection,Subpart R fall protection in steel erection
+federal_1926,range,1926.800,1926.804,excavation_trenching,"Subpart S underground construction, caissons, cofferdams"
+federal_1926,range,1926.850,1926.860,demolition,Subpart T demolition
+federal_1926,range,1926.900,1926.914,fire_explosion,Subpart U blasting and use of explosives
+federal_1926,range,1926.950,1926.968,electrical,Subpart V electric power transmission and distribution
+federal_1926,range,1926.1000,1926.1003,motor_vehicles_equipment,Subpart W rollover protective structures
+federal_1926,range,1926.1050,1926.1060,ladders,Subpart X stairways and ladders
+federal_1926,range,1926.1100,1926.1153,health_silica_lead_asbestos_noise,"Subpart Z toxic and hazardous substances (asbestos 1101, cadmium 1127, silica 1153)"
+federal_1926,range,1926.1200,1926.1213,confined_space,Subpart AA confined spaces in construction
+federal_1926,range,1926.1400,1926.1442,cranes_rigging,Subpart CC cranes and derricks in construction
+federal_1926,range,1926.1500,1926.1501,cranes_rigging,Subpart DD cranes and derricks in demolition and underwater construction
+federal_1910,range,1910.1,1910.9,safety_program_training,Subpart A general (1910.9 per-employee compliance duties)
+federal_1910,exact,1910.20,,recordkeeping,Access to employee exposure and medical records (pre-1996 number)
+federal_1910,range,1910.21,1910.30,fall_protection,"Subpart D walking-working surfaces; renumbered in 2017 (old 1910.25-27 = ladders, new 1910.23 = ladders), so the block maps to falls"
+federal_1910,range,1910.33,1910.39,fire_explosion,"Subpart E exit routes, emergency action and fire prevention plans"
+federal_1910,range,1910.66,1910.68,scaffolds,"Subpart F powered platforms, vehicle-mounted elevating platforms (aerial lifts), manlifts"
+federal_1910,range,1910.94,1910.98,health_silica_lead_asbestos_noise,"Subpart G ventilation, noise, radiation"
+federal_1910,range,1910.101,1910.126,fire_explosion,"Subpart H hazardous materials (compressed gases, flammable liquids, LP gas, spray finishing, PSM)"
+federal_1910,exact,1910.120,,health_silica_lead_asbestos_noise,Subpart H HAZWOPER
+federal_1910,range,1910.132,1910.138,ppe,Subpart I personal protective equipment
+federal_1910,exact,1910.134,,health_silica_lead_asbestos_noise,Subpart I respiratory protection
+federal_1910,exact,1910.137,,electrical,Subpart I electrical protective equipment
+federal_1910,exact,1910.140,,fall_protection,Subpart I personal fall protection systems
+federal_1910,range,1910.141,1910.152,safety_program_training,"Subpart J general environmental controls (sanitation, signs, first aid 1910.151)"
+federal_1910,exact,1910.146,,confined_space,Subpart J permit-required confined spaces
+federal_1910,exact,1910.147,,tools_machine_guarding,Subpart J control of hazardous energy (lockout/tagout)
+federal_1910,range,1910.155,1910.165,fire_explosion,Subpart L fire protection
+federal_1910,range,1910.169,1910.169,tools_machine_guarding,Subpart M air receivers
+federal_1910,exact,1910.177,,motor_vehicles_equipment,Subpart N servicing multi-piece and single-piece rim wheels
+federal_1910,exact,1910.178,,motor_vehicles_equipment,Subpart N powered industrial trucks (forklifts)
+federal_1910,range,1910.179,1910.184,cranes_rigging,"Subpart N cranes, derricks, slings"
+federal_1910,range,1910.211,1910.219,tools_machine_guarding,Subpart O machinery and machine guarding
+federal_1910,range,1910.241,1910.244,tools_machine_guarding,Subpart P hand and portable powered tools
+federal_1910,range,1910.251,1910.255,fire_explosion,"Subpart Q welding, cutting and brazing"
+federal_1910,exact,1910.268,,electrical,Subpart R telecommunications
+federal_1910,exact,1910.269,,electrical,"Subpart R electric power generation, transmission and distribution"
+federal_1910,range,1910.301,1910.399,electrical,Subpart S electrical
+federal_1910,range,1910.1000,1910.1450,health_silica_lead_asbestos_noise,Subpart Z toxic and hazardous substances
+federal_1910,exact,1910.1020,,recordkeeping,Subpart Z access to employee exposure and medical records
+federal_1910,exact,1910.1200,,hazcom,Subpart Z hazard communication
+federal_other,range,1903.1,1903.22,recordkeeping,"Part 1903 inspections, citations and penalties (1903.2 posting, 1903.19 abatement verification)"
+federal_other,range,1904.0,1904.46,recordkeeping,Part 1904 recording and reporting occupational injuries and illnesses
+federal_other,range,1960.1,1960.90,safety_program_training,Part 1960 federal agency safety and health programs
+general_duty,exact,5(a)(1),,general_duty,OSH Act section 5(a)(1) General Duty Clause
+general_duty,prefix,5(a),,general_duty,Other OSH Act section 5(a) codes (5(a)(2) is rare)
+state_WA,prefix,WAC 296-880-,,fall_protection,Unified safety standards for fall protection (since 2016)
+state_WA,prefix,WAC 296-155-245,,fall_protection,Part C-1 fall protection (pre-2016 numbering)
+state_WA,prefix,WAC 296-155-246,,fall_protection,Part C-1 fall protection (later moved to 296-880)
+state_WA,prefix,WAC 296-155-0,,safety_program_training,"Part A general provisions (education, first aid, housekeeping, general requirements)"
+state_WA,prefix,WAC 296-155-040,,general_duty,Safe place standards (WA construction general duty: workplace free from recognized hazards)
+state_WA,prefix,WAC 296-155-1,,safety_program_training,"Part B-1 management responsibility, accident prevention program (110), first aid (120-130), sanitation (140)"
+state_WA,prefix,WAC 296-155-145,,health_silica_lead_asbestos_noise,Part B-1 occupational noise exposure
+state_WA,prefix,WAC 296-155-15,,health_silica_lead_asbestos_noise,"Part B-1 radiation, gases, vapors, fumes, dusts"
+state_WA,prefix,WAC 296-155-16,,health_silica_lead_asbestos_noise,"Part B-1 gases, vapors, fumes, dusts, mists; lighting"
+state_WA,prefix,WAC 296-155-165,,safety_program_training,Part B-1 lighting and illumination
+state_WA,prefix,WAC 296-155-17,,health_silica_lead_asbestos_noise,"Part B-1 ventilation, MDA, cadmium, lead (176)"
+state_WA,prefix,WAC 296-155-18,,hazcom,Part B-2 hazard communication
+state_WA,prefix,WAC 296-155-2,,ppe,Part C personal protective and life saving equipment
+state_WA,prefix,WAC 296-155-203,,confined_space,Part C confined spaces
+state_WA,prefix,WAC 296-155-210,,health_silica_lead_asbestos_noise,Part C hearing protection
+state_WA,prefix,WAC 296-155-220,,health_silica_lead_asbestos_noise,Part C respiratory protection
+state_WA,prefix,WAC 296-155-225,,fall_protection,"Repealed section, inferred: pre-2000s safety belts/lifelines (mirrors 1926.104)"
+state_WA,prefix,WAC 296-155-25,,fire_explosion,Part D fire protection and prevention
+state_WA,prefix,WAC 296-155-26,,fire_explosion,Part D fire protection and prevention
+state_WA,prefix,WAC 296-155-27,,fire_explosion,"Part D flammable liquids, LP-gas"
+state_WA,prefix,WAC 296-155-28,,fire_explosion,Part D temporary heating devices
+state_WA,prefix,WAC 296-155-3,,motor_vehicles_equipment,"Part E signaling, flaggers, barricades (300-315)"
+state_WA,prefix,WAC 296-155-32,,other,Part F storage (general requirements)
+state_WA,prefix,WAC 296-155-33,,cranes_rigging,"Part F-1 rigging, slings, lifting devices (336-340); 335 waste disposal"
+state_WA,prefix,WAC 296-155-335,,other,Part F disposal of waste materials
+state_WA,prefix,WAC 296-155-34,,cranes_rigging,Part F-1 lifting devices other than slings
+state_WA,prefix,WAC 296-155-35,,tools_machine_guarding,Part G tools - hand and power
+state_WA,prefix,WAC 296-155-36,,tools_machine_guarding,"Part G power tools, powder-actuated, abrasive wheels, masonry saws"
+state_WA,prefix,WAC 296-155-37,,tools_machine_guarding,"Part G woodworking tools, jacks"
+state_WA,prefix,WAC 296-155-38,,tools_machine_guarding,Part G air receivers
+state_WA,prefix,WAC 296-155-4,,electrical,Part I electrical (426-462)
+state_WA,prefix,WAC 296-155-40,,fire_explosion,Part H welding and cutting (400-420)
+state_WA,prefix,WAC 296-155-41,,fire_explosion,Part H welding and cutting (400-420)
+state_WA,prefix,WAC 296-155-42,,fire_explosion,Part H welding and cutting (400-420); 426+ electrical
+state_WA,prefix,WAC 296-155-426,,electrical,Part I electrical
+state_WA,prefix,WAC 296-155-428,,electrical,Part I electrical
+state_WA,prefix,WAC 296-155-429,,electrical,Part I electrical lockout and tagging of circuits
+state_WA,prefix,WAC 296-155-47,,ladders,Part J stairways (475-477)
+state_WA,prefix,WAC 296-155-480,,ladders,"Repealed section, inferred: pre-2008 portable ladders (moved to 296-876)"
+state_WA,prefix,WAC 296-155-48,,scaffolds,"Repealed sections, inferred: pre-2008 scaffolds 296-155-481 to -493 (moved to 296-874)"
+state_WA,prefix,WAC 296-155-49,,scaffolds,"Repealed sections, inferred: pre-2008 scaffolds (moved to 296-874)"
+state_WA,prefix,WAC 296-155-505,,fall_protection,"Repealed section, inferred: guardrails, handrails and covers"
+state_WA,prefix,WAC 296-155-52,,cranes_rigging,Part L cranes and derricks (old 525-528 and current 529)
+state_WA,prefix,WAC 296-155-53,,cranes_rigging,"Part L cranes, rigging and personnel lifting"
+state_WA,prefix,WAC 296-155-54,,cranes_rigging,"Part L cranes, rigging and personnel lifting"
+state_WA,prefix,WAC 296-155-55,,cranes_rigging,"Part L cranes, rigging and personnel lifting"
+state_WA,prefix,WAC 296-155-56,,cranes_rigging,Part L rigging hardware and lifting devices
+state_WA,prefix,WAC 296-155-57,,cranes_rigging,"Repealed sections, inferred: hoists and elevators"
+state_WA,prefix,WAC 296-155-6,,motor_vehicles_equipment,"Part M motor vehicles, mechanized equipment (600-630)"
+state_WA,prefix,WAC 296-155-65,,excavation_trenching,"Part N excavation, trenching and shoring"
+state_WA,prefix,WAC 296-155-66,,excavation_trenching,"Part N excavation, trenching and shoring"
+state_WA,prefix,WAC 296-155-67,,steel_concrete_masonry,"Part O concrete, forms, shoring and masonry (675-697)"
+state_WA,prefix,WAC 296-155-68,,steel_concrete_masonry,"Part O concrete, forms, shoring and masonry (675-697)"
+state_WA,prefix,WAC 296-155-69,,steel_concrete_masonry,"Part O concrete, forms, shoring and masonry (675-697)"
+state_WA,prefix,WAC 296-155-70,,steel_concrete_masonry,Steel erection (700s; inferred from chapter structure)
+state_WA,prefix,WAC 296-155-71,,steel_concrete_masonry,Steel erection (700s; inferred from chapter structure)
+state_WA,prefix,WAC 296-155-72,,steel_concrete_masonry,Steel erection (700s; inferred from chapter structure)
+state_WA,prefix,WAC 296-155-73,,excavation_trenching,Part CC tunnels and shafts (730)
+state_WA,prefix,WAC 296-155-771,,cranes_rigging,"Hoists, elevators, excavators and conveyors (77100)"
+state_WA,prefix,WAC 296-155-775,,demolition,Demolition: preparatory operations (775) and following sections
+state_WA,prefix,WAC 296-155-78,,demolition,"Demolition (780s, inferred from chapter structure)"
+state_WA,prefix,WAC 296-155-8,,fire_explosion,"Blasting and explosives (800s; inferred from chapter structure)"
+state_WA,prefix,WAC 296-155-95,,electrical,"Power transmission and distribution (950s; inferred from chapter structure)"
+state_WA,prefix,WAC 296-876-,,ladders,"Ladders, portable and fixed"
+state_WA,prefix,WAC 296-874-,,scaffolds,Scaffolds
+state_WA,prefix,WAC 296-869-,,scaffolds,Elevating work platforms (aerial lifts)
+state_WA,prefix,WAC 296-870-,,scaffolds,Powered platforms
+state_WA,prefix,WAC 296-811-,,scaffolds,Powered platforms for building maintenance
+state_WA,prefix,WAC 296-878-,,scaffolds,Window cleaning
+state_WA,prefix,WAC 296-842-,,health_silica_lead_asbestos_noise,Respirators
+state_WA,prefix,WAC 296-820-,,health_silica_lead_asbestos_noise,"Wildfire smoke rule (296-820-820 = hazard communication about smoke; chapter title inferred)"
+state_WA,prefix,WAC 296-840-,,health_silica_lead_asbestos_noise,Respirable crystalline silica
+state_WA,prefix,WAC 296-841-,,health_silica_lead_asbestos_noise,Airborne contaminants
+state_WA,prefix,WAC 296-817-,,health_silica_lead_asbestos_noise,Hearing loss prevention (noise)
+state_WA,prefix,WAC 296-818-,,health_silica_lead_asbestos_noise,Abrasive blasting
+state_WA,prefix,WAC 296-65-,,health_silica_lead_asbestos_noise,Asbestos removal and encapsulation
+state_WA,prefix,WAC 296-823-,,health_silica_lead_asbestos_noise,Bloodborne pathogens
+state_WA,prefix,WAC 296-843-,,health_silica_lead_asbestos_noise,Hazardous waste operations (HAZWOPER)
+state_WA,prefix,WAC 296-856-,,health_silica_lead_asbestos_noise,Ethylene oxide (inferred)
+state_WA,prefix,WAC 296-62-,,health_silica_lead_asbestos_noise,"General occupational health standards (asbestos 077, carcinogens, air contaminants, wildfire smoke 085)"
+state_WA,prefix,WAC 296-62-054,,hazcom,Pre-GHS hazard communication (Part C)
+state_WA,prefix,WAC 296-62-095,,heat,Outdoor heat exposure (296-62-09510 to -09560)
+state_WA,prefix,WAC 296-901-,,hazcom,Globally harmonized system for hazard communication
+state_WA,prefix,WAC 296-27-,,recordkeeping,Recordkeeping and reporting
+state_WA,prefix,WAC 296-802-,,recordkeeping,Employee medical and exposure records
+state_WA,prefix,WAC 296-900-,,recordkeeping,"Administrative rules (posting, citations, abatement)"
+state_WA,prefix,WAC 296-863-,,motor_vehicles_equipment,Forklifts and other powered industrial trucks
+state_WA,prefix,WAC 296-865-,,motor_vehicles_equipment,Motor vehicles
+state_WA,prefix,WAC 296-809-,,confined_space,Confined spaces
+state_WA,prefix,WAC 296-806-,,tools_machine_guarding,Machine safety
+state_WA,prefix,WAC 296-807-,,tools_machine_guarding,Portable power tools and other hand-held equipment
+state_WA,prefix,WAC 296-803-,,tools_machine_guarding,Lockout/tagout (control of hazardous energy)
+state_WA,prefix,WAC 296-45-,,electrical,Safety standards for electrical workers
+state_WA,prefix,WAC 296-32-,,electrical,Telecommunications
+state_WA,prefix,WAC 296-824-,,fire_explosion,Emergency response
+state_WA,prefix,WAC 296-67-,,fire_explosion,Process safety management
+state_WA,prefix,WAC 296-52-,,fire_explosion,Possession and handling of explosives
+state_WA,prefix,WAC 296-800-,,safety_program_training,"Safety and health core rules (committees 130, accident prevention program 140, first aid 150, bulletin board, housekeeping, sanitation)"
+state_WA,prefix,WAC 296-800-110,,general_duty,Employer responsibilities: safe workplace (WA general duty)
+state_WA,prefix,WAC 296-800-160,,ppe,Personal protective equipment
+state_WA,prefix,WAC 296-800-170,,hazcom,Employer chemical hazard communication (pre-GHS)
+state_WA,prefix,WAC 296-800-180,,recordkeeping,Safety data sheets as exposure records
+state_WA,prefix,WAC 296-800-200,,recordkeeping,Job safety and health law poster
+state_WA,prefix,WAC 296-800-240,,health_silica_lead_asbestos_noise,Environmental tobacco smoke
+state_WA,prefix,WAC 296-800-250,,ladders,Stairs and stair railings
+state_WA,prefix,WAC 296-800-260,,fall_protection,"Repealed section, inferred: floor and wall openings"
+state_WA,prefix,WAC 296-800-270,,other,Workplace structural integrity
+state_WA,prefix,WAC 296-800-280,,electrical,Basic electrical rules
+state_WA,prefix,WAC 296-800-300,,fire_explosion,Portable fire extinguishers
+state_WA,prefix,WAC 296-800-310,,fire_explosion,Exit routes and employee alarm systems
+state_WA,prefix,WAC 296-800-320,,recordkeeping,Accident reporting and investigating
+state_WA,prefix,WAC 296-800-330,,recordkeeping,Releasing accident investigation reports
+state_WA,prefix,WAC 296-24-0,,safety_program_training,"General safety standards Part A (pre-2001 accident prevention program, committees, first aid)"
+state_WA,prefix,WAC 296-24-07,,ppe,"Repealed Part A-2 personal protective equipment (inferred, moved to 296-800-160)"
+state_WA,prefix,WAC 296-24-08,,ppe,"Repealed Part A-2 personal protective equipment (inferred, moved to 296-800-160)"
+state_WA,prefix,WAC 296-24-09,,ppe,"Repealed Part A-2 personal protective equipment (inferred, moved to 296-800-160)"
+state_WA,prefix,WAC 296-24-1,,tools_machine_guarding,"Repealed Part A-4 safety procedures and Part C machine guarding (moved to 296-803, 296-806)"
+state_WA,prefix,WAC 296-24-2,,cranes_rigging,"Part D materials handling, storage, cranes, derricks, rigging (215-294)"
+state_WA,prefix,WAC 296-24-23,,motor_vehicles_equipment,"Part D powered industrial trucks (inferred, 230s)"
+state_WA,prefix,WAC 296-24-295,,fire_explosion,"Part E hazardous materials, flammable liquids, spray finishing"
+state_WA,prefix,WAC 296-24-3,,fire_explosion,"Part E hazardous materials, flammable liquids, spray finishing"
+state_WA,prefix,WAC 296-24-4,,fire_explosion,"Part E-F hazardous materials, LP gas"
+state_WA,prefix,WAC 296-24-5,,fire_explosion,"Part G means of egress, fire protection, fire suppression"
+state_WA,prefix,WAC 296-24-6,,fire_explosion,"Part G fire suppression; Part I welding (680+)"
+state_WA,prefix,WAC 296-24-7,,fire_explosion,"Part I welding, cutting and brazing (680-722)"
+state_WA,prefix,WAC 296-24-73,,fall_protection,"Part J-1 working surfaces, floors, wall openings (735-750)"
+state_WA,prefix,WAC 296-24-74,,fall_protection,"Part J-1 working surfaces, floors, wall openings (735-750)"
+state_WA,prefix,WAC 296-24-75,,fall_protection,"Part J-1 working surfaces, floors, wall openings (735-750)"
+state_WA,prefix,WAC 296-24-76,,ladders,"Repealed sections, inferred: ladders (760s-810s)"
+state_WA,prefix,WAC 296-24-77,,ladders,"Repealed sections, inferred: ladders (760s-810s)"
+state_WA,prefix,WAC 296-24-78,,ladders,"Repealed sections, inferred: ladders (760s-810s)"
+state_WA,prefix,WAC 296-24-79,,ladders,"Repealed sections, inferred: ladders (760s-810s)"
+state_WA,prefix,WAC 296-24-8,,scaffolds,"Part J-2 scaffolds (862) and repealed scaffold/platform sections"
+state_WA,prefix,WAC 296-24-92,,fire_explosion,Part K compressed gas and equipment
+state_WA,prefix,WAC 296-24-93,,fire_explosion,Part K compressed gas and equipment
+state_WA,prefix,WAC 296-24-94,,fire_explosion,Part K compressed gas and equipment
+state_WA,prefix,WAC 296-24-95,,electrical,Part L electrical
+state_WA,prefix,WAC 296-24-96,,electrical,Part L electrical
+state_WA,prefix,WAC 296-24-97,,electrical,Part L electrical
+state_WA,prefix,WAC 296-24-98,,electrical,Part L electrical
+state_WA,prefix,WAC 296-24-99,,electrical,Part L electrical
+state_CA,range,T8 CCR 340,T8 CCR 344,recordkeeping,"Cal/OSHA administrative: posting (340), permits (341), serious injury reporting (342)"
+state_CA,range,T8 CCR 450,T8 CCR 560,tools_machine_guarding,Unfired pressure vessel safety orders (air tanks; permit to operate 461)
+state_CA,range,T8 CCR 1500,T8 CCR 1527,safety_program_training,"CSO Art 1-3 general: IIPP (1509), safety instruction (1510), emergency medical services (1512), housekeeping, sanitation"
+state_CA,range,T8 CCR 1514,T8 CCR 1517,ppe,CSO Art 3 personal protective devices
+state_CA,exact,T8 CCR 1518,,electrical,CSO Art 3 protection from electric shock
+state_CA,exact,T8 CCR 1521,,health_silica_lead_asbestos_noise,CSO Art 3 ear protection
+state_CA,exact,T8 CCR 1522,,ppe,CSO Art 3 body protection
+state_CA,range,T8 CCR 1528,T8 CCR 1537,health_silica_lead_asbestos_noise,"CSO Art 4 dusts, fumes, mists, vapors, gases (asbestos 1529, silica 1530.1/1532.3, lead 1532.1)"
+state_CA,exact,T8 CCR 1538,,tools_machine_guarding,CSO Art 5 rock drilling
+state_CA,range,T8 CCR 1539,T8 CCR 1547,excavation_trenching,CSO Art 6 excavations
+state_CA,range,T8 CCR 1548,T8 CCR 1549,other,"CSO Art 7 bins, bunkers, hoppers, material storage"
+state_CA,range,T8 CCR 1550,T8 CCR 1580,fire_explosion,CSO Art 8 explosives
+state_CA,range,T8 CCR 1581,T8 CCR 1589,cranes_rigging,"CSO Art 9 derricks, cranes, boom-type excavators"
+state_CA,range,T8 CCR 1590,T8 CCR 1599,motor_vehicles_equipment,"CSO Art 10-11 haulage, earth moving, vehicles, traffic control, flaggers"
+state_CA,range,T8 CCR 1600,T8 CCR 1601,cranes_rigging,CSO Art 12 pile driving
+state_CA,range,T8 CCR 1602,T8 CCR 1603,ppe,CSO Art 13 work over or near water
+state_CA,range,T8 CCR 1604,T8 CCR 1619,cranes_rigging,"CSO Art 14-15 construction hoists, cranes and derricks (1604-1619.5)"
+state_CA,range,T8 CCR 1620,T8 CCR 1621,fall_protection,CSO Art 16 standard railings
+state_CA,range,T8 CCR 1622,T8 CCR 1631,ladders,"CSO Art 17-18 ramps, runways, stairs; access and egress (stairways and ladders 1629)"
+state_CA,range,T8 CCR 1623,T8 CCR 1625,fall_protection,"CSO Art 17 wheelbarrow, foot-traffic and powered-buggy runways"
+state_CA,exact,T8 CCR 1630,,cranes_rigging,CSO Art 18 elevators for hoisting workers
+state_CA,range,T8 CCR 1632,T8 CCR 1633,fall_protection,"CSO Art 19 floor, roof and wall openings"
+state_CA,exact,T8 CCR 1635,,fall_protection,CSO Art 20 temporary floors (1635.1+ are scaffolds)
+state_CA,range,T8 CCR 1635.1,T8 CCR 1667,scaffolds,CSO Art 21-23 scaffolds
+state_CA,range,T8 CCR 1669,T8 CCR 1672,fall_protection,CSO Art 24 fall protection
+state_CA,range,T8 CCR 1675,T8 CCR 1678,ladders,CSO Art 25 ladders
+state_CA,range,T8 CCR 1680,T8 CCR 1708,tools_machine_guarding,"CSO Art 26-28 power saws, powder-actuated tools, misc tools and equipment"
+state_CA,range,T8 CCR 1709,T8 CCR 1722,steel_concrete_masonry,"CSO Art 29 erection and construction (steel, concrete, impalement 1712, framing, masonry; 1709-1722.1)"
+state_CA,exact,T8 CCR 1716.2,,fall_protection,CSO Art 29 residential-type framing (mainly fall protection requirements)
+state_CA,range,T8 CCR 1723,T8 CCR 1724,fall_protection,CSO Art 30 roofing general
+state_CA,range,T8 CCR 1725,T8 CCR 1729,fire_explosion,CSO Art 30 hot asphalt/pitch kettles and buckets
+state_CA,range,T8 CCR 1730,T8 CCR 1731,fall_protection,CSO Art 30 roof hazards; residential-type roofing
+state_CA,range,T8 CCR 1733,T8 CCR 1737,demolition,CSO Art 31 demolition
+state_CA,range,T8 CCR 1739,T8 CCR 1743,fire_explosion,"CSO Art 32 oxygen, acetylene and fuel gas"
+state_CA,exact,T8 CCR 1760,,electrical,CSO Art 33 electrical requirements
+state_CA,range,T8 CCR 1800,T8 CCR 1813,health_silica_lead_asbestos_noise,CSO Art 34 nonionizing radiation
+state_CA,range,T8 CCR 1900,T8 CCR 1909,cranes_rigging,CSO Art 35 helicopter operations
+state_CA,range,T8 CCR 1920,T8 CCR 1938,fire_explosion,CSO Art 36 fire protection and prevention
+state_CA,range,T8 CCR 1950,T8 CCR 1962,confined_space,CSO Art 37 confined spaces in construction
+state_CA,range,T8 CCR 2299,T8 CCR 2989,electrical,Electrical safety orders (low and high voltage)
+state_CA,range,T8 CCR 3000,T8 CCR 3146,cranes_rigging,Elevator safety orders
+state_CA,range,T8 CCR 3200,T8 CCR 3206,safety_program_training,GISO introduction (IIPP 3203)
+state_CA,exact,T8 CCR 3204,,recordkeeping,Access to employee exposure and medical records
+state_CA,range,T8 CCR 3205,T8 CCR 3205,health_silica_lead_asbestos_noise,COVID-19 prevention (3205 to 3205.4)
+state_CA,range,T8 CCR 3207,T8 CCR 3213,fall_protection,"GISO Art 1-2 definitions, standard guardrails, elevated locations, wall/floor openings (3209-3213)"
+state_CA,exact,T8 CCR 3214,,ladders,GISO Art 2 stair rails and handrails
+state_CA,range,T8 CCR 3215,T8 CCR 3239,fire_explosion,"GISO Art 2 means of egress, exit signs, fire protection equipment, emergency action plan (3220), fire prevention plan (3221), exits"
+state_CA,range,T8 CCR 3231,T8 CCR 3234,ladders,"GISO Art 2 stairways, ramps, fixed industrial stairs"
+state_CA,range,T8 CCR 3240,T8 CCR 3261,other,GISO Art 3 special design requirements
+state_CA,range,T8 CCR 3270,T8 CCR 3274,fall_protection,"GISO Art 4 access, rope access, openings, aisles and walkways, working area (3270-3274)"
+state_CA,exact,T8 CCR 3275,,scaffolds,GISO Art 4 scaffolds
+state_CA,range,T8 CCR 3276,T8 CCR 3280,ladders,GISO Art 4 portable and fixed ladders
+state_CA,range,T8 CCR 3281,T8 CCR 3299,scaffolds,"GISO Art 5-6 window cleaning, powered platforms for building maintenance"
+state_CA,range,T8 CCR 3300,T8 CCR 3345,tools_machine_guarding,"GISO Art 7 miscellaneous safe practices (lockout 3314, machinery 3328)"
+state_CA,range,T8 CCR 3350,T8 CCR 3376,safety_program_training,GISO Art 8-9 labor camps and sanitation
+state_CA,range,T8 CCR 3380,T8 CCR 3394,ppe,GISO Art 10 personal safety devices and safeguards
+state_CA,exact,T8 CCR 3395,,heat,Heat illness prevention (outdoor)
+state_CA,exact,T8 CCR 3396,,heat,Heat illness prevention in indoor places of employment
+state_CA,exact,T8 CCR 3400,,safety_program_training,Medical services and first aid
+state_CA,range,T8 CCR 3401,T8 CCR 3411,ppe,GISO Art 10.1 firefighter protective clothing and equipment
+state_CA,range,T8 CCR 3412,T8 CCR 3416,fall_protection,GISO Art 11 outdoor advertising structures
+state_CA,range,T8 CCR 3420,T8 CCR 3482,other,"GISO Art 12-15 tree work, agriculture, marine terminals, vats and bins"
+state_CA,range,T8 CCR 3511,T8 CCR 3583,tools_machine_guarding,"GISO Art 17-21 engines and compressors, automotive lifts, hand and portable powered tools, abrasive wheels"
+state_CA,range,T8 CCR 3620,T8 CCR 3648,scaffolds,"GISO Art 23-24 mobile scaffolds, elevating work platforms and aerial devices"
+state_CA,range,T8 CCR 3649,T8 CCR 3811,motor_vehicles_equipment,"GISO Art 25-31 industrial trucks, tractors, haulage, earthmoving, transportation of employees, railroads"
+state_CA,range,T8 CCR 3940,T8 CCR 4647,tools_machine_guarding,"GISO Groups 6-8 power transmission, machines, points of operation"
+state_CA,range,T8 CCR 4648,T8 CCR 4660,fire_explosion,GISO Group 9 compressed gas and air equipment
+state_CA,range,T8 CCR 4794,T8 CCR 4853,fire_explosion,GISO Groups 10-11 welding and cutting
+state_CA,range,T8 CCR 4884,T8 CCR 5049,cranes_rigging,GISO Group 13 cranes and other hoisting equipment
+state_CA,range,T8 CCR 5075,T8 CCR 5223,health_silica_lead_asbestos_noise,"GISO Groups 14-16 radiation, noise and ergonomics, control of hazardous substances (respirators 5144, silica 5204)"
+state_CA,range,T8 CCR 5157,T8 CCR 5158,confined_space,Permit-required and other confined spaces
+state_CA,exact,T8 CCR 5162,,ppe,Emergency eyewash and shower equipment
+state_CA,exact,T8 CCR 5189,,fire_explosion,Process safety management
+state_CA,exact,T8 CCR 5194,,hazcom,Hazard communication
+state_CA,range,T8 CCR 5236,T8 CCR 5629,fire_explosion,"GISO Groups 18-20 explosive materials, flammable liquids, gases and vapors"
+state_CA,range,T8 CCR 6050,T8 CCR 6120,other,GISO Group 26 diving
+state_CA,range,T8 CCR 6150,T8 CCR 6184,fire_explosion,GISO Group 27 fire protection
+state_CA,range,T8 CCR 8400,T8 CCR 8570,excavation_trenching,Tunnel safety orders
+state_CA,range,T8 CCR 14000,T8 CCR 14400,recordkeeping,"Chapter 7 injury reports and records: employer's report 14001 (inferred), recordkeeping 14300.x (packed as 1430dddd/4300dddd), pre-2002 14301-14308"
+state_CA,exact,LC 6401.9,,safety_program_training,Labor Code 6401.9 workplace violence prevention plan (2024+)
+state_CA,exact,LC 6401.7,,safety_program_training,Labor Code 6401.7 injury prevention program
+state_MI,prefix,R 408.401,,safety_program_training,"CS Part 1 general rules (accident prevention program R 408.40114, medical services and first aid R 408.40132)"
+state_MI,prefix,R 408.402,,steel_concrete_masonry,CS Part 2 masonry wall bracing
+state_MI,prefix,R 408.406,,ppe,CS Part 6 personal protective equipment
+state_MI,prefix,R 408.407,,fire_explosion,CS Part 7 welding and cutting
+state_MI,prefix,R 408.408,,other,CS Part 8 handling and storage of materials
+state_MI,prefix,R 408.409,,excavation_trenching,"CS Part 9 excavation, trenching and shoring"
+state_MI,prefix,R 408.410,,cranes_rigging,CS Part 10 lifting and digging equipment / cranes and derricks
+state_MI,prefix,R 408.411,,ladders,CS Part 11 fixed and portable ladders
+state_MI,prefix,R 408.412,,scaffolds,CS Part 12 scaffolds and scaffold platforms
+state_MI,prefix,R 408.413,,motor_vehicles_equipment,CS Part 13 mobile equipment
+state_MI,prefix,R 408.414,,excavation_trenching,"CS Part 14 tunnels, shafts, caissons and cofferdams"
+state_MI,prefix,R 408.415,,cranes_rigging,"CS Part 15 excavators, hoists, elevators, helicopters and conveyors"
+state_MI,prefix,R 408.4152,,motor_vehicles_equipment,"CS Part 15 excavator rules (R 408.41523 inspection, R 408.41527 pinch point/struck-by)"
+state_MI,prefix,R 408.416,,electrical,CS Part 16 power transmission and distribution
+state_MI,prefix,R 408.417,,electrical,CS Part 17 electrical installations
+state_MI,prefix,R 408.418,,fire_explosion,CS Part 18 fire protection and prevention
+state_MI,prefix,R 408.419,,tools_machine_guarding,CS Part 19 tools
+state_MI,prefix,R 408.420,,demolition,CS Part 20 demolition
+state_MI,prefix,R 408.421,,fall_protection,CS Part 21 guarding of walking and working areas
+state_MI,prefix,R 408.422,,motor_vehicles_equipment,"CS Part 22 signals, signs, tags and barricades"
+state_MI,prefix,R 408.424,,fire_explosion,CS Part 24 tar kettles
+state_MI,prefix,R 408.425,,steel_concrete_masonry,CS Part 25 concrete construction
+state_MI,prefix,R 408.426,,steel_concrete_masonry,CS Part 26 steel erection
+state_MI,prefix,R 408.427,,fire_explosion,CS Part 27 blasting and use of explosives
+state_MI,prefix,R 408.428,,cranes_rigging,CS Part 28 personnel hoisting in steel erection
+state_MI,prefix,R 408.429,,fall_protection,CS Part 29 communication towers (climbing)
+state_MI,prefix,R 408.430,,electrical,CS Part 30 telecommunications
+state_MI,prefix,R 408.432,,scaffolds,CS Part 32 aerial work platforms
+state_MI,prefix,R 408.435,,confined_space,CS Part 35 confined space in construction
+state_MI,prefix,R 408.442,,hazcom,CS Part 42 hazard communication
+state_MI,prefix,R 408.445,,fall_protection,CS Part 45 fall protection
+state_MI,prefix,R 408.100,,safety_program_training,GI Part 1 general provisions
+state_MI,prefix,R 408.101,,tools_machine_guarding,GI Part 1a abrasive wheels
+state_MI,prefix,R 408.102,,fall_protection,GI Part 2 walking-working surfaces
+state_MI,prefix,R 408.103,,ladders,GI Part 3 fixed ladders (rescinded)
+state_MI,prefix,R 408.104,,ladders,GI Part 4 portable ladders (rescinded)
+state_MI,prefix,R 408.105,,scaffolds,GI Part 5 powered platforms for building maintenance
+state_MI,prefix,R 408.106,,fire_explosion,GI Part 6 fire exits
+state_MI,prefix,R 408.107,,tools_machine_guarding,GI Part 7 guards for power transmission
+state_MI,prefix,R 408.108,,fire_explosion,GI Part 8 portable fire extinguishers
+state_MI,prefix,R 408.109,,fire_explosion,GI Part 9 fixed fire equipment
+state_MI,prefix,R 408.111,,tools_machine_guarding,"GI Part 11 polishing, buffing and abrading"
+state_MI,prefix,R 408.112,,fire_explosion,GI Part 12 welding and cutting
+state_MI,prefix,R 408.113,,cranes_rigging,GI Part 13 derricks
+state_MI,prefix,R 408.114,,tools_machine_guarding,GI Part 14 conveyors
+state_MI,prefix,R 408.118,,cranes_rigging,GI Part 18 overhead and gantry cranes
+state_MI,prefix,R 408.119,,cranes_rigging,"GI Part 19 crawler, locomotive and truck cranes"
+state_MI,prefix,R 408.120,,cranes_rigging,GI Part 20 underhung cranes and monorails
+state_MI,prefix,R 408.121,,motor_vehicles_equipment,GI Part 21 powered industrial trucks
+state_MI,prefix,R 408.122,,motor_vehicles_equipment,GI Part 22 tractors
+state_MI,prefix,R 408.123,,tools_machine_guarding,GI Part 23 hydraulic power presses
+state_MI,prefix,R 408.124,,tools_machine_guarding,GI Part 24 mechanical power presses
+state_MI,prefix,R 408.125,,cranes_rigging,GI Part 25 manlifts
+state_MI,prefix,R 408.126,,tools_machine_guarding,GI Part 26 metalworking machinery
+state_MI,prefix,R 408.127,,tools_machine_guarding,GI Part 27 woodworking machinery
+state_MI,prefix,R 408.133,,ppe,GI Part 33 personal protective equipment
+state_MI,prefix,R 408.137,,safety_program_training,GI Part 37 accident prevention signs and tags
+state_MI,prefix,R 408.138,,tools_machine_guarding,GI Part 38 hand and portable powered tools
+state_MI,prefix,R 408.139,,electrical,GI Part 39 design safety standards for electrical systems
+state_MI,prefix,R 408.140,,electrical,Part 40 electrical safety-related work practices
+state_MI,prefix,R 408.149,,cranes_rigging,GI Part 49 slings
+state_MI,prefix,R 408.150,,electrical,GI Part 50 telecommunications
+state_MI,prefix,R 408.155,,fire_explosion,GI Part 55 explosives and blasting agents
+state_MI,prefix,R 408.156,,fire_explosion,GI Part 56 LP gas
+state_MI,prefix,R 408.158,,scaffolds,GI Part 58 aerial work platforms
+state_MI,prefix,R 408.159,,cranes_rigging,GI Part 59 helicopters
+state_MI,prefix,R 408.169,,fire_explosion,GI Part 69 compressed gases
+state_MI,prefix,R 408.172,,motor_vehicles_equipment,GI Part 72 automotive service operations
+state_MI,prefix,R 408.175,,fire_explosion,GI Part 75 flammable liquids
+state_MI,prefix,R 408.176,,fire_explosion,GI Part 76 spray finishing
+state_MI,prefix,R 408.185,,tools_machine_guarding,GI Part 85 control of hazardous energy (lockout)
+state_MI,prefix,R 408.186,,electrical,"GI Part 86 electric power generation, transmission and distribution"
+state_MI,prefix,R 408.190,,confined_space,GI Part 90 permit-required confined spaces
+state_MI,prefix,R 408.191,,fire_explosion,GI Part 91 process safety management
+state_MI,prefix,R 408.192,,hazcom,GI Part 92 hazard communication
+state_MI,prefix,R 408.193,,tools_machine_guarding,GI Part 93 air receivers
+state_MI,prefix,R 408.22,,recordkeeping,"Administrative standards: Part 11 recording and reporting (R 408.221xx), Part 13 inspections and citations incl. notification of abatement (R 408.22349)"
+state_MI,prefix,R 325.,,health_silica_lead_asbestos_noise,"Occupational health standards (lead, asbestos, silica, noise, respirators, air contaminants)"
+state_MI,prefix,R 325.472,,safety_program_training,OH Part 472 medical services and first aid
+state_MI,prefix,R 325.474,,safety_program_training,OH Part 474 sanitation
+state_MI,exact,MCL 408.1011,,general_duty,MIOSH Act section 11(a) general duty clause (11(b) comply with rules)
+state_MI,exact,MCL 408.1014,,hazcom,"MIOSH Act section 14 (posting) and 14a-14l (Michigan right-to-know hazard communication); packed codes mostly cite the lettered sections (40801014J...), so mapped to hazcom (inferred)"
+state_MI,prefix,MI RULE,,health_silica_lead_asbestos_noise,MIOSHA COVID-19 emergency rules (cited Oct 2020 - 2021 as 'RULE n'; inferred from dates)
+state_MI,prefix,MCL 338.,,health_silica_lead_asbestos_noise,"Inferred, unverified: Michigan asbestos abatement contractor licensing act"
+state_OR,exact,OAR 437-003-1501,,fall_protection,Oregon construction fall protection (6-foot trigger)
+state_OR,exact,OAR 437-003-1500,,fall_protection,Oregon fall protection additional definitions
+state_OR,exact,OAR 437-003-1502,,fall_protection,Warning line systems for roofing work
+state_OR,exact,OAR 437-003-1423,,fall_protection,Fall protection on cranes
+state_OR,exact,OAR 437-003-1754,,fall_protection,Roof and floor holes and openings
+state_OR,exact,OAR 437-003-2501,,fall_protection,Protection from falling objects
+state_OR,exact,OAR 437-003-2502,,fall_protection,Safety monitoring systems
+state_OR,exact,OAR 437-003-0502,,fall_protection,Personal fall restraint
+state_OR,exact,OAR 437-003-0503,,fall_protection,Fall protection training requirements
+state_OR,exact,OAR 437-003-0134,,ppe,Personal protective equipment (construction)
+state_OR,exact,OAR 437-003-0015,,safety_program_training,Drinking water
+state_OR,exact,OAR 437-003-0020,,safety_program_training,Toilets
+state_OR,exact,OAR 437-003-0047,,electrical,Working near overhead high voltage lines and equipment
+state_OR,exact,OAR 437-003-0062,,health_silica_lead_asbestos_noise,Lead respiratory protection program
+state_OR,exact,OAR 437-003-0065,,ladders,Extension ladders
+state_OR,range,OAR 437-003-0071,OAR 437-003-0074,scaffolds,"Aerial platforms, boom-supported work platforms, scissor lifts"
+state_OR,range,OAR 437-003-0080,OAR 437-003-0094,cranes_rigging,"Cranes: wind velocity device, general requirement, pinchpoints, personnel platforms"
+state_OR,exact,OAR 437-003-0096,,excavation_trenching,Underground installations
+state_OR,exact,OAR 437-003-0404,,electrical,Branch circuits
+state_OR,exact,OAR 437-003-0420,,motor_vehicles_equipment,Traffic control
+state_OR,exact,OAR 437-003-0706,,steel_concrete_masonry,Protection of employees on or near masonry walls
+state_OR,range,OAR 437-003-0752,OAR 437-003-0761,steel_concrete_masonry,"Steel erection: site-specific erection plan, tag lines, training"
+state_OR,range,OAR 437-003-0905,OAR 437-003-0920,steel_concrete_masonry,"Flooring, temporary floors, shoring/bracing/guying of structures, project plans"
+state_OR,exact,OAR 437-003-0925,,tools_machine_guarding,Powder-actuated tools
+state_OR,range,OAR 437-003-1000,OAR 437-003-1127,health_silica_lead_asbestos_noise,Air contaminants; asbestos and cadmium respiratory protection programs
+state_OR,exact,OAR 437-003-3060,,health_silica_lead_asbestos_noise,MDA respiratory protection program
+state_OR,range,OAR 437-003-3224,OAR 437-003-3226,motor_vehicles_equipment,Vehicle drivers and riders; vehicles
+state_OR,exact,OAR 437-003-3600,,motor_vehicles_equipment,Equipment
+state_OR,range,OAR 437-001-0001,OAR 437-001-0699,recordkeeping,"Administrative rules (inspections, penalties, posting 0275, abatement verification 0231)"
+state_OR,range,OAR 437-001-0700,OAR 437-001-0742,recordkeeping,"Recording and reporting injuries, falsification, recordkeeping variances"
+state_OR,exact,OAR 437-001-0744,,health_silica_lead_asbestos_noise,Rule addressing COVID-19 workplace risks
+state_OR,exact,OAR 437-001-0760,,safety_program_training,"Rules for all workplaces (employer responsibilities, supervision, training)"
+state_OR,exact,OAR 437-001-0765,,safety_program_training,Safety committees and safety meetings
+state_OR,exact,OAR 437-002-0022,,safety_program_training,Additional Oregon general requirements
+state_OR,exact,OAR 437-002-0026,,ladders,Portable ladders
+state_OR,range,OAR 437-002-0041,OAR 437-002-0043,fire_explosion,Exits and exit routes; emergency action plan
+state_OR,exact,OAR 437-002-0107,,fire_explosion,Spray finishing
+state_OR,exact,OAR 437-002-0134,,ppe,Personal protective equipment
+state_OR,exact,OAR 437-002-0146,,confined_space,Confined spaces
+state_OR,exact,OAR 437-002-0156,,heat,Heat illness prevention (2022)
+state_OR,exact,OAR 437-002-0161,,safety_program_training,Medical services and first aid
+state_OR,exact,OAR 437-002-0187,,fire_explosion,Portable fire extinguishers
+state_OR,exact,OAR 437-002-0210,,fire_explosion,Compressed air and compressed gas equipment
+state_OR,exact,OAR 437-002-0221,,other,Handling materials
+state_OR,exact,OAR 437-002-0227,,motor_vehicles_equipment,Powered industrial trucks
+state_OR,range,OAR 437-002-0228,OAR 437-002-0233,cranes_rigging,Oregon rules for cranes
+state_OR,exact,OAR 437-002-0307,,ppe,Personal protective equipment
+state_OR,exact,OAR 437-002-0316,,electrical,Oregon rules for telecommunications
+state_OR,range,OAR 437-002-0377,OAR 437-002-0378,hazcom,Hazard communication; pipe labelling
+state_OR,exact,OAR 437-002-0382,,health_silica_lead_asbestos_noise,Oregon rules for air contaminants
+state_OR,range,OAR 437-002-1050,OAR 437-002-1063,health_silica_lead_asbestos_noise,Respirable crystalline silica
+state_OR,range,OAR 437-002-2101,OAR 437-002-2102,fire_explosion,Compressed gases; acetylene
+state_OR,range,OAR 437-002-2224,OAR 437-002-2226,motor_vehicles_equipment,Vehicle drivers and riders; vehicles
+state_OR,exact,OAR 437-002-2253,,fire_explosion,Oxygen-fuel gas welding and cutting
+state_OR,exact,OAR 437-004-0251,,safety_program_training,Agriculture: safety committees and safety meetings
+state_OR,exact,OAR 437-004-1041,,health_silica_lead_asbestos_noise,Agriculture: respiratory protection
+state_OR,range,OAR 437-004-1105,OAR 437-004-1120,safety_program_training,"Agriculture: sanitation, field sanitation, labor housing"
+state_OR,exact,OAR 437-004-1131,,heat,Agriculture: heat illness prevention (2022; title unverified)
+state_OR,exact,OAR 437-004-1305,,safety_program_training,Agriculture: medical services and first aid
+state_OR,exact,OAR 437-004-1680,,fire_explosion,Agriculture: storage of hazardous chemicals
+state_OR,exact,OAR 437-004-1700,,motor_vehicles_equipment,Agriculture: forklifts
+state_OR,range,OAR 437-004-2800,OAR 437-004-2999,electrical,Agriculture: electrical
+state_OR,range,OAR 437-004-3410,OAR 437-004-3600,motor_vehicles_equipment,"Agriculture: vehicles, tractor operators, ROPS"
+state_OR,exact,OAR 437-004-9800,,hazcom,Agriculture: hazard communication
+state_OR,exact,OAR 437-007-0220,,safety_program_training,Forest activities: medical services and first aid
+state_OR,prefix,40 CFR 170.,,health_silica_lead_asbestos_noise,EPA worker protection standard (pesticides) enforced by Oregon OSHA
+state_other,exact,AK AS 18.60.058,,recordkeeping,Alaska AS 18.60.058(a) report fatalities and hospitalizations within 8 hours
+state_other,prefix,AK 8 AAC 61.6,,health_silica_lead_asbestos_noise,Alaska 8 AAC 61.600 asbestos abatement worker certificate
+state_other,prefix,AK 8 AAC 61.8,,health_silica_lead_asbestos_noise,Alaska 8 AAC 61.800 hazardous painting certificate
+state_other,exact,AZ A.R.S. 23-403.A,,general_duty,Arizona A.R.S. 23-403(A) general duty clause
+state_other,prefix,AZ A.A.C. R20-5-627,,recordkeeping,Arizona A.A.C. R20-5-627 abatement certification
+state_other,prefix,AZ A.A.C.R2-05.627,,recordkeeping,Arizona A.A.C. R20-5-627 abatement certification (alternate spelling)
+state_other,exact,CT 31-370,,general_duty,Connecticut C.G.S. 31-370(a) general duty clause (public sector)
+state_other,exact,HI 12-110-2,,safety_program_training,"Hawaii HAR 12-110-2 construction safety and health program: prime contractor duties (f), supervisor training (b); (a)(3) hazard-elimination duty is ~15%"
+state_other,exact,HI 12-110-3,,safety_program_training,Hawaii HAR 12-110-3 daily jobsite safety inspections and written inspection records
+state_other,exact,HI 12-60-2,,safety_program_training,Hawaii HAR 12-60-2 general industry safety and health program; (a)(3) hazard-elimination duty is about half
+state_other,exact,IA 88.4,,general_duty,Iowa Code 88.4 general duty clause
+state_other,exact,IA 88.4 - CODE OF IOWA,,general_duty,Iowa Code 88.4 general duty clause
+state_other,exact,IL 820 ILCS 219/20,,general_duty,Illinois 820 ILCS 219/20(a) general duty clause (public employers)
+state_other,prefix,IL 56 IL ADMIN CODE PART 350.,,recordkeeping,Illinois 56 Ill. Adm. Code Part 350 injury recordkeeping (public employers)
+state_other,exact,IN 22.8,,general_duty,Indiana IC 22-8-1.1-2 general duty clause (raw '22.8(1)(1)(SEC2)')
+state_other,exact,IN 2200080101SEC2,,general_duty,Indiana IC 22-8-1.1-2 general duty clause (packed)
+state_other,exact,KY 338.31,,general_duty,Kentucky KRS 338.031(1)(a) general duty clause
+state_other,exact,KY 338003101,,general_duty,Kentucky KRS 338.031(1) general duty clause (packed)
+state_other,prefix,KY 2.412,,fall_protection,Kentucky 803 KAR 2:412 fall protection (residential construction 6 ft)
+state_other,prefix,KY 20412,,fall_protection,Kentucky 803 KAR 2:412 fall protection (packed)
+state_other,prefix,KY 2.417,,fall_protection,Kentucky 803 KAR 2:417 steel erection fall protection
+state_other,prefix,KY 20417,,fall_protection,Kentucky 803 KAR 2:417 steel erection fall protection (packed)
+state_other,prefix,KY 2.18,,recordkeeping,Kentucky 803 KAR 2:180/2:181 injury recordkeeping and reporting
+state_other,prefix,KY 2018,,recordkeeping,Kentucky 803 KAR 2:180/2:181 injury recordkeeping and reporting (packed)
+state_other,exact,MD 05-104,,general_duty,Maryland Labor and Employment 5-104(a) general duty clause (mgaleg.maryland.gov)
+state_other,exact,MD 5-104,,general_duty,Maryland Labor and Employment 5-104(a) general duty clause (mgaleg.maryland.gov)
+state_other,exact,MD 05-503,,motor_vehicles_equipment,"Maryland Labor and Employment 5-503 power equipment operator training (backhoes, loaders, cranes, hoists)"
+state_other,exact,MD 5-503,,motor_vehicles_equipment,"Maryland Labor and Employment 5-503 power equipment operator training (backhoes, loaders, cranes, hoists)"
+state_other,prefix,MD 09.12.26,,cranes_rigging,"Maryland COMAR 09.12.26 crane safety (substance abuse policy, rigger qualification, training records)"
+state_other,prefix,MD 09.12.32,,heat,Maryland COMAR 09.12.32 heat stress standard (effective 2024-09-30; before 1994 this chapter was lead in construction; all cited rows are 2025+)
+state_other,exact,ME T.26CH.6561-A,,general_duty,Maine 26 M.R.S. 561-A general duty clause (public sector)
+state_other,exact,ME T.26CH.6?561-A,,general_duty,Maine 26 M.R.S. 561-A general duty clause (public sector; encoding-damaged section sign)
+state_other,exact,MN 182.653,,safety_program_training,"Minnesota Stat. 182.653: 88% of citations are subd. 8 AWAIR program, 12% subd. 2 general duty"
+state_other,exact,MN 182065308,,safety_program_training,Minnesota Stat. 182.653 subd. 8 AWAIR program (packed)
+state_other,exact,MN 182065302,,general_duty,Minnesota Stat. 182.653 subd. 2 general duty clause (packed)
+state_other,exact,MN 182.676,,safety_program_training,Minnesota Stat. 182.676 safety committees
+state_other,exact,MN 182.6525,,cranes_rigging,Minnesota Stat. 182.6525 crane operator certification
+state_other,exact,MN 1826525,,cranes_rigging,Minnesota Stat. 182.6525 crane operator certification (packed)
+state_other,exact,MN 52071100,,scaffolds,Minnesota Rule 5207.1100 elevating work platforms (fall arrest in boom lifts)
+state_other,prefix,MN 520710,,motor_vehicles_equipment,Minnesota Rule 5207.1000 operation of mobile earth-moving equipment
+state_other,prefix,MN 5206070,,hazcom,Minnesota Rule 5206.0700 employee right-to-know training and program
+state_other,exact,MN 52070310,,health_silica_lead_asbestos_noise,Minnesota Rule 5207.0310 carbon monoxide monitoring
+state_other,exact,NC 95.129,,general_duty,North Carolina G.S. 95-129(1) general duty clause
+state_other,exact,NC 95012901,,general_duty,North Carolina G.S. 95-129(1) general duty clause (packed)
+state_other,exact,NC 7F.202,,ppe,North Carolina 13 NCAC 07F .0202 PPE where hazards exist (modifies 1926.28(a))
+state_other,exact,NC 7F0202,,ppe,North Carolina 13 NCAC 07F .0202 PPE where hazards exist (packed)
+state_other,exact,NJ N.J.S.A. 34:6A-33,,general_duty,New Jersey PEOSH Act 34:6A-33 general duty clause (public employers)
+state_other,exact,NJ N.J.A.C. 12:100-7.3,,hazcom,New Jersey PEOSH hazard communication: employee information and training
+state_other,exact,NV NEVADA REVISED STATUTES 618.375,,general_duty,Nevada NRS 618.375 general duty clause
+state_other,exact,NV NEVADA REVISED STATUTE 618.375,,general_duty,Nevada NRS 618.375 general duty clause
+state_other,exact,NV NEVADA REVISED STATUTES 618.376,,safety_program_training,Nevada NRS 618.376 written statement of rights and duties for new employees
+state_other,exact,NV NEVADA REVISED STATUTE 618.376,,safety_program_training,Nevada NRS 618.376 written statement of rights and duties for new employees
+state_other,exact,NV NEVADA REVISED STATUTES 618.383,,safety_program_training,Nevada NRS 618.383 written safety program and safety committee
+state_other,exact,NV NEVADA REVISED STATUTE 618.383,,safety_program_training,Nevada NRS 618.383 written safety program and safety committee
+state_other,exact,NV NEVADA REVISED STATUTES 618.983,,safety_program_training,Nevada NRS 618.983 OSHA-10 card for construction workers
+state_other,exact,NV NEVADA REVISED STATUTES 618.987,,safety_program_training,Nevada NRS 618.987 OSHA-10/OSHA-30 cards: employer duties
+state_other,exact,NV NEVADA ADMINISTRATIVE CODE 618.54,,safety_program_training,"Nevada NAC 618.540-.544 written safety program (raw code truncated at 33 characters; inferred)"
+state_other,exact,NV NEVADA ADMINISTRATIVE CODE 618.53,,safety_program_training,"Nevada NAC 618.538 written safety program (raw code truncated; inferred)"
+state_other,exact,"NY NYSLL ARTICLE 2, SECTION 27-A.3.A",,general_duty,New York Labor Law 27-a(3)(a) general duty clause (public employers)
+state_other,exact,NY 12 NYCRR PART 800.6,,safety_program_training,New York 12 NYCRR 800.6 workplace violence prevention (public employers)
+state_other,prefix,NY 12 NYCRR PART 801.,,recordkeeping,New York 12 NYCRR Part 801 injury recordkeeping (public employers)
+state_other,prefix,NY 12 NYCRR 801.,,recordkeeping,New York 12 NYCRR Part 801 injury recordkeeping (public employers)
+state_other,exact,PR 6,,general_duty,"Puerto Rico Law 16 sec. 6: 6(a) general duty clause (59%), 6(b) PPE at no cost (41%)"
+state_other,exact,PR LEY 16 SEC 6 A,,general_duty,Puerto Rico Law 16 sec. 6(a) general duty clause
+state_other,exact,PR LEY 16 SEC 6 B,,ppe,Puerto Rico Law 16 sec. 6(b) safety devices and PPE
+state_other,exact,PR 1904,,recordkeeping,Puerto Rico citing 29 CFR 1904 in spaced format
+state_other,exact,PR 1903,,recordkeeping,Puerto Rico citing 29 CFR 1903 in spaced format
+state_other,exact,SC 1.12,,general_duty,South Carolina Reg. 71-112(A) general duty clause (format reading inferred)
+state_other,prefix,SC 3.,,recordkeeping,"South Carolina Reg. 71-3xx injury reporting and recordkeeping (71-339, 71-340 confirmed)"
+state_other,exact,TN TCA 50-3-105,,general_duty,Tennessee T.C.A. 50-3-105(1) general duty clause
+state_other,prefix,TN TDLWD RULE 800-01-03-,,recordkeeping,Tennessee Rule 0800-01-03 injury recordkeeping
+state_other,prefix,TN RULE 800-01-03-,,recordkeeping,Tennessee Rule 0800-01-03 injury recordkeeping
+state_other,prefix,TN RULE 800-1-3-,,recordkeeping,Tennessee Rule 0800-01-03 injury recordkeeping
+state_other,exact,TN TDLWD RULE 800-01-04-.23,,recordkeeping,Tennessee Rule 0800-01-04-.23 abatement verification
+state_other,exact,TN RULE 800-01-04-.23,,recordkeeping,Tennessee Rule 0800-01-04-.23 abatement verification
+state_other,prefix,TN TDLWD RULE 800-01-09-,,hazcom,Tennessee Rule 0800-01-09 hazardous chemical right to know
+state_other,prefix,TN RULE 800-01-09-,,hazcom,Tennessee Rule 0800-01-09 hazardous chemical right to know
+state_other,exact,UT UCA 34A-6-201,,general_duty,Utah Code 34A-6-201(1)(a) general duty clause
+state_other,exact,UT UCA 34A-6-301,,recordkeeping,Utah Code 34A-6-301 (8-hour fatality/injury reporting is the likely cited part; inferred)
+state_other,prefix,UT UAC R614-1-5.B.,,recordkeeping,Utah R614-1-5.B reporting of fatalities and injuries (numbering since ~2020; 146 of 149 citations are 2020+)
+state_other,exact,UT UAC R614-1-5.C.1,,recordkeeping,Utah R614-1-5.C.1 8-hour reporting (pre-2020 numbering; all citations are pre-2020)
+state_other,exact,UT UAC R614-1-5.C.2,,recordkeeping,Utah R614-1-5.C.2 preserve accident evidence (pre-2020 numbering; all citations are pre-2020)
+state_other,exact,UT UAC R614-1-5.D.3,,safety_program_training,Utah R614-1-5.D.3 management inspections and hazard correction (pre-2020 numbering; all citations are pre-2020)
+state_other,exact,VA 40.1-51.1.A,,general_duty,Virginia Code 40.1-51.1(A) general duty clause
+state_other,prefix,VA 40.1-51.1.D,,recordkeeping,Virginia Code 40.1-51.1(D) report fatalities and serious injuries
+state_other,prefix,VA 59.1-4,,electrical,Virginia Overhead High Voltage Line Safety Act (59.1-406 to -411)
+state_other,prefix,VA ?59.1-4,,electrical,Virginia Overhead High Voltage Line Safety Act (encoding-damaged section sign)
+state_other,prefix,VA 16VAC25-60-307,,recordkeeping,Virginia 16VAC25-60-307 abatement certification and documentation
+state_other,prefix,VA 16VAC25-60.307,,recordkeeping,Virginia 16VAC25-60-307 abatement certification and documentation (alternate spelling)
+state_other,prefix,VA 16VAC25-160-,,safety_program_training,Virginia construction sanitation standard
+state_other,prefix,VA 16VAC25-97-,,motor_vehicles_equipment,Virginia reverse signal operation (backup alarms and ground guides)
+state_other,prefix,VA 16VAC25-145-,,fall_protection,Virginia fall protection in steel erection
+state_other,exact,WY 27-11-105,,general_duty,Wyoming Stat. 27-11-105 general duty clause at (b)(vi)(A)
