@@ -3,10 +3,16 @@
 -- so "this inspection is linked to a fatality" does not mean "this employer caused it". Status:
 --   fatality_cited               fatal accident linked AND this employer got serious+ citations in it
 --   fatality_inspected_not_cited fatal accident linked, no serious+ citations for this employer
+--   fatality_pending             the case is still open and no serious+ citation has been issued yet:
+--                                a fatal accident with no citations yet, or a fatality/catastrophe
+--                                inspection (insp_type M) whose accident detail isn't published
 --   fatcat_cited                 fatality/catastrophe-type inspection (insp_type M) without published
 --                                accident detail, with serious+ citations
---   accident_outcome_unknown     accident-type inspection (A/M) without published accident detail
+--   fatcat_not_cited             the same, case closed, no serious+ citations for this employer
+--   accident_outcome_unknown     accident-type inspection (A) without published accident detail
 --   none
+-- OSHA's accident detail lags (it ends 2025-03-28 in the 2026-10 load), so recent investigations land
+-- in fatality_pending / fatcat_* rather than going unflagged.
 CREATE OR REPLACE TABLE insp_accident AS
 SELECT l.activity_nr,
        count(*) AS accident_n,
@@ -32,9 +38,12 @@ SELECT i.*,
        coalesce(a.accident_n, 0) AS accident_n,
        CASE
          WHEN coalesce(a.has_fatal_accident, false) AND coalesce(c.serious_plus_n, 0) > 0 THEN 'fatality_cited'
+         WHEN coalesce(a.has_fatal_accident, false) AND i.is_open AND coalesce(c.citation_n, 0) = 0 THEN 'fatality_pending'
          WHEN coalesce(a.has_fatal_accident, false) THEN 'fatality_inspected_not_cited'
          WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND coalesce(c.serious_plus_n, 0) > 0 THEN 'fatcat_cited'
-         WHEN i.insp_type IN ('A', 'M') AND a.activity_nr IS NULL THEN 'accident_outcome_unknown'
+         WHEN i.insp_type = 'M' AND a.activity_nr IS NULL AND i.is_open THEN 'fatality_pending'
+         WHEN i.insp_type = 'M' AND a.activity_nr IS NULL THEN 'fatcat_not_cited'
+         WHEN i.insp_type = 'A' AND a.activity_nr IS NULL THEN 'accident_outcome_unknown'
          ELSE 'none'
        END AS fatality_status
 FROM stg_inspection i

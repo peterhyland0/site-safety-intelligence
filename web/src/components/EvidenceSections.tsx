@@ -77,6 +77,9 @@ export function QuestionCard({
 const KIND_LABEL: Record<RedFlag["kind"], string> = {
   fatality_cited: "Fatality, cited",
   fatality_inspected_not_cited: "Fatality, not cited",
+  fatality_pending: "Fatality/catastrophe, investigation open",
+  fatcat_cited: "Fatality/catastrophe, cited",
+  fatcat_not_cited: "Fatality/catastrophe, not cited",
   willful: "Willful",
   repeat: "Repeat",
   fta: "Failure to abate",

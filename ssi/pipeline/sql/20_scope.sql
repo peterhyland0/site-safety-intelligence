@@ -30,7 +30,8 @@ SELECT i.activity_nr,
        nullif(upper(trim(i.mail_state)), '') AS mail_state,
        establishment_key(n.clean_name, a.addr_key, zip5(i.mail_zip), nullif(upper(trim(i.mail_state)), '')) AS establishment_key,
        coalesce(i.naics_code LIKE '23%', false) AS is_naics23,
-       coalesce(left(i.sic_code, 2) IN ('15', '16', '17'), false) AS is_sic_construction,
+       -- SIC codes are 4 digits; some loads drop the leading zero ('175' is 0175 orchards, not 17xx construction)
+       coalesce(left(lpad(trim(i.sic_code), 4, '0'), 2) IN ('15', '16', '17'), false) AS is_sic_construction,
        is_placeholder(n.clean_name) AS is_placeholder
 FROM raw_inspection_window i
 LEFT JOIN name_clean n ON n.estab_name IS NOT DISTINCT FROM i.estab_name

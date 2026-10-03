@@ -80,7 +80,7 @@ flowchart LR
 | **Layers split by trust and rebuildability; decisions in a separate store.** | A pipeline rebuild can never destroy a GC's confirmed matches. Every figure traces to source records. | `app` can't use foreign keys into the rebuildable warehouse. Instead, establishment keys are **deterministic hashes** (the same input gives the same key every build), and `entity.establishment_member` lets a rule change remap old keys to new ones by inspection overlap. |
 | **Facts in DuckDB, decisions in Postgres.** | Each store fits its workload: scanning millions of rows for analysis vs small, concurrent transactional writes. Full history stays online at no hosting cost. | Two stores, joined in API code. That's cheap: a sub's scope is tens of keys. DuckDB has no trigram index, so candidate search uses a token-blocking table plus Jaro-Winkler. |
 | **Normalised facts; accidents ↔ inspections many-to-many.** | OSHA opens an inspection for *every* employer on a fatality site and copies the injury rows to each. Storing the accident once and linking it to each inspection avoids duplication and false attribution. | More joins; fine at this size. |
-| **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatcat_cited` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. | Extra logic in the pipeline. |
+| **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatality_pending` / `fatcat_cited` / `fatcat_not_cited` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. OSHA's accident detail lags (it ends 2025-03-28 in this load), so an investigation without published detail is still flagged: *pending* while the case is open, *cited* / *not cited* once closed. | Extra logic in the pipeline. A build check fails if any fatality/catastrophe investigation without detail has no flag. |
 | **Rollups are additive at establishment × year.** | The lookback window (3/5/10 years) is a setting, not a schema decision. A sub's figures are sums over its matched keys and years. The red-flag table covers the whole history window, so catastrophic events count however old they are within it. | Duplicated data. Company-level medians can't be precomputed, but benchmarks describe *peers*, so that's fine. |
 | **Flag, don't delete.** Blank penalty ≠ $0; deleted citations are marked, not removed; an `other` hazard bucket. | Totals always reconcile: hazard counts sum to citation counts, a build check. Every quirk stays visible. | Every query has to respect the flags, so only the named queries touch the data. |
 | **One meaning per business term, in `ref`.** | "Fall protection" means 1926.501–503 *and* Washington's `296-155-24510`, Oregon's `437-003-…` and so on, in both the GC view and the foreman's answers. | The map needs upkeep. Unmapped codes land in `other` and are still counted. |
@@ -149,14 +149,17 @@ GC enters: name, city, state (+ optional trade, licence #)
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
 | L1 | Linked to the licence number the GC entered | Matched |
 | S1 | Differs only by `OF <STATE>` / `AT <project>`: usually a sibling company | Uncertain |
+| S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
+| P1 / X5 | A person's name (sole proprietors: "JOSE HERNANDEZ" is 49 records in 17 states): matches only on the same city or a matched address; another city or state is excluded; no city is uncertain | Matched / Excluded / Uncertain |
 | U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE) | Uncertain |
 | X1–X4 | Different real name word; different common name; common name in another state | Excluded |
+| R1 | Safety net: a red-flagged record at an address this company uses is never excluded by a rule; it goes to the GC | Uncertain |
 
 **Name distinctiveness** is measured from the data, not hand-listed: how many distinct full names share the name's core.
 - `BRASFIELD GORRIE` has 3, so it's distinctive.
 - `CLARK` has 112 and `ABC` has 114, so they're generic.
 
-Common names need a city match to auto-match. A GC's typo (`Brasfeild`) adopts OSHA's dominant spelling when that spelling has ≥5× the inspections, and the GC is told.
+Common names and people's names need a city match to auto-match. A GC's typo (`Brasfeild`) adopts OSHA's dominant spelling only when that spelling clearly dominates (≥10 inspections and ≥10× the GC's spelling), and the GC is told. A lower bar "corrected" COLMEX (a real Florida company) to COMEX (an Iowa one).
 
 **What the GC sees:** *Matched* (counted) · *Possible* ("+N inspections if these are yours", not counted) · *Excluded lookalikes* (collapsed). The GC can move any record between buckets; that's stored as `method = 'gc'` and always wins.
 
@@ -164,12 +167,12 @@ Common names need a city match to auto-match. A GC's typo (`Brasfeild`) adopts O
 
 ## 4. Verdicts: flags with evidence, not a score
 
-A GC has to be able to defend turning a sub down, so the tool gives **reasons with inspection IDs** rather than a single number ([ssi/scoring/verdict.py](ssi/scoring/verdict.py)). Recent = within 10 years; W = the project window.
+A GC has to be able to defend turning a sub down, so the tool gives **reasons with inspection IDs** rather than a single number ([ssi/scoring/verdict.py](ssi/scoring/verdict.py)). Recent = within 10 years of the data date; W = the project window (the last 3, 5 or 10 years). Both compare dates, not calendar years, so an event from October 2016 is still recent in data dated September 2026.
 
 | Verdict | Triggered by |
 |---|---|
 | **High concern** | Any of the following:<br>• a cited fatality, willful violation, failure-to-abate or fatality/catastrophe investigation with serious citations, recent<br>• repeat violations in ≥2 separate inspections within W<br>• serious citations per inspection in the trade's top 10% (≥5 inspections, ≥30 peers) |
-| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections with at least one inside the window (older patterns show as information)<br>• open cases with serious citations<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• a recent fatality on site where the sub wasn't cited |
+| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections with at least one inside the window (older patterns show as information)<br>• open cases with serious citations<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• a recent fatality on site where the sub wasn't cited<br>• a fatality/catastrophe investigation that's still open, or closed without serious citations and no published detail |
 | **No OSHA record** | No matched records: **"unknown, not clean"**. Ask the sub for its EMR, TRIR and 300 logs |
 | **No recent record** | Matched records exist, but none in W |
 | **No flags** | Matched records in W and nothing above |
@@ -269,15 +272,17 @@ The web front end has 21 more (`npm test`).
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
 - **Negatives:** same name core and state, different tax IDs.
 
-300 pairs, repeatable sample, run on the default 10-year data. Full table in [eval/matching/results.md](eval/matching/results.md):
+300 pairs on the default 10-year data. The sample is deterministic (pairs ordered by a hash of their establishment keys); an earlier version used DuckDB's "repeatable" sampling, which isn't repeatable across runs with multiple threads, so its numbers moved by a few points between identical runs. Full table in [eval/matching/results.md](eval/matching/results.md):
 
-| Metric | 10-year data | All years | Meaning |
+| Metric | 10-year data | All years (earlier sample) | Meaning |
 |---|---|---|---|
-| Precision of automatic matches | **0.83** | 0.90 | Of records auto-matched, the share with the same tax ID |
-| Candidate recall | 0.96 | 0.95 | The right record was found at all |
-| False exclusions | 0.00 | 0.013 | Same-company records wrongly excluded |
-| Different companies kept out | 0.86 | 0.93 | Not auto-matched |
+| Precision of automatic matches | **0.85** | 0.90 | Of records auto-matched, the share with the same tax ID |
+| Candidate recall | 0.94 | 0.95 | The right record was found at all |
+| False exclusions | 0.013 | 0.013 | Same-company records wrongly excluded (here: DR HORTON INC GREENSBORO, a city used as a division name) |
+| Different companies kept out | 0.88 | 0.93 | Not auto-matched |
 | Same-company records left "possible" | 0.27 | 0.33 | Sent to the AI adjudicator or the GC, not counted |
+
+The person-name, branch and red-flag rules added after the pipeline review change no outcome in this sample (run with and without them on the same 300 pairs); their effect is on the cases the review found, below.
 
 **Reading the precision honestly.** I reviewed the disagreements by hand. The auto-matches the labels call "different" are corporate families filing under several tax IDs, not different businesses that happen to share a name:
 - D.R. Horton's regional divisions in NC, TX and CA
@@ -289,6 +294,16 @@ The web front end has 21 more (`npm test`).
 A GC would most likely treat each as one company. Precision is lower on 10-year data because, with less history, fewer spelling variants exist per name, so more names count as "distinctive" and auto-match across offices. The labels are "silver" for exactly this reason.
 
 **What the first run taught.** Auto-matching names that differed only by *trade* words (`WAUSAU HOMES` vs `WAUSAU TILE`, `TURNKEY CONSTRUCTION` vs `TURNKEY ELECTRIC`) was the real error. Splitting generic words into *descriptors* (GENERAL, CONTRACTORS, SERVICES) and *trade words* removed it. On all-years data, precision rose from 0.87 to 0.90.
+
+**Independent pipeline review.** A separate review rebuilt every pipeline step from the raw files and diffed it against the warehouse: no in-scope row is lost (scope, citations, accidents, red flags and the yearly rollups reconcile exactly, to the cent on penalties). It found problems in the rules on top, fixed so far with a test and a build check each:
+
+| Found | Fixed |
+|---|---|
+| People's names (sole proprietors) rated "distinctive": "Juan Garcia, TX" auto-matched 24 records in 13 states, including another person's cited fatality | Person names need a city or address; 0 auto-matches without a city, only the Houston records with one |
+| A company's own branch excluded by a rule: Barnhart's Oklahoma City fatality | Branch names are "unsure", and a red-flagged record at a matched address always goes to the GC |
+| Fatality/catastrophe investigations after OSHA's accident detail ends (586) had no flag | Flagged as pending or not cited; a build check requires a flag on every one |
+| "Recent" by calendar year dropped late-2016 events from 10-year windows | Windows compare dates |
+| Farm SIC codes missing a leading zero ("175") counted as construction | Codes padded to 4 digits; a build check rejects short codes |
 
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 

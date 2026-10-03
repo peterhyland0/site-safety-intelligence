@@ -4,14 +4,17 @@
 -- layer picks the most specific level with enough peers.
 CREATE OR REPLACE TABLE as_of AS SELECT max(open_date) AS data_as_of FROM wh.osha.inspection;
 
+-- Windows are dates: the last N years before the data date (calendar years would drop late 2016 from
+-- a 10-year window that starts 2016-09-23). Same definitions as mart.establishment_year.
 CREATE OR REPLACE TABLE est_window AS
-SELECT y.establishment_key, w.window_years,
-       sum(y.insp_rated_n) AS rated_n, sum(y.insp_with_cit_n) AS with_cit_n,
-       sum(y.viol_serious_plus_n) AS serious_plus_n, sum(y.viol_n) AS viol_n
-FROM wh.mart.establishment_year y,
+SELECT i.establishment_key, w.window_years,
+       count(*) FILTER (WHERE coalesce(i.insp_type, '') NOT IN ('F', 'D', 'E')) AS rated_n,
+       count(*) FILTER (WHERE i.citation_n > 0) AS with_cit_n,
+       sum(i.serious_plus_n) AS serious_plus_n, sum(i.citation_n) AS viol_n
+FROM wh.osha.inspection i,
      (SELECT unnest([3, 5, 10]) AS window_years) w,
      as_of
-WHERE y.year > year(as_of.data_as_of) - w.window_years
+WHERE i.open_date >= as_of.data_as_of - to_years(w.window_years)
 GROUP BY 1, 2;
 
 CREATE OR REPLACE TABLE wh.mart.trade_benchmark AS

@@ -38,6 +38,7 @@ REF_STUBS = {
     "violation_type": "code VARCHAR, label VARCHAR, severity_rank INTEGER, serious_plus BOOLEAN",
     "inspection_type": "code VARCHAR, label VARCHAR, is_accident BOOLEAN, decode_confirmed BOOLEAN, source VARCHAR",
     "state_plan": "state VARCHAR, plan_scope VARCHAR, plan_name VARCHAR",
+    "given_name": "name VARCHAR",
 }
 
 

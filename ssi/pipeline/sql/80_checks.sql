@@ -16,6 +16,16 @@ SELECT * FROM (VALUES
   ('construction_coded_inspections_all_in_scope', 'error', 0,
      ((SELECT count(*) FROM insp_key WHERE is_naics23 OR is_sic_construction)
       - (SELECT count(*) FROM wh.osha.inspection WHERE scope_reason IN ('naics23', 'sic15_17')))::DOUBLE),
+  -- a 3-digit SIC code is a 4-digit code missing its leading zero (0175 orchards), never construction
+  ('short_sic_codes_in_scope', 'error', 0,
+     (SELECT count(*) FROM wh.osha.inspection WHERE scope_reason = 'sic15_17' AND length(sic_code) < 4)::DOUBLE),
+  -- every fatality/catastrophe investigation without published accident detail carries a red flag
+  ('undetailed_fatcat_without_flag', 'error', 0,
+     (SELECT count(*) FROM wh.osha.inspection i WHERE i.insp_type = 'M' AND i.accident_n = 0
+        AND NOT EXISTS (SELECT 1 FROM wh.mart.red_flag r WHERE r.activity_nr = i.activity_nr))::DOUBLE),
+  -- a person's name must never count as a distinctive company name
+  ('person_names_rated_distinctive', 'error', 0,
+     (SELECT count(*) FROM wh.entity.core_stats WHERE is_person AND tier = 'distinctive')::DOUBLE),
   ('hazard_other_share_pct', 'warn', 5,
      (SELECT 100.0 * count(*) FILTER (WHERE hazard_code = 'other') / count(*) FROM wh.osha.violation WHERE NOT is_deleted)::DOUBLE),
   ('orphan_violations_quarantined', 'warn', 374,

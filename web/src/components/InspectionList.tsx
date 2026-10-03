@@ -8,6 +8,9 @@ import { InlineError, OshaLink } from "./ui";
 const FATALITY_LABEL: Record<FatalityStatus, string | null> = {
   fatality_cited: "Fatality investigation, citations issued",
   fatality_inspected_not_cited: "Fatality investigation, no citations",
+  fatality_pending: "Fatality/catastrophe investigation open, outcome not yet published",
+  fatcat_cited: "Fatality/catastrophe investigation, citations issued",
+  fatcat_not_cited: "Fatality/catastrophe investigation, no serious citations",
   accident_outcome_unknown: "Accident inspection, outcome not in OSHA's accident data",
   none: null,
 };
@@ -24,9 +27,11 @@ export function InspectionBadges({ row }: { row: InspectionRow }) {
       {fat ? (
         <span
           className={`pill ${
-            row.fatality_status === "fatality_cited"
+            row.fatality_status === "fatality_cited" || row.fatality_status === "fatcat_cited"
               ? "border-high-line bg-high-bg text-high-fg"
-              : "border-line-strong bg-surface-2 text-ink-2"
+              : row.fatality_status === "fatality_pending"
+                ? "border-review-line bg-review-bg text-review-fg"
+                : "border-line-strong bg-surface-2 text-ink-2"
           }`}
         >
           {fat}

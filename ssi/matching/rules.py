@@ -16,6 +16,10 @@ MATCHED, UNCERTAIN, EXCLUDED = "matched", "uncertain", "excluded"
 GENERIC_TOKENS: frozenset[str] = frozenset()  # filled from the warehouse macro at runtime (see run.py)
 
 
+# A record filed as a branch or division of the sub ("BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH")
+BRANCH_WORDS = frozenset({"BRANCH", "DIVISION", "DIV", "OFFICE", "REGION", "REGIONAL", "DISTRICT"})
+
+
 def jw(a: str, b: str) -> float:
     return jellyfish.jaro_winkler_similarity(a or "", b or "")
 
@@ -27,7 +31,7 @@ class Query:
     state: str | None
     city: str | None
     trade: str | None
-    tier: str  # 'distinctive' | 'medium' | 'generic'
+    tier: str  # 'distinctive' | 'medium' | 'generic' | 'person'
     initials_only: bool
     sibling: str | None
     aliases: set[str] = field(default_factory=set)
@@ -114,6 +118,12 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     if (q.sibling or c.sibling_suffix) and q.sibling != c.sibling_suffix and (core_equal or same_full or typo_equal(q.core, c.name_core)):
         return Decision(UNCERTAIN, "S1", "Names differ only by a location/project suffix, which usually means a sibling company")
 
+    # S2: the sub's full name plus a branch/division suffix: likely the same company, never "different"
+    rest = next((c.clean_name[len(a):].split() for a in {q.clean, *q.aliases}
+                 if a and c.clean_name.startswith(a + " ")), [])
+    if rest and BRANCH_WORDS & set(rest):
+        return Decision(UNCERTAIN, "S2", "Looks like a branch or division of the same company (" + " ".join(rest[:4]) + ")")
+
     def matched(rule: str, reason: str) -> Decision:
         if conflict:
             return Decision(UNCERTAIN, rule + "_trade", reason + ", but OSHA lists a different trade")
@@ -127,6 +137,13 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
                                  or (typo_equal(q.core, c.name_core) and only_generic_difference(c.clean_name, q.clean, generic)
                                      and not core_equal)):
         return matched("M2", "Same address as a matched record; name differs only by spelling")
+    # P1 / X5: a person's name (a sole proprietor) is usually many different people; only a place ties it
+    if q.tier == "person" and (same_full or core_equal):
+        if q.state and c.state and not same_state:
+            return Decision(EXCLUDED, "X5", f"A person's name in another state ({c.state}): usually a different person")
+        if q.city and c.city and not same_city:
+            return Decision(EXCLUDED, "X5", f"A person's name in a different city ({c.city.title()}): usually a different person")
+        return Decision(UNCERTAIN, "P1", "A person's name: a city or address is needed to tell people apart")
     if (same_full or descriptor_diff) and not same_state and distinctive:
         return matched("M3", f"Same distinctive name, another state ({c.state or 'unknown'})")
     if generic_diff and not descriptor_diff and distinctive:

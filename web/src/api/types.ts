@@ -15,6 +15,9 @@ export type MatchStatus = "resolved" | "needs_adjudication" | "questions_pending
 export type FatalityStatus =
   | "fatality_cited"
   | "fatality_inspected_not_cited"
+  | "fatality_pending"
+  | "fatcat_cited"
+  | "fatcat_not_cited"
   | "accident_outcome_unknown"
   | "none";
 export type AskStatus =
@@ -185,7 +188,15 @@ export interface QuestionAnswer {
 
 // --- evidence ------------------------------------------------------------------------------------
 export interface RedFlag {
-  kind: "fatality_cited" | "fatality_inspected_not_cited" | "willful" | "repeat" | "fta";
+  kind:
+    | "fatality_cited"
+    | "fatality_inspected_not_cited"
+    | "fatality_pending"
+    | "fatcat_cited"
+    | "fatcat_not_cited"
+    | "willful"
+    | "repeat"
+    | "fta";
   label: string;
   event_date: string | null;
   activity_nr: number;

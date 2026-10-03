@@ -3,6 +3,7 @@ so every reason names the inspections behind it. Pure function over facts comput
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 
 from ssi import config
 from ssi.api.schemas import Reason
@@ -24,12 +25,27 @@ HIGH_KINDS = {
 }
 
 
+# Fatality investigations this employer wasn't cited in (or not yet): they matter only while recent.
+SITE_KINDS = {
+    "fatality_inspected_not_cited": "On a site where a fatality was investigated, but not cited for serious violations",
+    "fatcat_not_cited": "Fatality/catastrophe investigation, not cited for serious violations (details not published)",
+}
+
+
+def years_before(d: date, years: int) -> date:
+    try:
+        return d.replace(year=d.year - years)
+    except ValueError:  # 29 February
+        return d.replace(year=d.year - years, day=28)
+
+
 @dataclass
 class RedFlagFact:
     kind: str
     year: int | None
     activity_nr: int
     case_open: bool
+    when: date | None = None  # event date; windows compare dates, not calendar years
 
 
 @dataclass
@@ -45,7 +61,7 @@ class HazardFact:
 
 @dataclass
 class Facts:
-    as_of_year: int
+    as_of_year: int  # kept for year-only facts (tests); as_of (the data date) is used when set
     window_years: int
     matched_establishments: int
     inspections_all: int
@@ -62,6 +78,7 @@ class Facts:
     benchmark_label: str | None = None
     ita_dart_above_p75_years: list[int] = field(default_factory=list)
     licence_lapsed: str | None = None
+    as_of: date | None = None
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -71,10 +88,26 @@ def _years(flags: list[RedFlagFact]) -> str:
     return shown + (f" and {len(ys) - 4} earlier" if len(ys) > 4 else "")
 
 
+def _since(f: Facts, years: int) -> date:
+    """First day inside "the last N years": N years before the data date (Sep 23 2026 -> Sep 23 2016).
+    Year-only facts fall back to calendar years."""
+    return years_before(f.as_of, years) if f.as_of else date(f.as_of_year - years + 1, 1, 1)
+
+
+def _day(x: RedFlagFact) -> date:
+    return x.when or (date(x.year, 7, 1) if x.year else date.min)
+
+
 def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     reasons: list[Reason] = []
-    recent_cutoff = f.as_of_year - config.RED_FLAG_RECENCY_YEARS
-    window_cutoff = f.as_of_year - f.window_years
+    recent_since = _since(f, config.RED_FLAG_RECENCY_YEARS)
+    window_since = _since(f, f.window_years)
+
+    def recent(x: RedFlagFact) -> bool:
+        return _day(x) >= recent_since
+
+    def in_window(x: RedFlagFact) -> bool:
+        return _day(x) >= window_since
 
     def add(code, label, severity, flags=(), **figures):
         reasons.append(Reason(code=code, label=label, severity=severity,
@@ -83,10 +116,10 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
 
     # High: catastrophic events within the recency window
     for kind, text in HIGH_KINDS.items():
-        recent = [x for x in f.red_flags if x.kind == kind and (x.year or 0) > recent_cutoff]
-        if recent:
-            add(f"H_{kind}", f"{text} ({_years(recent)})", "high", recent, count=len(recent))
-    repeat_window = [x for x in f.red_flags if x.kind == "repeat" and (x.year or 0) > window_cutoff]
+        hits = [x for x in f.red_flags if x.kind == kind and recent(x)]
+        if hits:
+            add(f"H_{kind}", f"{text} ({_years(hits)})", "high", hits, count=len(hits))
+    repeat_window = [x for x in f.red_flags if x.kind == "repeat" and in_window(x)]
     repeat_insp = {x.activity_nr for x in repeat_window}
     if len(repeat_insp) >= 2:
         add("H_repeat", f"Repeat violations in {len(repeat_insp)} separate inspections in the last {f.window_years} years",
@@ -99,18 +132,25 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
 
     # Review
     for kind, text in HIGH_KINDS.items():
-        old = [x for x in f.red_flags if x.kind == kind and (x.year or 0) <= recent_cutoff]
+        old = [x for x in f.red_flags if x.kind == kind and not recent(x)]
         if old:
             add(f"R_old_{kind}", f"{text}, over {config.RED_FLAG_RECENCY_YEARS} years ago ({_years(old)})",
                 "review", old, count=len(old))
+    # An open fatality/catastrophe investigation: OSHA hasn't published the outcome or issued serious
+    # citations yet. Not High (we can't say whose worker it was), but never silent.
+    pending = [x for x in f.red_flags if x.kind == "fatality_pending"]
+    if pending:
+        add("R_fatality_pending", f"Fatality/catastrophe investigation still open; outcome not yet published ({_years(pending)})",
+            "review", pending, count=len(pending))
     # Not this sub's offence, so it only matters while recent (cited fatalities keep the unlimited lookback)
-    not_cited = [x for x in f.red_flags if x.kind == "fatality_inspected_not_cited" and (x.year or 0) > recent_cutoff]
-    if not_cited:
-        add("R_fatality_site", f"On a site where a fatality was investigated, but not cited for serious violations ({_years(not_cited)})",
-            "review", not_cited, count=len(not_cited))
+    for kind, text in SITE_KINDS.items():
+        hits = [x for x in f.red_flags if x.kind == kind and recent(x)]
+        if hits:
+            add("R_fatality_site" if kind == "fatality_inspected_not_cited" else "R_fatcat_site",
+                f"{text} ({_years(hits)})", "review", hits, count=len(hits))
     if len(repeat_insp) == 1:
         add("R_repeat", f"Repeat violation in the last {f.window_years} years", "review", repeat_window)
-    old_repeat = [x for x in f.red_flags if x.kind == "repeat" and (x.year or 0) <= window_cutoff]
+    old_repeat = [x for x in f.red_flags if x.kind == "repeat" and not in_window(x)]
     if old_repeat and len(repeat_insp) == 0:
         add("R_old_repeat", f"Repeat violations before the last {f.window_years} years ({_years(old_repeat)})",
             "info", old_repeat)

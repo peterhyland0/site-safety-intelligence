@@ -3,38 +3,38 @@
     "pairs": 300,
     "positives": 150,
     "negatives": 150,
-    "matched_precision": 0.831,
-    "matched_recall": 0.687,
-    "candidate_recall": 0.96,
-    "positives_left_uncertain": 0.273,
-    "false_exclusion_rate": 0.0,
-    "negatives_kept_out": 0.86
+    "matched_precision": 0.846,
+    "matched_recall": 0.66,
+    "candidate_recall": 0.94,
+    "positives_left_uncertain": 0.267,
+    "false_exclusion_rate": 0.013,
+    "negatives_kept_out": 0.88
   },
   "by_kind": {
     "different_name": {
-      "matched": 0,
-      "uncertain": 1,
-      "excluded": 0,
-      "not_found": 6
+      "matched": 1,
+      "uncertain": 4,
+      "excluded": 2,
+      "not_found": 9
     },
     "same_core_different_ein": {
-      "matched": 11,
-      "uncertain": 26,
-      "excluded": 101,
+      "matched": 12,
+      "uncertain": 40,
+      "excluded": 92,
       "not_found": 0
     },
     "same_name_different_ein": {
-      "matched": 10,
-      "uncertain": 2,
+      "matched": 6,
+      "uncertain": 0,
       "excluded": 0,
       "not_found": 0
     },
     "same_name_other_address": {
-      "matched": 103,
-      "uncertain": 40,
+      "matched": 98,
+      "uncertain": 36,
       "excluded": 0,
       "not_found": 0
     }
   },
-  "seconds": 96
+  "seconds": 97
 }

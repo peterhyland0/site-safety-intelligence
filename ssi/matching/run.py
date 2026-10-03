@@ -5,11 +5,24 @@ import json
 from dataclasses import asdict
 
 from ssi.matching import candidates as C
-from ssi.matching.rules import EXCLUDED, MATCHED, UNCERTAIN, Candidate, Query, decide, jw, typo_equal
+from ssi.matching.rules import (
+    EXCLUDED,
+    MATCHED,
+    UNCERTAIN,
+    Candidate,
+    Decision,
+    Query,
+    decide,
+    typo_equal,
+)
 from ssi.store import pg, warehouse
 
 EXCLUDED_KEEP = 25      # show the closest lookalikes, not hundreds
 UNCERTAIN_KEEP = 200
+# Adopt OSHA's spelling only when it clearly dominates: COLMEX (1 inspection) is a real company, not a
+# slip of COMEX (5); BRASFEILD (1) is a slip of BRASFIELD (hundreds).
+SPELLING_MIN_INSPECTIONS = 10
+SPELLING_RATIO = 10
 
 
 def _candidate(r: dict, at_address: bool = False) -> Candidate:
@@ -34,8 +47,8 @@ def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
     """Adopt OSHA's dominant spelling when the GC's spelling is a slip of a distinctive name.
 
     Triggers when a near-identical distinctive core (BRASFIELD GORRIE vs BRASFEILD GORRIE) carries at
-    least 5x the inspections of the GC's spelling, including when OSHA's data contains the same slip
-    on a stray record. Returns the note shown to the GC."""
+    least SPELLING_MIN_INSPECTIONS inspections and SPELLING_RATIO times those of the GC's spelling,
+    including when OSHA's data contains the same slip on a stray record. Returns the note shown to the GC."""
     if not q.core:
         return q, None
     totals: dict[str, int] = {}
@@ -49,7 +62,7 @@ def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
     if not totals:
         return q, None
     best = max(totals, key=totals.get)
-    if best == q.core or totals[best] < 5 * max(totals.get(q.core, 0), 1):
+    if best == q.core or totals[best] < max(SPELLING_MIN_INSPECTIONS, SPELLING_RATIO * max(totals.get(q.core, 0), 1)):
         return q, None
     r = sample[best]
     tier = C.core_tier(best, bool(r["initials_only"]))
@@ -90,6 +103,7 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     for r in rows:
         decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic, descriptors))
     # address expansion (two passes): records at a matched address whose name differs only by spelling
+    excluded_at_address: dict[str, dict] = {}
     for _ in range(2):
         matched = [k for k, (_, d) in decided.items() if d.bucket == MATCHED]
         new = C.at_addresses(matched, exclude=set())
@@ -100,14 +114,22 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
             if prev and prev[1].bucket == MATCHED:
                 continue
             d = decide(q, _candidate(r, at_address=True), generic, descriptors)
+            if d.bucket == EXCLUDED:
+                excluded_at_address[k] = prev[0] if prev else r
             if d.bucket == MATCHED or not prev:
                 if d.bucket == MATCHED or d.bucket == UNCERTAIN:
                     decided[k] = (prev[0] if prev else r, d)
                     changed = changed or d.bucket == MATCHED
         if not changed:
             break
+    # Red-flag safety net: a rule may not throw away a red-flagged record at an address this company uses
+    # (a branch filed under another name, e.g. Barnhart's Oklahoma City fatality). It goes to the GC instead.
+    still_excluded = [k for k in excluded_at_address if k not in decided or decided[k][1].bucket == EXCLUDED]
+    for k, n in C.red_flag_counts(still_excluded).items():
+        if n:
+            decided[k] = (excluded_at_address[k], Decision(
+                UNCERTAIN, "R1", "Red flags at an address this company uses; needs your confirmation"))
     if lic_keys:  # records linked (exact name + zip/address) to the licence the GC entered
-        from ssi.matching.rules import Decision
         missing = [k for k in lic_keys if k not in decided]
         if missing:
             for r in C.establishments(missing):

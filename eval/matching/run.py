@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import random
 import time
 from pathlib import Path
 
@@ -41,17 +40,16 @@ def build_pairs(n: int, seed: int = 7) -> list[dict]:
       SELECT a.establishment_key AS a_key, b.establishment_key AS b_key, 1 AS label,
              CASE WHEN a.clean_name = b.clean_name THEN 'same_name_other_address' ELSE 'different_name' END AS kind
       FROM e a JOIN e b ON a.ein = b.ein AND a.establishment_key < b.establishment_key
-      USING SAMPLE reservoir(4000 ROWS) REPEATABLE (7)""")
+      ORDER BY md5(a.establishment_key || b.establishment_key || ?) LIMIT ?""", [str(seed), n])
     neg = warehouse.rows(base + """
       SELECT a.establishment_key AS a_key, b.establishment_key AS b_key, 0 AS label,
              CASE WHEN a.clean_name = b.clean_name THEN 'same_name_different_ein' ELSE 'same_core_different_ein' END AS kind
       FROM e a JOIN e b ON a.name_core = b.name_core AND a.state = b.state AND a.ein <> b.ein
                         AND a.establishment_key < b.establishment_key AND a.name_core <> ''
-      USING SAMPLE reservoir(4000 ROWS) REPEATABLE (7)""")
-    rnd = random.Random(seed)
-    rnd.shuffle(pos)
-    rnd.shuffle(neg)
-    pairs = pos[: n] + neg[: n]
+      ORDER BY md5(a.establishment_key || b.establishment_key || ?) LIMIT ?""", [str(seed), n])
+    # Deterministic sample: pairs ordered by a hash of their (stable) establishment keys. DuckDB's
+    # REPEATABLE reservoir sample isn't repeatable across runs with multiple threads.
+    pairs = pos + neg
     keys = list({p["a_key"] for p in pairs} | {p["b_key"] for p in pairs})
     info = {r["establishment_key"]: r for r in warehouse.rows(
         "SELECT establishment_key, display_name, clean_name, city, state FROM entity.establishment "

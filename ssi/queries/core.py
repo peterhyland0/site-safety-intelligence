@@ -11,7 +11,7 @@ from urllib.parse import quote, urlencode
 from ssi import config
 from ssi.api import schemas as S
 from ssi.matching.trades import NAICS4_LABELS, trade_naics4
-from ssi.scoring.verdict import VERDICT_LABELS, Facts, HazardFact, RedFlagFact, evaluate
+from ssi.scoring.verdict import VERDICT_LABELS, Facts, HazardFact, RedFlagFact, evaluate, years_before
 from ssi.store import pg, warehouse
 
 HAZARD_FALLBACK = {"other": "Other / unmapped"}
@@ -26,6 +26,8 @@ RED_FLAG_LABELS = {
     "fatality_cited": "Fatality, employer cited",
     "fatality_inspected_not_cited": "Fatality on site, employer not cited for serious violations",
     "fatcat_cited": "Fatality/catastrophe investigation, cited (details not yet published)",
+    "fatcat_not_cited": "Fatality/catastrophe investigation, not cited (details not published)",
+    "fatality_pending": "Fatality/catastrophe investigation still open, outcome not yet published",
     "willful": "Willful violation",
     "repeat": "Repeat violation",
     "fta": "Failure to abate",
@@ -127,17 +129,20 @@ def red_flags(keys: list[str]) -> list[S.RedFlag]:
                       url=osha_search_url(r["establishment_name"], r["insp_state"], r["insp_open"])) for r in rs]
 
 
+def window_since(window: int) -> date:
+    """First day of "the last N years": N years before the data date (dates, not calendar years)."""
+    return years_before(as_of(), window)
+
+
 def hazards(keys: list[str], window: int) -> list[S.HazardRow]:
     if not keys:
         return []
-    cutoff = as_of().year - window
     hl = hazard_labels()
     rs = warehouse.rows(
         f"""SELECT hazard_code, sum(viol_n) AS citations, sum(viol_serious_plus_n) AS serious_plus,
-                   sum(insp_n) AS inspections, sum(insp_n) FILTER (WHERE year > ?) AS insp_window,
-                   min(year) AS first_year, max(year) AS last_year
+                   sum(insp_n) AS inspections, min(year) AS first_year, max(year) AS last_year
             FROM mart.establishment_hazard_year WHERE establishment_key IN {_in(keys)}
-            GROUP BY 1 ORDER BY citations DESC""", [cutoff])
+            GROUP BY 1 ORDER BY citations DESC""")
     tops = warehouse.rows(
         f"""SELECT v.hazard_code, v.section_key, count(*) AS n
             FROM osha.violation v JOIN osha.inspection i USING (activity_nr)
@@ -191,7 +196,8 @@ def _inspection_row(r: dict, itl: dict) -> S.InspectionRow:
         penalty_initial=float(r["penalty_initial"]) if r["penalty_initial"] is not None else None,
         penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
         fatality_status=r["fatality_status"] if r["fatality_status"] in
-        ("fatality_cited", "fatality_inspected_not_cited", "fatcat_cited", "accident_outcome_unknown") else "none",
+        ("fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
+         "accident_outcome_unknown") else "none",
         shared_site_n=r["site_group_n"] or 1, dq_flags=list(r["dq_flags"] or []),
         url=osha_search_url(r["estab_name_raw"], r["site_state"], r["open_date"]))
 
@@ -271,15 +277,20 @@ def compute(sub: dict, project: dict) -> dict:
     keys = sc["matched"]
     window = int(project["lookback_years"])
     aof = as_of()
-    cutoff = aof.year - window
+    since = window_since(window)
     yrs = year_rows(keys)
     tot = Counter()
     for r in yrs:
         for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n", "open_insp_n"):
             tot[k] += r[k] or 0
-        if r["year"] > cutoff:
-            for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n"):
-                tot["w_" + k] += r[k] or 0
+    if keys:  # the window is dates (the last N years before the data date), so count from the inspections
+        w = warehouse.one(
+            f"""SELECT count(*) AS insp_n,
+                       count(*) FILTER (WHERE coalesce(insp_type, '') NOT IN ('F', 'D', 'E')) AS insp_rated_n,
+                       coalesce(sum(serious_plus_n), 0) AS viol_serious_plus_n
+                FROM osha.inspection WHERE establishment_key IN {_in(keys)} AND open_date >= ?""", [since])
+        for k in ("insp_n", "insp_rated_n", "viol_serious_plus_n"):
+            tot["w_" + k] = int(w[k] or 0)
     flags = red_flags(keys)
     hz = hazards(keys, window)
     open_serious = [i.activity_nr for i in inspections(keys, limit=50, open_only=True) if i.serious_plus > 0]
@@ -287,8 +298,10 @@ def compute(sub: dict, project: dict) -> dict:
     bm = benchmark(n4, window)
     hfacts = [HazardFact(h.hazard_code, h.label, h.inspections, 0, h.first_year, h.last_year) for h in hz]
     if hfacts:  # window counts and evidence for recurring hazards only
-        hw = warehouse.rows(f"""SELECT hazard_code, sum(insp_n) AS n FROM mart.establishment_hazard_year
-                                WHERE establishment_key IN {_in(keys)} AND year > ? GROUP BY 1""", [cutoff])
+        hw = warehouse.rows(f"""SELECT v.hazard_code, count(DISTINCT v.activity_nr) AS n
+                                FROM osha.violation v JOIN osha.inspection i USING (activity_nr)
+                                WHERE i.establishment_key IN {_in(keys)} AND NOT v.is_deleted AND i.open_date >= ?
+                                GROUP BY 1""", [since])
         wmap = {r["hazard_code"]: int(r["n"]) for r in hw}
         for h in hfacts:
             h.insp_window = wmap.get(h.hazard_code, 0)
@@ -297,10 +310,11 @@ def compute(sub: dict, project: dict) -> dict:
     rates = injury_rates(keys, n4)
     lics = licences(keys)
     facts = Facts(
-        as_of_year=aof.year, window_years=window, matched_establishments=len(keys),
+        as_of_year=aof.year, as_of=aof, window_years=window, matched_establishments=len(keys),
         inspections_all=tot["insp_n"], inspections_window=tot["w_insp_n"], rated_window=tot["w_insp_rated_n"],
         serious_plus_window=tot["w_viol_serious_plus_n"],
-        red_flags=[RedFlagFact(f.kind, int(f.event_date[:4]) if f.event_date else None, f.activity_nr, f.case_open) for f in flags],
+        red_flags=[RedFlagFact(f.kind, int(f.event_date[:4]) if f.event_date else None, f.activity_nr, f.case_open,
+                               date.fromisoformat(f.event_date[:10]) if f.event_date else None) for f in flags],
         hazards=hfacts, open_serious_cases=open_serious, pending_questions=len(sc["pending_questions"]),
         benchmark_p75=bm["serious_plus_rate_p75"] if bm else None, benchmark_p90=bm["serious_plus_rate_p90"] if bm else None,
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,

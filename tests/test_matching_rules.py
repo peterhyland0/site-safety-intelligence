@@ -108,3 +108,51 @@ def test_city_spelling_variants_match():
     assert norm_city("Fort Worth") == norm_city("FT WORTH")
     d = q("DIXIE ROOFING", "DIXIE", state="TN", tier="medium", city="LaFollette")
     assert decide(d, c("DIXIE ROOFING", "DIXIE", state="TN", city="LA FOLLETTE"), GENERIC).bucket == MATCHED
+
+
+# --- people's names (sole proprietors): the same name is usually many different people ---------------
+JUAN = q("JUAN GARCIA", "JUAN GARCIA", state="TX", tier="person")
+
+
+def test_person_name_in_another_state_is_excluded():
+    d = decide(JUAN, c("JUAN GARCIA", "JUAN GARCIA", state="MA"), GENERIC)
+    assert (d.bucket, d.rule_id) == (EXCLUDED, "X5")
+
+
+def test_person_name_needs_a_place_to_match():
+    # no city given: same name in the same state is unsure, never an automatic match
+    assert decide(JUAN, c("JUAN GARCIA", "JUAN GARCIA", state="TX", city="HOUSTON"), GENERIC).rule_id == "P1"
+    houston = q("JUAN GARCIA", "JUAN GARCIA", state="TX", tier="person", city="Houston")
+    assert decide(houston, c("JUAN GARCIA", "JUAN GARCIA", state="TX", city="HOUSTON"), GENERIC).bucket == MATCHED
+    assert decide(houston, c("JUAN GARCIA ROOFING", "JUAN GARCIA", state="TX", city="DALLAS"), GENERIC).rule_id == "X5"
+
+
+def test_person_name_at_a_matched_address_still_matches():
+    d = decide(JUAN, c("JUAN GARCIA", "JUAN GARCIA", state="TX", at_addr=True), GENERIC)
+    assert d.bucket == MATCHED and d.rule_id == "M2"
+    # a trade word added at the same address is unsure (as for companies), so the reviewer decides
+    assert decide(JUAN, c("JUAN GARCIA ROOFING", "JUAN GARCIA", state="TX", at_addr=True), GENERIC).bucket == UNCERTAIN
+
+
+def test_branch_or_division_is_never_a_different_company():
+    barnhart = q("BARNHART CRANE RIGGING", "BARNHART CRANE RIGGING", state="TN")
+    d = decide(barnhart, c("BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH", "BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH",
+                           state="TN"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S2")
+
+
+# --- spelling correction: only a clearly dominant spelling, never a different small company ---------
+def _row(core, insp, clean=None):
+    return {"name_core": core, "clean_name": clean or core, "insp_n": insp, "sim": 0.95, "initials_only": False,
+            "sibling_suffix": None}
+
+
+def test_spelling_correction_needs_a_clearly_dominant_spelling(monkeypatch):
+    from ssi.matching import candidates, run
+    monkeypatch.setattr(candidates, "core_tier", lambda core, initials: "distinctive")
+    colmex = q("COLMEX CONTRACTING", "COLMEX", state="FL")
+    q2, note = run.correct_spelling(colmex, [_row("COLMEX", 1, "COLMEX CONTRACTING"), _row("COMEX", 5, "COMEX CONSTRUCTION")])
+    assert note is None and q2.core == "COLMEX"  # Comex (5 inspections) is another company, not a typo fix
+    slip = q("BRASFEILD GORRIE", "BRASFEILD GORRIE")
+    q3, note = run.correct_spelling(slip, [_row("BRASFEILD GORRIE", 1), _row("BRASFIELD GORRIE", 300)])
+    assert q3.core == "BRASFIELD GORRIE" and note

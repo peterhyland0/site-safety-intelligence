@@ -2,6 +2,11 @@
 token blocking on the query's rarest words, typo-tolerant via Jaro-Winkler on the token vocabulary)."""
 from __future__ import annotations
 
+import csv
+import re
+from functools import cache
+
+from ssi import config
 from ssi.store import warehouse
 
 EST_COLS = """e.establishment_key, e.clean_name, e.name_core, e.legal_name, e.dba_name, e.display_name,
@@ -22,9 +27,31 @@ def describe_query(name: str) -> dict:
     )
 
 
+@cache
+def given_names() -> frozenset[str]:
+    path = config.REF_DIR / "given_name.csv"
+    if not path.exists():
+        return frozenset()
+    with path.open() as f:
+        return frozenset(r["name"].strip().upper() for r in csv.DictReader(f) if r["name"].strip())
+
+
+def is_person_core(core: str) -> bool:
+    """A name core that is a person's name: "JUAN GARCIA", "JOSE A HERNANDEZ", "HERNANDEZ JOSE".
+    Sole proprietors appear in OSHA's data under the owner's name, and the same name is usually many
+    different people. Mirrors entity.core_stats.is_person (42_name_stats.sql)."""
+    t = core.split()
+    if not 2 <= len(t) <= 4 or not re.fullmatch(r"[A-Z]+( [A-Z]+)*", core):
+        return False
+    g = given_names()
+    return t[0] in g or (len(t) == 2 and t[1] in g)
+
+
 def core_tier(core: str, initials: bool) -> str:
     if not core or initials:
         return "generic"
+    if is_person_core(core):
+        return "person"
     r = warehouse.one("SELECT tier FROM entity.core_stats WHERE name_core = ?", [core])
     return r["tier"] if r else "distinctive"  # a core never seen in OSHA data is, by definition, rare
 

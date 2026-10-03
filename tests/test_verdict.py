@@ -52,3 +52,26 @@ def test_recurring_hazard_and_open_cases():
     v, r = evaluate(facts(hazards=old))
     assert v == "no_flags" and r[0].severity == "info"
     assert evaluate(facts(open_serious_cases=[9]))[0] == "review"
+
+
+def test_recency_compares_dates_not_calendar_years():
+    from datetime import date
+    as_of = date(2026, 9, 23)
+    inside = RedFlagFact("fatality_cited", 2016, 1, False, when=date(2016, 10, 1))   # 9 years 11 months ago
+    outside = RedFlagFact("fatality_cited", 2016, 2, False, when=date(2016, 9, 1))   # just over 10 years ago
+    assert evaluate(facts(as_of=as_of, red_flags=[inside]))[0] == "high"
+    v, r = evaluate(facts(as_of=as_of, red_flags=[outside]))
+    assert v == "review" and r[0].code == "R_old_fatality_cited"
+
+
+def test_open_fatality_investigation_is_never_silent():
+    from datetime import date
+    pending = RedFlagFact("fatality_pending", 2025, 3, True, when=date(2025, 10, 16))
+    v, r = evaluate(facts(as_of=date(2026, 9, 23), red_flags=[pending]))
+    assert v == "review" and r[0].code == "R_fatality_pending"
+
+
+def test_closed_fatcat_investigation_without_serious_citations_is_review_while_recent():
+    from datetime import date
+    f = RedFlagFact("fatcat_not_cited", 2025, 4, False, when=date(2025, 6, 1))
+    assert evaluate(facts(as_of=date(2026, 9, 23), red_flags=[f]))[0] == "review"

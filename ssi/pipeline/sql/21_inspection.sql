@@ -18,7 +18,7 @@ SELECT
   i.why_no_insp,  -- kept raw: populated on ~100% of recent rows, so it can't be used as a filter
   i.union_status, i.safety_hlth,
   nullif(nullif(i.naics_code, '000000'), '0')               AS naics_code,
-  nullif(nullif(i.sic_code, '0000'), '0')                   AS sic_code,
+  nullif(lpad(nullif(trim(i.sic_code), ''), 4, '0'), '0000') AS sic_code,  -- restore the leading zero ('175' -> '0175')
   try_cast(i.nr_in_estab AS INTEGER)                        AS nr_in_estab,  -- never used to normalise
   try_cast(left(i.open_date, 10) AS DATE)                   AS open_date,
   try_cast(left(i.close_case_date, 10) AS DATE)             AS close_date,
