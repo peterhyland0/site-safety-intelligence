@@ -6,6 +6,7 @@ import csv
 import io
 import os
 import secrets
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -78,7 +79,9 @@ def _cards(project: dict) -> list[S.SubCard]:
     with pg.conn() as c:
         subs = c.execute("SELECT * FROM app.project_sub WHERE project_id = %s ORDER BY position, created_at",
                          [project["project_id"]]).fetchall()
-    cards = [Q.card(s, project) for s in subs]
+    # each card runs ~a dozen small warehouse queries; DuckDB cursors are thread-safe, so do subs in parallel
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        cards = list(ex.map(lambda s: Q.card(s, project), subs))
     order = {"high": 0, "review": 1, "no_record": 2, "no_recent": 3, "no_flags": 4}
     return sorted(cards, key=lambda c: (order[c.verdict], -sum(r.severity == "high" for r in c.reasons),
                                         -c.red_flag_count, c.entered_name.lower()))

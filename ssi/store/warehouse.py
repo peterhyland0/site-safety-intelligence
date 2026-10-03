@@ -24,7 +24,7 @@ def open_warehouse(path: Path | None = None) -> duckdb.DuckDBPyConnection:
             raise RuntimeError(f"No warehouse found (looked for {config.CURRENT_POINTER}). Run the build first.")
         if _con is not None and _path == path:
             return _con
-        con = duckdb.connect(str(path), read_only=True, config={"threads": "4"})
+        con = duckdb.connect(str(path), read_only=True, config={"threads": "8"})
         if not con.execute("SELECT count(*) FROM duckdb_functions() WHERE function_name = 'clean_name'").fetchone()[0]:
             install_macros(con, temp=True)  # older warehouse without persisted macros
         _con, _path = con, path
