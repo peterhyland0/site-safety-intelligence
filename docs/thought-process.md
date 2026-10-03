@@ -154,6 +154,9 @@ The GC enters the sub's name plus city and state, which they already have from b
 
 ### Where the LLM adjudicator runs
 
+(October 2026: groups without red flags now go to Jev, a decision model, after it beat the LLM on held-out
+silver pairs; red-flagged ones stay with the LLM. See [adjudicator.md](adjudicator.md).)
+
 The adjudicator runs in one place only: **when the GC adds a sub, and only on the candidates the rules can't sort confidently.** It never touches the pipeline, the scorecard numbers or the red flags.
 
 ```

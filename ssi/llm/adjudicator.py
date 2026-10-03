@@ -1,20 +1,30 @@
-"""LLM adjudicator for UNCERTAIN match clusters.
+"""Adjudicator for UNCERTAIN match clusters: Jev for ordinary clusters, the LLM for red-flagged ones.
 
-Sees identity evidence only (names, addresses, years, trade codes, the GC's input) and never the safety
-history, so a fatality can't bias whether a record is judged "the same company". Output is validated in
-code: cited evidence IDs must exist in the packet, and numbers/places in the rationale must appear in it.
-Anything that fails validation becomes POSSIBLE (method llm_rejected)."""
+decide() routes each cluster. A red-flagged cluster becomes a question to the GC, who reads the AI's reason, so
+it goes to the LLM, whose written reason is checked below. The rest go to Jev (ssi/llm/jev.py) when a Jev key is
+set: it was more accurate than the LLM on held-out silver pairs, about 3.5x faster, and writes no text, so its
+reason line is written in code from the evidence (docs/adjudicator.md). SSI_ADJUDICATOR=llm sends everything to
+the LLM; a failed Jev call falls back to it.
+
+Either way the adjudicator sees identity evidence only (names, addresses, years, trade codes, the GC's input)
+and never the safety history, so a fatality can't bias whether a record is judged "the same company". The LLM's
+output is validated in code: cited evidence IDs must exist in the packet, and numbers/places in the rationale
+must appear in it. Anything that fails validation becomes POSSIBLE (method llm_rejected)."""
 from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import os
 import re
 
 from ssi.llm import client as llm
+from ssi.llm import jev
 from ssi.matching.rules import near_spelling
 from ssi.store import pg
 
-SYSTEM = """You decide whether OSHA inspection records belong to the same company as a general contractor's \
+# GUIDANCE is how to judge; SYSTEM adds the output rules. The Jev comparison (eval/adjudication) sends GUIDANCE alone.
+GUIDANCE = """You decide whether OSHA inspection records belong to the same company as a general contractor's \
 subcontractor. OSHA records have no company ID: the employer name is typed per inspection, so the same \
 company appears under spelling variants, and different companies share common names.
 
@@ -26,7 +36,9 @@ Weigh: exact vs similar names; shared or nearby addresses; the same city or regi
 the same trade code. Treat a different legal suffix (INC/LLC) as weak evidence. Names that differ by a \
 location or project suffix ("... OF OREGON", "... AT MERIDIAN") are usually sibling companies, not the same \
 one. A common name in a different state with no shared address is usually a different company. When the \
-evidence is thin, answer unsure: a wrong "same" attaches someone else's history to the sub.
+evidence is thin, answer unsure: a wrong "same" attaches someone else's history to the sub."""
+
+SYSTEM = GUIDANCE + """
 
 Cite the evidence lines you relied on by ID. Keep the rationale to one or two short sentences, and only \
 mention names, places, years and numbers that appear in the evidence."""
@@ -44,12 +56,73 @@ SCHEMA = {
 }
 
 
+log = logging.getLogger(__name__)
+
+
+def use_jev() -> bool:
+    """Jev handles ordinary clusters when its key is set, unless SSI_ADJUDICATOR=llm."""
+    return os.environ.get("SSI_ADJUDICATOR", "jev").strip().lower() != "llm" and jev.available()
+
+
 def available() -> bool:
-    return llm.available("adjudicator")
+    return llm.available("adjudicator") or use_jev()
+
+
+def decide(packet: dict) -> dict | None:
+    """The answer for one cluster from whichever adjudicator handles it (see the module docstring), or None."""
+    has_llm = llm.available("adjudicator")
+    if use_jev() and not (packet.get("red_flagged") and has_llm):
+        try:
+            return decide_jev(packet)
+        except Exception as e:  # noqa: BLE001 - any failure: the LLM, or leave the cluster possible
+            log.warning("Jev failed (%s: %s); %s", type(e).__name__, e, "using the LLM" if has_llm else "left possible")
+    return decide_llm(packet) if has_llm else None
+
+
+def decide_jev(packet: dict) -> dict | None:
+    """Jev's answer through its thresholds, with a reason written from the evidence; cached like the LLM's."""
+    if not llm.budget_ok():
+        return None
+    model = jev.model()
+    key = hashlib.sha256(f"jev|{model}|{jev.questions_hash()}|{json.dumps(packet['lines'], sort_keys=True)}"
+                         .encode()).hexdigest()
+    with pg.conn() as c:
+        hit = c.execute("SELECT response FROM app.adjudication_cache WHERE packet_hash = %s", [key]).fetchone()
+    resp = (hit["response"] or {}).get("jev") if hit else None
+    if not resp:
+        resp = jev.ask(packet)
+        u = resp["usage"]
+        llm.record_usage(u.get("input_tokens") or 0, u.get("output_tokens") or 0)
+        with pg.conn() as c:
+            c.execute("""INSERT INTO app.adjudication_cache (packet_hash, model, response) VALUES (%s, %s, %s)
+                         ON CONFLICT (packet_hash) DO UPDATE SET response = EXCLUDED.response""",
+                      [key, model, json.dumps({"jev": resp})])
+    return jev_answer(resp, packet)
+
+
+_warned: set[str] = set()
+
+
+def jev_answer(resp: dict, packet: dict) -> dict:
+    served = resp.get("model") or jev.model()
+    if served != jev.TUNED_ON and served not in _warned:
+        _warned.add(served)
+        log.warning("Jev answered as %s; its thresholds were tuned on %s: re-run eval/adjudication", served, jev.TUNED_ON)
+    facts = packet.get("facts") or {}
+    p = jev.p_same(resp)
+    answer = jev.decision(p, facts.get("same_state"))
+    return {**answer, "p_same": round(p, 4), "evidence_ids": [],
+            "rationale": jev.rationale(p, answer["decision"], facts),
+            "decided_by": f"ai:jev:{served}"}
 
 
 def packet_text(packet: dict) -> str:
     return "\n".join(f"{line['id']}: {line['text']}" for line in packet["lines"])
+
+
+def user_prompt(packet: dict) -> str:
+    return (f"Sub: {packet['sub']}\n\nEvidence:\n{packet_text(packet)}\n\n"
+            "Are the candidate records the same company as the sub?")
 
 
 def validate(result: dict | None, packet: dict) -> tuple[bool, str]:
@@ -120,7 +193,7 @@ COMMON_WORDS = {
 }
 
 
-def decide(packet: dict) -> dict | None:
+def decide_llm(packet: dict) -> dict | None:
     """Returns {decision, confidence, rationale, evidence_ids} or {rejected: True, ...}; cached."""
     if not llm.budget_ok():
         return None
@@ -133,21 +206,19 @@ def decide(packet: dict) -> dict | None:
     if hit:
         resp = hit["response"] or {}
         if "raw" in resp:
-            return _checked(resp["raw"], packet)
+            return checked(resp["raw"], packet)
         if not resp.get("rejected"):
-            return _checked(resp, packet)
-    user = (f"Sub: {packet['sub']}\n\nEvidence:\n{packet_text(packet)}\n\n"
-            "Are the candidate records the same company as the sub?")
-    result, usage = provider.structured(SYSTEM, user, SCHEMA, max_tokens=1024)
+            return checked(resp, packet)
+    result, usage = provider.structured(SYSTEM, user_prompt(packet), SCHEMA, max_tokens=1024)
     llm.record_usage(usage.input_tokens, usage.output_tokens)
     with pg.conn() as c:
         c.execute("""INSERT INTO app.adjudication_cache (packet_hash, model, response) VALUES (%s, %s, %s)
                      ON CONFLICT (packet_hash) DO UPDATE SET response = EXCLUDED.response""",
                   [key, provider.model, json.dumps({"raw": result})])
-    return _checked(result, packet)
+    return checked(result, packet)
 
 
-def _checked(result: dict | None, packet: dict) -> dict:
+def checked(result: dict | None, packet: dict) -> dict:
     ok, why = validate(result, packet)
     return result if ok else {"rejected": True, "decision": "unsure", "confidence": 0.0,
                               "rationale": f"AI answer rejected by validation ({why})", "evidence_ids": []}

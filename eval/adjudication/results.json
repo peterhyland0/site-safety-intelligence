@@ -1,0 +1,7449 @@
+{
+  "seed": 7,
+  "held_out": false,
+  "tuned_exclude": [
+    0.2,
+    0.06
+  ],
+  "pairs": 2400,
+  "rule_outcomes": {
+    "same_name_other_address": {
+      "matched": 285,
+      "matched by M3": 143,
+      "matched by M1": 142,
+      "uncertain": 81,
+      "excluded": 2
+    },
+    "different_name": {
+      "uncertain": 6,
+      "excluded": 7,
+      "not_found": 14,
+      "matched": 5,
+      "matched by M2": 2,
+      "matched by M1b": 2,
+      "matched by M1": 1
+    },
+    "same_core_different_ein": {
+      "excluded": 244,
+      "uncertain": 108,
+      "matched": 22,
+      "matched by M1b": 16,
+      "matched by M2": 6
+    },
+    "same_name_different_ein": {
+      "matched": 23,
+      "matched by M1": 23,
+      "uncertain": 3
+    },
+    "other_state_different_ein": {
+      "excluded": 1441,
+      "matched": 51,
+      "matched by M3": 51,
+      "not_found": 4,
+      "uncertain": 104
+    }
+  },
+  "uncertain": 302,
+  "uncertain_same": 87,
+  "red_flagged": 46,
+  "models": {
+    "llm": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "jev": "jev-latest"
+  },
+  "jev_served_by": [
+    "jev-1.13.0"
+  ],
+  "metrics": {
+    "rules only": {
+      "wrong_merges": 0,
+      "wrong_exclusions": 0,
+      "same_matched": 0,
+      "different_excluded": 0,
+      "resolved": 0.0,
+      "match_precision": null,
+      "exclude_precision": null,
+      "auc": 0.5,
+      "brier": 0.25,
+      "rejected": 0,
+      "missing": 0,
+      "median_s": null,
+      "p90_s": null
+    },
+    "llm": {
+      "wrong_merges": 1,
+      "wrong_exclusions": 9,
+      "same_matched": 1,
+      "different_excluded": 137,
+      "resolved": 0.49,
+      "match_precision": 0.5,
+      "exclude_precision": 0.938,
+      "auc": 0.804,
+      "brier": 0.161,
+      "rejected": 6,
+      "missing": 0,
+      "median_s": 0.89,
+      "p90_s": 1.38
+    },
+    "jev-choice": {
+      "wrong_merges": 0,
+      "wrong_exclusions": 16,
+      "same_matched": 0,
+      "different_excluded": 160,
+      "resolved": 0.583,
+      "match_precision": null,
+      "exclude_precision": 0.909,
+      "auc": 0.845,
+      "brier": 0.181,
+      "rejected": 0,
+      "missing": 0,
+      "median_s": 0.25,
+      "p90_s": 0.31
+    },
+    "jev-tuned": {
+      "wrong_merges": 0,
+      "wrong_exclusions": 3,
+      "same_matched": 0,
+      "different_excluded": 154,
+      "resolved": 0.52,
+      "match_precision": null,
+      "exclude_precision": 0.981,
+      "auc": 0.845,
+      "brier": 0.181,
+      "rejected": 0,
+      "missing": 0,
+      "median_s": 0.25,
+      "p90_s": 0.31
+    },
+    "jev-noul": {
+      "wrong_merges": 0,
+      "wrong_exclusions": 22,
+      "same_matched": 0,
+      "different_excluded": 165,
+      "resolved": 0.619,
+      "match_precision": null,
+      "exclude_precision": 0.882,
+      "auc": 0.83,
+      "brier": 0.174,
+      "rejected": 0,
+      "missing": 0,
+      "median_s": 0.25,
+      "p90_s": 0.31
+    }
+  },
+  "sweep": {
+    "llm": {
+      "0.95": "0/87 \u00b7 0",
+      "0.9": "1/87 \u00b7 0",
+      "0.85": "1/87 \u00b7 1",
+      "0.8": "3/87 \u00b7 2",
+      "0.7": "8/87 \u00b7 9",
+      "0.6": "8/87 \u00b7 10"
+    },
+    "jev-choice": {
+      "0.95": "0/87 \u00b7 0",
+      "0.9": "0/87 \u00b7 0",
+      "0.85": "0/87 \u00b7 0",
+      "0.8": "0/87 \u00b7 0",
+      "0.7": "3/87 \u00b7 0",
+      "0.6": "6/87 \u00b7 1"
+    },
+    "jev-noul": {
+      "0.95": "0/87 \u00b7 0",
+      "0.9": "0/87 \u00b7 0",
+      "0.85": "0/87 \u00b7 0",
+      "0.8": "0/87 \u00b7 0",
+      "0.7": "0/87 \u00b7 0",
+      "0.6": "4/87 \u00b7 0"
+    }
+  },
+  "by_place": {
+    "Same company, same state": {
+      "n": 21,
+      "rules only": "0 \u00b7 21 \u00b7 0",
+      "llm": "1 \u00b7 19 \u00b7 1",
+      "jev-choice": "0 \u00b7 20 \u00b7 1",
+      "jev-tuned": "0 \u00b7 20 \u00b7 1",
+      "jev-noul": "0 \u00b7 20 \u00b7 1"
+    },
+    "Same company, other state": {
+      "n": 66,
+      "rules only": "0 \u00b7 66 \u00b7 0",
+      "llm": "0 \u00b7 58 \u00b7 8",
+      "jev-choice": "0 \u00b7 51 \u00b7 15",
+      "jev-tuned": "0 \u00b7 64 \u00b7 2",
+      "jev-noul": "0 \u00b7 45 \u00b7 21"
+    },
+    "Different company, same state": {
+      "n": 111,
+      "rules only": "0 \u00b7 111 \u00b7 0",
+      "llm": "1 \u00b7 57 \u00b7 53",
+      "jev-choice": "0 \u00b7 44 \u00b7 67",
+      "jev-tuned": "0 \u00b7 32 \u00b7 79",
+      "jev-noul": "0 \u00b7 42 \u00b7 69"
+    },
+    "Different company, other state": {
+      "n": 104,
+      "rules only": "0 \u00b7 104 \u00b7 0",
+      "llm": "0 \u00b7 20 \u00b7 84",
+      "jev-choice": "0 \u00b7 11 \u00b7 93",
+      "jev-tuned": "0 \u00b7 29 \u00b7 75",
+      "jev-noul": "0 \u00b7 8 \u00b7 96"
+    }
+  },
+  "tokens": {
+    "llm_tokens": 240675,
+    "jev_input_tokens": 379359
+  },
+  "errors": [],
+  "seconds": 1,
+  "cases": [
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "RESTON, VA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHICAGO, IL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.29
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.29
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "OAKLAND, CA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.24
+      }
+    },
+    {
+      "a": "TINDALL",
+      "a_place": "CONLEY, GA",
+      "b": "TINDALL CORPORATION VIRGINIA DIVISION",
+      "b_place": "PETERSBURG, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.46
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.46
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.46
+      }
+    },
+    {
+      "a": "MAXIM CRANE WORKS",
+      "a_place": "PLEASANT GROVE, CA",
+      "b": "MAXIM CRANE WORKS",
+      "b_place": "HOUSTON, TX",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.285
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.285
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.27
+      }
+    },
+    {
+      "a": "KENT COMPANIES",
+      "a_place": "GRAND RAPIDS, MI",
+      "b": "KENT COMPANIES",
+      "b_place": "TRAVERSE CITY, MI",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.53
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.53
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.45
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "SEATTLE, WA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "DALLAS, TX",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.275
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.275
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "VNC CONSTRUCTION",
+      "a_place": "DENHAM SPRINGS, LA",
+      "b": "VNC CONSTRUCTION",
+      "b_place": "DENNIS MILLS, LA",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.59
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.59
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.55
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "BRECKSVILLE, OH",
+      "b": "NVR",
+      "b_place": "BLUE BELL, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.09
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "TOLL BROS",
+      "a_place": "FORT WASHINGTON, PA",
+      "b": "TOLL BROS",
+      "b_place": "RESTON, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.32
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.32
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "MOSS ASSOCIATES",
+      "a_place": "FORT LAUDERDALE, FL",
+      "b": "MOSS ASSOCIATES",
+      "b_place": "EL PASO, TX",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.11
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.11
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "GRANDVIEW, MO",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "TEMPE, AZ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "PAR ELECTRICAL CONTRACTORS",
+      "a_place": "KANSAS CITY, MO",
+      "b": "PAR ELECTRICAL CONTRACTORS",
+      "b_place": "VACAVILLE, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "CAMP CONSTRUCTION SERVICES",
+      "a_place": "HOUSTON, TX",
+      "b": "CAMP ROOFING",
+      "b_place": "HOUSTON, TX",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "HUNTERSVILLE, NC",
+      "b": "NVR",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.72
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.37
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.37
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.41
+      }
+    },
+    {
+      "a": "MCCLURE",
+      "a_place": "HARRISBURG, PA",
+      "b": "MCCLURE",
+      "b_place": "STATE COLLEGE, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.47
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.47
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "CINCINNATI, OH",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHICAGO, IL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "AJD CONSTRUCTION",
+      "a_place": "JERSEY CITY, NJ",
+      "b": "AJD CONSTRUCTION",
+      "b_place": "LEONARDO, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.315
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.315
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "NEW YORK, NY",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "ALBANY, NY",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.68
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "BLUE BELL, PA",
+      "b": "NVR",
+      "b_place": "DAGSBORO, DE",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.28
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.28
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "WCA GROUP",
+      "a_place": "CARMEL, IN",
+      "b": "WCA GROUP",
+      "b_place": "FAIRFIELD, OH",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.28
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.095
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "OAKLAND, CA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHICAGO, IL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.175
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.175
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.26
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "OAKLAND, CA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "HUNTSVILLE, AL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "MONTVALE, NJ",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "NASHVILLE, TN",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.16
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.16
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.23
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "BALTIMORE, MD",
+      "b": "NVR",
+      "b_place": "FREDERICK, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.65
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.65
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.52
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "RICHMOND, VA",
+      "b": "NVR",
+      "b_place": "HUNTERSVILLE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.22
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.22
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.26
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "ANAHEIM, CA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "KANSAS CITY, MO",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.09
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "MAXIM CRANE WORKS",
+      "a_place": "CHARLOTTE, NC",
+      "b": "MAXIM CRANE WORKS",
+      "b_place": "JESSUP, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.22
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.22
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.29
+      }
+    },
+    {
+      "a": "WHC ENERGY SERVICES",
+      "a_place": "BROUSSARD, LA",
+      "b": "WHC",
+      "b_place": "BROUSSARD, LA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "matched",
+        "p_same": 0.9
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.73
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.73
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.64
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "BOSTON, MA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SOMERSET, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.185
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.185
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.25
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "BOSTON, MA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "RESTON, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.265
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.265
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "RESTON, VA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "PHILADELPHIA, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.435
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.435
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.41
+      }
+    },
+    {
+      "a": "SUNRUN INSTALLATION SERVICES",
+      "a_place": "LEHI, UT",
+      "b": "SUNRUN",
+      "b_place": "MARLBOROUGH, MA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.08
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "RECONSTRUCTION EXPERTS",
+      "a_place": "FORT MYERS, FL",
+      "b": "ADVANCED",
+      "b_place": "FORT MYERS, FL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.49
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.49
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.41
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "CARMEL, IN",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "TEMPE, AZ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.19
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.19
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.23
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "DETROIT, MI",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "BOSTON, MA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.21
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.21
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.3
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "MONTVALE, NJ",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.21
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.21
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.29
+      }
+    },
+    {
+      "a": "FL CRANE SONS",
+      "a_place": "MEMPHIS, TN",
+      "b": "FL CRANE SONS",
+      "b_place": "FULTON, MS",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.06
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "SEATTLE, WA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CINCINNATI, OH",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.235
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.235
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.3
+      }
+    },
+    {
+      "a": "NPL CONSTRUCTION",
+      "a_place": "TULSA, OK",
+      "b": "NPL CONSTRUCTION",
+      "b_place": "LAS VEGAS, NV",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.075
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.075
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "MAXIM CRANE WORKS",
+      "a_place": "PHOENIX, AZ",
+      "b": "MAXIM CRANE WORKS",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.265
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.265
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "FREDERICK, MD",
+      "b": "NVR",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "CHARLOTTESVILLE, VA",
+      "b": "NVR",
+      "b_place": "CHESAPEAKE, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.7
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.55
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.55
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.48
+      }
+    },
+    {
+      "a": "MCCARTHY BUILDING COMPANIES",
+      "a_place": "ROSEVILLE, CA",
+      "b": "MCCARTHY BUILDING COMPANIES",
+      "b_place": "NEWPORT BEACH, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.395
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.395
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.37
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "VIRGINIA BEACH, VA",
+      "b": "NVR",
+      "b_place": "OWINGS MILLS, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "KENNESAW, GA",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "LAKELAND, FL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.11
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.11
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "INTERSTATE ELECTRICAL SERVICES",
+      "a_place": "WHITE RIVER JUNCTION, VT",
+      "b": "INTERSTATE ELECTRICAL SERVICES",
+      "b_place": "EAST PROVIDENCE, RI",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.19
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.19
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.24
+      }
+    },
+    {
+      "a": "HELIX ELECTRIC",
+      "a_place": "OAKLAND, CA",
+      "b": "HELIX ELECTRIC",
+      "b_place": "MANASSAS, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.125
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.125
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "BIG D CONSTRUCTION",
+      "a_place": "LINDON, UT",
+      "b": "BIG D CONSTRUCTION",
+      "b_place": "OGDEN, UT",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.495
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.495
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.38
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "PORTLAND, OR",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "CARMEL, IN",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "STANDARD DRYWALL",
+      "a_place": "JACKSON, WY",
+      "b": "STANDARD DRYWALL",
+      "b_place": "DEL VALLE, TX",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.075
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.075
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "BALTIMORE, MD",
+      "b": "NVR",
+      "b_place": "NOTTINGHAM, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.71
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.71
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.61
+      }
+    },
+    {
+      "a": "AWT ENVIRONMENTAL SERVICES",
+      "a_place": "SAYREVILLE, NJ",
+      "b": "AWT ENVIRONMENTAL SERVICES",
+      "b_place": "OLD BRIDGE, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.8
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.68
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.68
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.6
+      }
+    },
+    {
+      "a": "WEST COAST FRAMING",
+      "a_place": "SACRAMENTO, CA",
+      "b": "WEST COAST FRAMING",
+      "b_place": "SAN JOSE, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.33
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.33
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "ANAHEIM, CA",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "TEMPE, AZ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.17
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.17
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "MCCARTHY BUILDING COMPANIES",
+      "a_place": "SAN FRANCISCO, CA",
+      "b": "MCCARTHY BUILDING COMPANIES",
+      "b_place": "NEWPORT BEACH, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.8
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.49
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PHILADELPHIA, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "PITTSBURGH, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.44
+      }
+    },
+    {
+      "a": "FERGUSON CONSTRUCTION",
+      "a_place": "SIDNEY, OH",
+      "b": "FERGUSON CONSTRUCTION",
+      "b_place": "DAYTON, OH",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.53
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.53
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.48
+      }
+    },
+    {
+      "a": "SUNRUN INSTALLATION SERVICES",
+      "a_place": "SOMERSET, NJ",
+      "b": "SUNRUN",
+      "b_place": "MARLBOROUGH, MA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.065
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.065
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "DETROIT, MI",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "DALLAS, TX",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.34
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.34
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.37
+      }
+    },
+    {
+      "a": "TEAM INDUSTRIAL SERVICES",
+      "a_place": "SYLVANIA, OH",
+      "b": "TEAM INDUSTRIAL SERVICES",
+      "b_place": "PASADENA, TX",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.18
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.18
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "HUNTERSVILLE, NC",
+      "b": "NVR",
+      "b_place": "LANHAM, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PITTSBURGH, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "ALBANY, NY",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.43
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.43
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.41
+      }
+    },
+    {
+      "a": "MAXIM CRANE WORKS",
+      "a_place": "FORT WORTH, TX",
+      "b": "MAXIM CRANE WORKS",
+      "b_place": "BRIDGEVILLE, PA",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.305
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.305
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "RALEIGH, NC",
+      "b": "NVR",
+      "b_place": "WILLIAMSBURG, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.7
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PITTSBURGH, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SOMERSET, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.205
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.205
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.3
+      }
+    },
+    {
+      "a": "PERFORMANCE CONTRACTING",
+      "a_place": "ANAHEIM, CA",
+      "b": "PERFORMANCE CONTRACTING",
+      "b_place": "WOODINVILLE, WA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "PAR ELECTRICAL CONTRACTORS",
+      "a_place": "ESCONDIDO, CA",
+      "b": "PAR ELECTRICAL CONTRACTORS",
+      "b_place": "VACAVILLE, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.365
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.365
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.37
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "BALTIMORE, MD",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "PITTSBURGH, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.485
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.485
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.43
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "NEW YORK, NY",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "HUNTSVILLE, AL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.305
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.305
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PITTSBURGH, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SOMERSET, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.255
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.255
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "SPRINGBORO, OH",
+      "b": "NVR",
+      "b_place": "BALTIMORE, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "PITTSBURGH, PA",
+      "b": "NVR",
+      "b_place": "NOTTINGHAM, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.085
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.085
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "FRANKLIN, TN",
+      "b": "NVR",
+      "b_place": "LANHAM, MD",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.11
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "ANAHEIM, CA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHICAGO, IL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.2
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.2
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.27
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "CINCINNATI, OH",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SOMERSET, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.3
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "BALTIMORE, MD",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SOMERSET, NJ",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "BAKER ROOFING",
+      "a_place": "CARY, NC",
+      "b": "BAKER ROOFING",
+      "b_place": "HENDERSONVILLE, TN",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.12
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.12
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "VIRGINIA BEACH, VA",
+      "b": "NVR",
+      "b_place": "FRANKLIN, TN",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.185
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.185
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.26
+      }
+    },
+    {
+      "a": "SUMMIT CONTRACTING GROUP",
+      "a_place": "ATLANTA, GA",
+      "b": "SUMMIT CONTRACTING GROUP",
+      "b_place": "JACKSONVILLE, FL",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.16
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.16
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "MCCARTHY BUILDING COMPANIES",
+      "a_place": "DENVER, CO",
+      "b": "MCCARTHY BUILDING COMPANIES",
+      "b_place": "HOUSTON, TX",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.3
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PHILADELPHIA, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "SAN DIEGO, CA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.29
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.29
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "SAK CONSTRUCTION",
+      "a_place": "ROCKLIN, CA",
+      "b": "SAK CONSTRUCTION",
+      "b_place": "O FALLON, MO",
+      "label": 1,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.08
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "NVR",
+      "a_place": "COLUMBIA, MD",
+      "b": "NVR",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.07
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "JEM GROUP",
+      "a_place": "CAMP HILL, PA",
+      "b": "JEM GROUP",
+      "b_place": "HARRISBURG, PA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.66
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.66
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.56
+      }
+    },
+    {
+      "a": "LANE CONSTRUCTION",
+      "a_place": "RALEIGH, NC",
+      "b": "LANE CONSTRUCTION",
+      "b_place": "HAMPTON, VA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "PITTSBURGH, PA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "CHARLOTTE, NC",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "TURNER CONSTRUCTION",
+      "a_place": "ATLANTA, GA",
+      "b": "TURNER CONSTRUCTION",
+      "b_place": "WEST DES MOINES, IA",
+      "label": 1,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.25
+      }
+    },
+    {
+      "a": "AMX COOLING HEATING",
+      "a_place": "PLEASANTVILLE, NY",
+      "b": "AMX MECHANICAL",
+      "b_place": "PLEASANTVILLE, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.8
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.595
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.595
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.57
+      }
+    },
+    {
+      "a": "COMPLETE ROOFING SOLUTIONS OF FLORIDA",
+      "a_place": "NORTH PORT, FL",
+      "b": "ALL FLORIDA ELECTRIC",
+      "b_place": "GAINESVILLE, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "FOCUS PLUMBING",
+      "a_place": "LAS VEGAS, NV",
+      "b": "FOCUS CONCRETE",
+      "b_place": "LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "DESERT PLASTERING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT FRAMING",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "DESERT ROOFING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT FRAMING",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.185
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.185
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.27
+      }
+    },
+    {
+      "a": "SPRINGFIELD ROOFING SYSTEMS",
+      "a_place": "SPRINGFIELD, MO",
+      "b": "SPRINGFIELD MECHANICAL SERVICES",
+      "b_place": "SPRINGFIELD, MO",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "GALLANT COMMERCIAL",
+      "a_place": "HOUSTON, TX",
+      "b": "GALLANT BUILDERS",
+      "b_place": "HOUSTON, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "KANSAS FENCING",
+      "a_place": "TOPEKA, KS",
+      "b": "KANSAS PAVING",
+      "b_place": "WICHITA, KS",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "KASSELMAN SOLAR",
+      "a_place": "ALBANY, NY",
+      "b": "KASSELMAN ELECTRIC",
+      "b_place": "MENANDS, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.065
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.065
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "CUMBERLAND PIPELINE",
+      "a_place": "COLUMBIA, KY",
+      "b": "CUMBERLAND STEEL",
+      "b_place": "CORBIN, KY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "UNITED CONSTRUCTORS OF TEXAS",
+      "a_place": "HOUSTON, TX",
+      "b": "TEXAS EXTERIOR SYSTEMS",
+      "b_place": "CYPRESS, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "A TEICHERT SON",
+      "a_place": "SACRAMENTO, CA",
+      "b": "TEICHERT ENERGY UTILITIES GROUP",
+      "b_place": "SACRAMENTO, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "BOMBARD MECHANICAL",
+      "a_place": "LAS VEGAS, NV",
+      "b": "BOMBARD ELECTRIC",
+      "b_place": "LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "CORNERSTONE ROOFING",
+      "a_place": "BOTHELL, WA",
+      "b": "CORNERSTONE GENERAL CONTRACTORS",
+      "b_place": "BOTHELL, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "ALAMO INTERIORS",
+      "a_place": "SAN ANTONIO, TX",
+      "b": "ALAMO ENVIRONMENTAL",
+      "b_place": "SAN ANTONIO, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "FOCUS PLUMBING",
+      "a_place": "LAS VEGAS, NV",
+      "b": "FOCUS FIRE PROTECTION",
+      "b_place": "LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.19
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.29
+      }
+    },
+    {
+      "a": "WRIGHT BROTHERS CONTRACTING",
+      "a_place": "CHARLESTON, TN",
+      "b": "WRIGHT BROTHERS CONSTRUCTION",
+      "b_place": "CHARLESTON, TN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.51
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.51
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.49
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA STEEL ERECTORS",
+      "b_place": "RICHMOND, VA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "GP MARTINI ROOFING",
+      "a_place": "DOWNINGTOWN, PA",
+      "b": "A MARTINI",
+      "b_place": "VERONA, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "LOUISVILLE WATER",
+      "a_place": "LOUISVILLE, KY",
+      "b": "LOUISVILLE PAVING",
+      "b_place": "LOUISVILLE, KY",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "TURNKEY ELECTRIC",
+      "a_place": "WILLIAMSPORT, PA",
+      "b": "TURNKEY CONSTRUCTION",
+      "b_place": "WILLIAMSPORT, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.26
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "WAUKEGAN STEEL",
+      "a_place": "WAUKEGAN, IL",
+      "b": "WAUKEGAN ROOFING",
+      "b_place": "MUNDELEIN, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "CONSTRUCTORS HAWAII",
+      "a_place": "HONOLULU, HI",
+      "b": "HAWAII PLUMBING GROUP",
+      "b_place": "HONOLULU, HI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "GUY M TURNER",
+      "a_place": "GREENSBORO, NC",
+      "b": "GUY M TURNER CRANE RIGGING",
+      "b_place": "GREENSBORO, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.72
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.23
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.4
+      }
+    },
+    {
+      "a": "BLUE MOUNTAIN MECHANICAL",
+      "a_place": "OLYMPIA, WA",
+      "b": "BLUE MOUNTAIN ELECTRIC",
+      "b_place": "OAK HARBOR, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "FLY FORM STRUCTURES",
+      "a_place": "ATLANTA, GA",
+      "b": "FLY FORM CONCRETE STRUCTURES",
+      "b_place": "ATLANTA, GA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.485
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.485
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.48
+      }
+    },
+    {
+      "a": "DAVENPORT MASONRY",
+      "a_place": "HOLT, MI",
+      "b": "DAVENPORT BROTHERS CONSTRUCTION",
+      "b_place": "BELLEVILLE, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "JH BERRA PAVING",
+      "a_place": "SAINT LOUIS, MO",
+      "b": "JH BERRA CONSTRUCTION",
+      "b_place": "SAINT LOUIS, MO",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.355
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.355
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.48
+      }
+    },
+    {
+      "a": "MID STATES CONCRETE INDUSTRIES",
+      "a_place": "SOUTH BELOIT, IL",
+      "b": "MID STATES GLASS METAL",
+      "b_place": "NILES, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "AAT ROOFING",
+      "a_place": "PORT ORANGE, FL",
+      "b": "AAT RESTORATION GROUP",
+      "b_place": "PORT ORANGE, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.205
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.205
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.25
+      }
+    },
+    {
+      "a": "BAY MECHANICAL",
+      "a_place": "VIRGINIA BEACH, VA",
+      "b": "BAY PAINTING",
+      "b_place": "VIRGINIA BEACH, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "BOSWORTH",
+      "a_place": "MIDLAND, TX",
+      "b": "BOSWORTH STEEL ERECTORS",
+      "b_place": "DALLAS, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "WESTERN NATIONAL BUILDERS",
+      "a_place": "IRVINE, CA",
+      "b": "WESTERN NATIONAL CONTRACTORS",
+      "b_place": "IRVINE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.6
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.255
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.255
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "ORANGE COUNTY ERECTORS",
+      "a_place": "ANAHEIM, CA",
+      "b": "ORANGE COUNTY PLASTERING",
+      "b_place": "COSTA MESA, CA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "KMU TRUCKING EXCAVATING",
+      "a_place": "AVON, OH",
+      "b": "KMU RESIDENTIAL",
+      "b_place": "AVON, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.295
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.295
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.37
+      }
+    },
+    {
+      "a": "GRAYCOR INDUSTRIAL CONSTRUCTORS",
+      "a_place": "OAKBROOK TERRACE, IL",
+      "b": "GRAYCOR CONSTRUCTION",
+      "b_place": "OAKBROOK TERRACE, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.41
+      }
+    },
+    {
+      "a": "THOMPSON CONCRETE CONSTRUCTION",
+      "a_place": "CARROLL, OH",
+      "b": "THOMPSON EXCAVATION",
+      "b_place": "CARROLL, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.225
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.225
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.26
+      }
+    },
+    {
+      "a": "BRANAGH",
+      "a_place": "OAKLAND, CA",
+      "b": "BRANAGH DEVELOPMENT",
+      "b_place": "LAFAYETTE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.23
+      }
+    },
+    {
+      "a": "PENNSYLVANIA AMERICAN WATER",
+      "a_place": "SCRANTON, PA",
+      "b": "PENNSYLVANIA ROOFING SYSTEMS",
+      "b_place": "BAKERSTOWN, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "SUNRUN",
+      "a_place": "VISTA, CA",
+      "b": "SUNRUN INSTALLATION SERVICES",
+      "b_place": "VISTA, CA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.72
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.24
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.24
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.33
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA DRYWALL",
+      "b_place": "VIRGINIA BEACH, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "SERVICE ELECTRIC OF MICHIGAN",
+      "a_place": "BRIGHTON, MI",
+      "b": "MICHIGAN GLASS METALS",
+      "b_place": "KALAMAZOO, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "DESERT PLASTERING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT CONCRETE",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "GIESE ROOFING",
+      "a_place": "DUBUQUE, IA",
+      "b": "GIESE SHEET METAL",
+      "b_place": "DUBUQUE, IA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "BONE DRY COMMERCIAL ROOFING",
+      "a_place": "INDIANAPOLIS, IN",
+      "b": "BONE DRY ROOFING",
+      "b_place": "INDIANAPOLIS, IN",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.52
+      }
+    },
+    {
+      "a": "AUSTIN CONSTRUCTORS",
+      "a_place": "AUSTIN, TX",
+      "b": "AUSTIN ENGINEERING",
+      "b_place": "AUSTIN, TX",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.16
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "SOUTHERN INDUSTRIAL CONSTRUCTORS",
+      "a_place": "RALEIGH, NC",
+      "b": "SOUTHERN ENERGY MANAGEMENT",
+      "b_place": "RALEIGH, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "OAHU AIR CONDITIONING SERVICE",
+      "a_place": "HONOLULU, HI",
+      "b": "OAHU PLUMBING SHEET METAL",
+      "b_place": "HONOLULU, HI",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.27
+      }
+    },
+    {
+      "a": "DESERT ROOFING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT PLASTERING",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.295
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.295
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.36
+      }
+    },
+    {
+      "a": "GAINESVILLE MECHANICAL",
+      "a_place": "GAINESVILLE, GA",
+      "b": "GAINESVILLE FIRE PROTECTION",
+      "b_place": "GAINESVILLE, GA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "BONE DRY COMMERCIAL ROOFING",
+      "a_place": "INDIANAPOLIS, IN",
+      "b": "BONE DRY ROOFING",
+      "b_place": "INDIANAPOLIS, IN",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.515
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.52
+      }
+    },
+    {
+      "a": "LONG ISLAND POWER SOLUTIONS",
+      "a_place": "RONKONKOMA, NY",
+      "b": "LONG ISLAND CONCRETE",
+      "b_place": "JAMAICA, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "BRISTOL GENERAL CONTRACTORS",
+      "a_place": "ANCHORAGE, AK",
+      "b": "BRISTOL DESIGN BUILD SERVICES",
+      "b_place": "ANCHORAGE, AK",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.335
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.335
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.38
+      }
+    },
+    {
+      "a": "RH MARLIN",
+      "a_place": "SOUTHPORT, IN",
+      "b": "RH MARLIN EXCAVATING",
+      "b_place": "INDIANAPOLIS, IN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "GRANITE CONSTRUCTION",
+      "a_place": "CARLSBAD, CA",
+      "b": "GRANITE CONSTRUCTION",
+      "b_place": "WATSONVILLE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.585
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.585
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.56
+      }
+    },
+    {
+      "a": "ARIZONA PAINTING",
+      "a_place": "CHANDLER, AZ",
+      "b": "FLOORING SYSTEMS OF ARIZONA",
+      "b_place": "TUCSON, AZ",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "ZACHRY CONSTRUCTION",
+      "a_place": "SAN ANTONIO, TX",
+      "b": "ZACHRY INDUSTRIAL",
+      "b_place": "SABINE PASS, TX",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "ZACHRY INDUSTRIAL",
+      "a_place": "CORPUS CHRISTI, TX",
+      "b": "ZACHRY CONSTRUCTION",
+      "b_place": "SAN ANTONIO, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.28
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "LEGACY COMPANIES",
+      "a_place": "MINNEAPOLIS, MN",
+      "b": "LEGACY RESTORATION",
+      "b_place": "MINNEAPOLIS, MN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.24
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.24
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.25
+      }
+    },
+    {
+      "a": "ROHDE BROS EXCAVATING",
+      "a_place": "SAGINAW, MI",
+      "b": "ROHDE CONSTRUCTION",
+      "b_place": "KENTWOOD, MI",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      }
+    },
+    {
+      "a": "ONYX BUILDING GROUP",
+      "a_place": "EL CAJON, CA",
+      "b": "ONYX PAVING",
+      "b_place": "ANAHEIM, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "PENNSYLVANIA ROOFING SYSTEMS",
+      "a_place": "BAKERSTOWN, PA",
+      "b": "PENNSYLVANIA AMERICAN WATER",
+      "b_place": "NEW CASTLE, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "TURNKEY ELECTRIC",
+      "a_place": "WILLIAMSPORT, PA",
+      "b": "TURNKEY CONSTRUCTION",
+      "b_place": "WILLIAMSPORT, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.31
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "GRANITE CONSTRUCTION",
+      "a_place": "CARLSBAD, CA",
+      "b": "GRANITE CONSTRUCTION",
+      "b_place": "WATSONVILLE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.585
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.585
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.56
+      }
+    },
+    {
+      "a": "PAHLISCH COMMERCIAL",
+      "a_place": "BEND, OR",
+      "b": "PAHLISCH HOMES",
+      "b_place": "BEND, OR",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA DRYWALL",
+      "b_place": "VIRGINIA BEACH, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA PAVING",
+      "b_place": "NORFOLK, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "JONES CLEARY SHEET METAL",
+      "a_place": "CHICAGO, IL",
+      "b": "JONES CLEARY ROOFING",
+      "b_place": "CHICAGO, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.165
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.165
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.31
+      }
+    },
+    {
+      "a": "STELLAR INDUSTRIAL SOLUTIONS",
+      "a_place": "JACKSONVILLE, FL",
+      "b": "STELLAR GROUP",
+      "b_place": "JACKSONVILLE, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.475
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.475
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.47
+      }
+    },
+    {
+      "a": "PENNSYLVANIA AMERICAN WATER",
+      "a_place": "BUTLER, PA",
+      "b": "PENNSYLVANIA ROOFING SYSTEMS",
+      "b_place": "BAKERSTOWN, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "SPRINGFIELD ENGINEERING",
+      "a_place": "SPRINGFIELD, MO",
+      "b": "SPRINGFIELD MECHANICAL SERVICES",
+      "b_place": "SPRINGFIELD, MO",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.225
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.225
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "MIDWEST MAINTENANCE MECHANICAL",
+      "a_place": "MINNEAPOLIS, MN",
+      "b": "QUALITY DRYWALL MIDWEST",
+      "b_place": "MINNEAPOLIS, MN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.105
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      }
+    },
+    {
+      "a": "STELLAR GROUP",
+      "a_place": "JACKSONVILLE, FL",
+      "b": "STELLAR INDUSTRIAL SOLUTIONS",
+      "b_place": "JACKSONVILLE, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.345
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.345
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.4
+      }
+    },
+    {
+      "a": "TRADEMARK SEAMLESS GUTTER",
+      "a_place": "HOLLY SPRINGS, NC",
+      "b": "TRADEMARK ROOFING",
+      "b_place": "HOLLY SPRINGS, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.58
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.58
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.51
+      }
+    },
+    {
+      "a": "OUTSOURCE",
+      "a_place": "EL SEGUNDO, CA",
+      "b": "OUTSOURCE UTILITY CONTRACTOR",
+      "b_place": "TORRANCE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "PENNSYLVANIA AMERICAN WATER",
+      "a_place": "BUTLER, PA",
+      "b": "PENNSYLVANIA ROOFING SYSTEMS",
+      "b_place": "BAKERSTOWN, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "EASTERN IOWA PAINTING",
+      "a_place": "HIAWATHA, IA",
+      "b": "EASTERN IOWA EXCAVATING CONCRETE",
+      "b_place": "CASCADE, IA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "SABRE INDUSTRIES",
+      "a_place": "ALVARADO, TX",
+      "b": "SABRE COMMERCIAL",
+      "b_place": "AUSTIN, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "BONE DRY COMMERCIAL ROOFING",
+      "a_place": "INDIANAPOLIS, IN",
+      "b": "BONE DRY ROOFING",
+      "b_place": "INDIANAPOLIS, IN",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "matched",
+        "p_same": 0.85
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.52
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.52
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.53
+      }
+    },
+    {
+      "a": "LOUISVILLE PAVING",
+      "a_place": "LOUISVILLE, KY",
+      "b": "LOUISVILLE WATER",
+      "b_place": "LOUISVILLE, KY",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "FROST BUILDING MAINTENANCE",
+      "a_place": "CLEVELAND, OH",
+      "b": "FROST ROOFING",
+      "b_place": "WAPAKONETA, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "PENNSYLVANIA AMERICAN WATER",
+      "a_place": "SCRANTON, PA",
+      "b": "PENNSYLVANIA ROOFING SYSTEMS",
+      "b_place": "BAKERSTOWN, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "FRESNO CONCRETE CONSTRUCTION",
+      "a_place": "FRESNO, CA",
+      "b": "FRESNO PLUMBING HEATING",
+      "b_place": "FRESNO, CA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "BIG ISLAND ELECTRIC",
+      "a_place": "KAILUA KONA, HI",
+      "b": "BIG ISLAND MECHANICAL CONSTRUCTION",
+      "b_place": "KAMUELA, HI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.22
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "RUSH RESIDENTIAL",
+      "a_place": "GIG HARBOR, WA",
+      "b": "RUSH COMMERCIAL CONSTRUCTION",
+      "b_place": "GIG HARBOR, WA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.12
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.28
+      }
+    },
+    {
+      "a": "TRI COUNTY ELECTRIC",
+      "a_place": "SALINE, MI",
+      "b": "SUPERIOR ELECTRIC TRI COUNTY",
+      "b_place": "SALINE, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.75
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.245
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.245
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.36
+      }
+    },
+    {
+      "a": "MICHIGAN GUTTERS",
+      "a_place": "TRAVERSE CITY, MI",
+      "b": "SERVICE ELECTRIC OF MICHIGAN",
+      "b_place": "BRIGHTON, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "PENA CONSTRUCTION SERVICES",
+      "a_place": "SUN VALLEY, CA",
+      "b": "PENA GRADING DEMOLITION",
+      "b_place": "SUN VALLEY, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.195
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.195
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.25
+      }
+    },
+    {
+      "a": "SUNRUN INSTALLATION SERVICES",
+      "a_place": "LEHI, UT",
+      "b": "SUNRUN",
+      "b_place": "LEHI, UT",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.72
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.375
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.375
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.37
+      }
+    },
+    {
+      "a": "GRAYCOR CONSTRUCTION",
+      "a_place": "OAKBROOK TERRACE, IL",
+      "b": "GRAYCOR INDUSTRIAL CONSTRUCTORS",
+      "b_place": "VILLA PARK, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.32
+      }
+    },
+    {
+      "a": "NORTHSHORE PAVING",
+      "a_place": "BOTHELL, WA",
+      "b": "NORTHSHORE EXTERIORS",
+      "b_place": "EVERETT, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "SUNRISE AIR SYSTEMS",
+      "a_place": "HENDERSON, NV",
+      "b": "SUNRISE MECHANICAL",
+      "b_place": "HENDERSON, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.43
+      }
+    },
+    {
+      "a": "PENNSYLVANIA ROOFING SYSTEMS",
+      "a_place": "BAKERSTOWN, PA",
+      "b": "PENNSYLVANIA AMERICAN WATER",
+      "b_place": "NEW CASTLE, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "DESERT PLASTERING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT FRAMING",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "ARIZONA FIRE PROTECTION",
+      "a_place": "PEORIA, AZ",
+      "b": "FLOORING SYSTEMS OF ARIZONA",
+      "b_place": "TUCSON, AZ",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA DRYWALL",
+      "b_place": "VIRGINIA BEACH, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "DESERT PLASTERING",
+      "a_place": "NORTH LAS VEGAS, NV",
+      "b": "DESERT CONCRETE",
+      "b_place": "NORTH LAS VEGAS, NV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.15
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "ERIE CONTRACTING",
+      "a_place": "LANCASTER, NY",
+      "b": "ERIE PAINTING MAINTENANCE",
+      "b_place": "BUFFALO, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "FROST BUILDING MAINTENANCE",
+      "a_place": "CLEVELAND, OH",
+      "b": "FROST ROOFING",
+      "b_place": "WAPAKONETA, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "TRI STATE UTILITY CONSTRUCTION",
+      "a_place": "CHATTANOOGA, TN",
+      "b": "TRI STATE ROOFING CONTRACTORS",
+      "b_place": "CHATTANOOGA, TN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "ORANGE COUNTY ERECTORS",
+      "a_place": "ANAHEIM, CA",
+      "b": "ORANGE COUNTY PLASTERING",
+      "b_place": "COSTA MESA, CA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      }
+    },
+    {
+      "a": "GRANITE CONSTRUCTION",
+      "a_place": "SACRAMENTO, CA",
+      "b": "GRANITE CONSTRUCTION",
+      "b_place": "WATSONVILLE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.615
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.615
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.54
+      }
+    },
+    {
+      "a": "HOEKSTRA ELECTRICAL SERVICES",
+      "a_place": "HAMILTON, MI",
+      "b": "HOEKSTRA ROOFING",
+      "b_place": "KALAMAZOO, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "BEATY MASONRY",
+      "a_place": "ALBUQUERQUE, NM",
+      "b": "BEATY CONSTRUCTION",
+      "b_place": "ALBUQUERQUE, NM",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.27
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.34
+      }
+    },
+    {
+      "a": "SPRINGFIELD ROOFING SYSTEMS",
+      "a_place": "SPRINGFIELD, MO",
+      "b": "SPRINGFIELD MECHANICAL SERVICES",
+      "b_place": "SPRINGFIELD, MO",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "SUMMERS ROOFING",
+      "a_place": "ALPHARETTA, GA",
+      "b": "SUMMERS CONCRETE CONTRACTING",
+      "b_place": "HAHIRA, GA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "FINGER LAKES SERVICE GROUP",
+      "a_place": "FAIRPORT, NY",
+      "b": "FINGER LAKES ROOFING",
+      "b_place": "FISHERS, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.075
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.075
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      }
+    },
+    {
+      "a": "EL PASO COMMERCIAL CONSTRUCTION",
+      "a_place": "EL PASO, TX",
+      "b": "EL PASO ROOFING",
+      "b_place": "EL PASO, TX",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "PCI UTILITIES",
+      "a_place": "MCKINNEY, TX",
+      "b": "PCI CONSTRUCTION",
+      "b_place": "MC KINNEY, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.345
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.345
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.4
+      }
+    },
+    {
+      "a": "MEADE",
+      "a_place": "WILLOWBROOK, IL",
+      "b": "MEADE ELECTRIC",
+      "b_place": "WILLOWBROOK, IL",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.23
+      }
+    },
+    {
+      "a": "BONE DRY COMMERCIAL ROOFING",
+      "a_place": "INDIANAPOLIS, IN",
+      "b": "BONE DRY ROOFING",
+      "b_place": "INDIANAPOLIS, IN",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.405
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.405
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.45
+      }
+    },
+    {
+      "a": "LEONARD CONTRACTING",
+      "a_place": "SAN ANTONIO, TX",
+      "b": "LEONARD ROOFING",
+      "b_place": "TEMECULA, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "ELITE GUNITE",
+      "a_place": "LAKELAND, FL",
+      "b": "SUPERIOR GUNITE",
+      "b_place": "LAKE VIEW TERRACE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "MASSEY ELECTRIC",
+      "a_place": "KINGSPORT, TN",
+      "b": "MASSEY ROOFING SERVICES",
+      "b_place": "JACKSONVILLE, FL",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "EASTWOOD CONTRACTORS",
+      "a_place": "BREWER, ME",
+      "b": "EASTWOOD HOMES",
+      "b_place": "CHARLOTTE, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.065
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.065
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "TRI COUNTY ELECTRIC",
+      "a_place": "SALINE, MI",
+      "b": "TRI COUNTY ELECTRIC",
+      "b_place": "MORGANTOWN, WV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.07
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "ACE ELECTRIC",
+      "a_place": "POWAY, CA",
+      "b": "ACE ELECTRIC",
+      "b_place": "AURORA, OR",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "PACIFIC EXTERIORS",
+      "a_place": "LAKE FOREST PARK, WA",
+      "b": "PACIFIC EXTERIORS",
+      "b_place": "GARDEN GROVE, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.085
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.085
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      }
+    },
+    {
+      "a": "COMPLETE ROOFING SOLUTIONS OF FLORIDA",
+      "a_place": "NORTH PORT, FL",
+      "b": "FLORIDA CONCRETE SERVICES",
+      "b_place": "PERRY, GA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "CSE",
+      "a_place": "WILLISTON, VT",
+      "b": "CSE",
+      "b_place": "MADISON HEIGHTS, VA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "PRECISE SERVICES",
+      "a_place": "HACKENSACK, NJ",
+      "b": "PRECISE SERVICES",
+      "b_place": "PORTER, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.145
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "STEVENS CONSTRUCTION",
+      "a_place": "MADISON, WI",
+      "b": "STEVENS CONSTRUCTION",
+      "b_place": "FORT MYERS, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.17
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.17
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "ROBINSON CONSTRUCTION",
+      "a_place": "POTEAU, OK",
+      "b": "ROBINSON CONSTRUCTION",
+      "b_place": "WARSAW, IN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.09
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "GRAHAM CONSTRUCTION",
+      "a_place": "CEDAR RAPIDS, IA",
+      "b": "GRAHAM CONSTRUCTION",
+      "b_place": "SAGINAW, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "RJ MECHANICAL",
+      "a_place": "BIRMINGHAM, AL",
+      "b": "RJ MECHANICAL",
+      "b_place": "MORA, MN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "HEARTLAND CONSTRUCTION",
+      "a_place": "CHESAPEAKE, VA",
+      "b": "HEARTLAND CONSTRUCTION",
+      "b_place": "BELLEVUE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "MCPHEE MASONRY",
+      "a_place": "OAKDALE, CA",
+      "b": "MCPHEE ELECTRIC",
+      "b_place": "FARMINGTON, CT",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "TRADESMEN GROUP",
+      "a_place": "PLAIN CITY, OH",
+      "b": "TRADESMEN ELECTRIC",
+      "b_place": "BATTLE GROUND, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "COMPASS CONSTRUCTION",
+      "a_place": "SPOKANE, WA",
+      "b": "COMPASS CONSTRUCTION",
+      "b_place": "DUBLIN, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "PROGRESSIVE ELECTRIC",
+      "a_place": "LIVONIA, MI",
+      "b": "PROGRESSIVE ELECTRIC",
+      "b_place": "CHARLESTON, WV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "RP CONSTRUCTORS",
+      "a_place": "NEW BRAUNFELS, TX",
+      "b": "RP CONSTRUCTORS",
+      "b_place": "NORTH SIOUX CITY, SD",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "PROGRESSIVE ELECTRIC",
+      "a_place": "LIVONIA, MI",
+      "b": "PROGRESSIVE ELECTRIC",
+      "b_place": "CHARLESTON, WV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "BYERS",
+      "a_place": "NATURAL BRIDGE STATION, VA",
+      "b": "BYERS INDUSTRIAL SERVICES",
+      "b_place": "FRANKLINVILLE, NJ",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "SCHUMACHER EXCAVATING",
+      "a_place": "ZUMBROTA, MN",
+      "b": "SCHUMACHER SYSTEMS",
+      "b_place": "CALLICOON, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "SOUTHWAY CRANE RIGGING",
+      "a_place": "BYRON, GA",
+      "b": "SOUTHWAY BUILDERS",
+      "b_place": "BALTIMORE, MD",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "WRIGHT CONSTRUCTION",
+      "a_place": "MOUNT HOLLY, VT",
+      "b": "WRIGHT CONSTRUCTION",
+      "b_place": "COLLIERVILLE, TN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "UNIVERSITY MECHANICAL ENGINEERING CONTRACTORS",
+      "a_place": "EL CAJON, CA",
+      "b": "UNIVERSITY MECHANICAL CONTRACTORS",
+      "b_place": "LYNNWOOD, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.025
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "H2O SYSTEMS",
+      "a_place": "CAPE CORAL, FL",
+      "b": "H2O FIRE PROTECTION",
+      "b_place": "GLENDORA, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "AGRI SYSTEMS",
+      "a_place": "BILLINGS, MT",
+      "b": "CUSTOM AGRI SYSTEMS",
+      "b_place": "ATTICA, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "ASSOCIATED DRYWALL PARTNERS",
+      "a_place": "INDIANAPOLIS, IN",
+      "b": "ASSOCIATED CONSTRUCTION PARTNERS",
+      "b_place": "BOERNE, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "RACKLEY",
+      "a_place": "ORLAND, CA",
+      "b": "RACKLEY ROOFING",
+      "b_place": "CARTHAGE, TN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "CAPPS ROOFING",
+      "a_place": "HOBE SOUND, FL",
+      "b": "CAPPS CONSTRUCTION PLUMBING",
+      "b_place": "FUQUAY VARINA, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "DELANEY CONCRETE CONSTRUCTION",
+      "a_place": "MARION, IA",
+      "b": "DELANEY ASSOCIATES",
+      "b_place": "FLUSHING, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "EGAN",
+      "a_place": "CHAMPLIN, MN",
+      "b": "EGAN PLUMBING",
+      "b_place": "SAN CARLOS, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "APEX STEEL",
+      "a_place": "RALEIGH, NC",
+      "b": "APEX STEEL",
+      "b_place": "KIRKLAND, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.095
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.095
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "UNITY ELECTRIC",
+      "a_place": "EAST RUTHERFORD, NJ",
+      "b": "UNITY ELECTRIC",
+      "b_place": "SHORELINE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.08
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "EASTWOOD HOMES",
+      "a_place": "HIGH POINT, NC",
+      "b": "EASTWOOD CONTRACTORS",
+      "b_place": "BREWER, ME",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "GUNTER CONSTRUCTION",
+      "a_place": "LAWRENCEVILLE, GA",
+      "b": "GUNTER CONSTRUCTION ROOFING",
+      "b_place": "SCOTTSVILLE, KY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.35
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "MODERN BUILDERS",
+      "a_place": "MOUNT VERNON, OH",
+      "b": "MODERN BUILDERS",
+      "b_place": "JANESVILLE, IA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.065
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.065
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "TOWER CONSTRUCTION",
+      "a_place": "SYLVAN LAKE, MI",
+      "b": "TOWER CONSTRUCTION",
+      "b_place": "CRANSTON, RI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.07
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      }
+    },
+    {
+      "a": "SUPERIOR STRUCTURES",
+      "a_place": "WALTON, KY",
+      "b": "SUPERIOR STRUCTURES",
+      "b_place": "SNOQUALMIE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.09
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "TRITON CONSTRUCTION",
+      "a_place": "NEW YORK, NY",
+      "b": "TRITON CONSTRUCTION",
+      "b_place": "SAINT ALBANS, WV",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA TILE",
+      "b_place": "KANSAS CITY, KS",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "BIG D CONSTRUCTION",
+      "a_place": "LINDON, UT",
+      "b": "BIG D CONSTRUCTION",
+      "b_place": "PLEASANTON, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.09
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "CAMPBELL CONSTRUCTION",
+      "a_place": "MANCHESTER, TN",
+      "b": "CAMPBELL CONSTRUCTION",
+      "b_place": "MUKWONAGO, WI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.07
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.18
+      }
+    },
+    {
+      "a": "ALARIS CONSTRUCTION",
+      "a_place": "EAST BOSTON, MA",
+      "b": "ALARIS HOMES",
+      "b_place": "GREENSBORO, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "CAMPBELL CONSTRUCTION",
+      "a_place": "RENO, NV",
+      "b": "CAMPBELL CONSTRUCTION",
+      "b_place": "MUKWONAGO, WI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      }
+    },
+    {
+      "a": "AGRI SYSTEMS",
+      "a_place": "BILLINGS, MT",
+      "b": "AGRI ELECTRIC",
+      "b_place": "CHICO, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "CAPP ELECTRIC",
+      "a_place": "HOUSTON, TX",
+      "b": "CAPP STEEL ERECTORS",
+      "b_place": "ASHTABULA, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "PRECAST ERECTORS",
+      "a_place": "HURST, TX",
+      "b": "PRECAST SERVICES",
+      "b_place": "TWINSBURG, OH",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "SNELL SERVICES",
+      "a_place": "NORTH PLATTE, NE",
+      "b": "SNELL CRANE SERVICE",
+      "b_place": "OLYMPIA, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "MCPHEE MASONRY",
+      "a_place": "OAKDALE, CA",
+      "b": "MCPHEE ELECTRIC",
+      "b_place": "SOUTH PLAINFIELD, NJ",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "TRADESMEN ELECTRIC",
+      "a_place": "BATTLE GROUND, WA",
+      "b": "TRADESMEN GROUP",
+      "b_place": "PLAIN CITY, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "BIG D CONSTRUCTION",
+      "a_place": "PLEASANTON, CA",
+      "b": "BIG D CONSTRUCTION",
+      "b_place": "SALT LAKE CITY, UT",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.3
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "ASSOCIATED CONSTRUCTION",
+      "a_place": "HARTFORD, CT",
+      "b": "ASSOCIATED CONSTRUCTION",
+      "b_place": "SPOKANE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "OVATION DEVELOPMENT",
+      "a_place": "LAS VEGAS, NV",
+      "b": "OVATION PLUMBING",
+      "b_place": "DENVER, CO",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "CSE",
+      "a_place": "WILLISTON, VT",
+      "b": "CSE",
+      "b_place": "MADISON HEIGHTS, VA",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "BIG D CONSTRUCTION",
+      "a_place": "SALT LAKE CITY, UT",
+      "b": "BIG D CONSTRUCTION",
+      "b_place": "PLEASANTON, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "GAMMA INSTALLATIONS",
+      "a_place": "JERSEY CITY, NJ",
+      "b": "GAMMA CONSTRUCTION",
+      "b_place": "HOUSTON, TX",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "NORTH CENTRAL MECHANICAL",
+      "a_place": "SAINT MARYS, PA",
+      "b": "NORTH CENTRAL CONSTRUCTION",
+      "b_place": "MOSES LAKE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "TRI VALLEY PLASTERING",
+      "a_place": "CLOVIS, CA",
+      "b": "TRI VALLEY PLUMBING HEATING",
+      "b_place": "SCHENECTADY, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      }
+    },
+    {
+      "a": "TWIN RIVERS PLUMBING",
+      "a_place": "EUGENE, OR",
+      "b": "TWIN RIVERS CONSTRUCTION",
+      "b_place": "MARIETTA, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "OHLA USA",
+      "a_place": "IRVINE, CA",
+      "b": "OHLA BUILDING",
+      "b_place": "MIAMI, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.035
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.17
+      }
+    },
+    {
+      "a": "BROTHERS PRO PAVE",
+      "a_place": "STERLING, VA",
+      "b": "PAVE TECH",
+      "b_place": "VISTA, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "MODERN BUILDERS",
+      "a_place": "JANESVILLE, IA",
+      "b": "MODERN BUILDERS",
+      "b_place": "MOUNT VERNON, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.08
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.16
+      }
+    },
+    {
+      "a": "CUSTOM AGRI SYSTEMS",
+      "a_place": "NAPOLEON, OH",
+      "b": "AGRI INDUSTRIES",
+      "b_place": "WILLISTON, ND",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "GLASS SERVICE OF CUMBERLAND",
+      "a_place": "CUMBERLAND, MD",
+      "b": "CUMBERLAND STEEL",
+      "b_place": "CORBIN, KY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      }
+    },
+    {
+      "a": "CAMBLIN STEEL SERVICE",
+      "a_place": "ROSEVILLE, CA",
+      "b": "CAMBLIN MECHANICAL",
+      "b_place": "ATLANTIC, IA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "TECTA AMERICA",
+      "a_place": "SANTA ANA, CA",
+      "b": "ROOFING SERVICES SOLUTIONS A TECTA AMERICA",
+      "b_place": "SAINT LOUIS, MO",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.4
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.23
+      }
+    },
+    {
+      "a": "JARRETT ELECTRIC",
+      "a_place": "BAKERSFIELD, CA",
+      "b": "JARRETT PAVING",
+      "b_place": "NASHVILLE, TN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "FED",
+      "a_place": "DEDHAM, MA",
+      "b": "FED",
+      "b_place": "GLADWIN, MI",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "SARGENT DRILLING",
+      "a_place": "GENEVA, NE",
+      "b": "SARGENT ELECTRIC",
+      "b_place": "PITTSBURGH, PA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      }
+    },
+    {
+      "a": "ROMAN ELECTRIC",
+      "a_place": "VISALIA, CA",
+      "b": "ROMAN ELECTRIC",
+      "b_place": "WEST ALLIS, WI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "ARCTIC COOLING SYSTEMS",
+      "a_place": "CHINO, CA",
+      "b": "ARCTIC AIR SERVICES",
+      "b_place": "SARASOTA, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "HOLT CONSTRUCTION",
+      "a_place": "PEARL RIVER, NY",
+      "b": "HOLT CONSTRUCTION",
+      "b_place": "CHICO, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "BENCHMARK CONSTRUCTION",
+      "a_place": "BROWNSTOWN, PA",
+      "b": "BENCHMARK CONSTRUCTION",
+      "b_place": "BARTLETT, IL",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.14
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "LEONARD CONTRACTING",
+      "a_place": "SAN ANTONIO, TX",
+      "b": "LEONARD ROOFING",
+      "b_place": "TEMECULA, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "NORTH STATE ENVIRONMENTAL",
+      "a_place": "WINSTON SALEM, NC",
+      "b": "NORTH STATE ELECTRICAL CONTRACTORS",
+      "b_place": "RANCHO CORDOVA, CA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    },
+    {
+      "a": "WILLIAMS BROTHERS CONSTRUCTION",
+      "a_place": "HOUSTON, TX",
+      "b": "WILLIAMS BROTHERS CONSTRUCTION",
+      "b_place": "EAST PEORIA, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.04
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "WENGER CONSTRUCTION",
+      "a_place": "CAMPBELLSPORT, WI",
+      "b": "WENGER EXCAVATING",
+      "b_place": "DALTON, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "BUCK ROOFING CONSTRUCTION",
+      "a_place": "MERRIAM, KS",
+      "b": "BUCK CONSTRUCTION",
+      "b_place": "WHITESBORO, NY",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "BCI CONSTRUCTION",
+      "a_place": "GRAND RAPIDS, MI",
+      "b": "BCI CONSTRUCTION",
+      "b_place": "SAUK RAPIDS, MN",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.14
+      }
+    },
+    {
+      "a": "PAVILION CONSTRUCTION",
+      "a_place": "ALBUQUERQUE, NM",
+      "b": "PAVILION FLOORS",
+      "b_place": "WOBURN, MA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.02
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "ACE ELECTRIC",
+      "a_place": "POWAY, CA",
+      "b": "ACE ELECTRIC",
+      "b_place": "RICHMOND, VA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "SMITH MECHANICAL",
+      "a_place": "LAWRENCEVILLE, GA",
+      "b": "SMITH MECHANICAL",
+      "b_place": "COLUMBIA, MD",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "HOME IMPROVEMENT COMPANY OF VERMONT",
+      "a_place": "NORTH WALPOLE, NH",
+      "b": "VERMONT MECHANICAL",
+      "b_place": "WILLISTON, VT",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.015
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "CENTRAL ROOFING",
+      "a_place": "MINNEAPOLIS, MN",
+      "b": "CENTRAL ROOFING",
+      "b_place": "MATTOON, IL",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.5
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.115
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "ME CONSTRUCTION",
+      "a_place": "ERIE, PA",
+      "b": "ME CONSTRUCTION",
+      "b_place": "WEST MELBOURNE, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.055
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.055
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      }
+    },
+    {
+      "a": "BENTON CONCRETE UTILITIES",
+      "a_place": "CONWAY, SC",
+      "b": "BENTON ROOFING",
+      "b_place": "FLAT ROCK, NC",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "ANDERSON EXCAVATING",
+      "a_place": "OMAHA, NE",
+      "b": "ANDERSON EXCAVATING",
+      "b_place": "MORGANTOWN, WV",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.125
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.125
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.22
+      }
+    },
+    {
+      "a": "BALLARD MARINE CONSTRUCTION",
+      "a_place": "WASHOUGAL, WA",
+      "b": "BALLARD CONSTRUCTION",
+      "b_place": "SYRACUSE, NY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "CLARKSON INDUSTRIAL CONTRACTORS",
+      "a_place": "SPARTANBURG, SC",
+      "b": "CLARKSON CONSTRUCTION",
+      "b_place": "KANSAS CITY, MO",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      }
+    },
+    {
+      "a": "CAMBLIN STEEL SERVICE",
+      "a_place": "ROSEVILLE, CA",
+      "b": "CAMBLIN MECHANICAL",
+      "b_place": "ATLANTIC, IA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "TITAN ELECTRIC",
+      "a_place": "ITASCA, IL",
+      "b": "TITAN ELECTRIC",
+      "b_place": "BELLEVUE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.135
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      }
+    },
+    {
+      "a": "GILMORE CONSTRUCTION",
+      "a_place": "DENVER, CO",
+      "b": "GILMORE ELECTRIC",
+      "b_place": "LANDING, NJ",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.01
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.12
+      }
+    },
+    {
+      "a": "BUCK ROOFING CONSTRUCTION",
+      "a_place": "KANSAS CITY, KS",
+      "b": "BUCK SERVICES",
+      "b_place": "WEST CHICAGO, IL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.28
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.03
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "CREEK ENTERPRISE",
+      "a_place": "JACKSON, MI",
+      "b": "STONE CREEK BUILDING DEVELOPMENT",
+      "b_place": "OREGON CITY, OR",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.08
+      }
+    },
+    {
+      "a": "CALVERT MASONRY",
+      "a_place": "MANASSAS, VA",
+      "b": "CALVERT UTILITIES",
+      "b_place": "SEVERN, MD",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "CR ELECTRIC",
+      "a_place": "GIRARD, OH",
+      "b": "CR ELECTRIC",
+      "b_place": "SHEPHERD, MI",
+      "label": 0,
+      "red_flagged": true,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.2
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.045
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.13
+      }
+    },
+    {
+      "a": "VICO CONSTRUCTION",
+      "a_place": "CHESAPEAKE, VA",
+      "b": "VICO PAINTING CONTRACTORS",
+      "b_place": "HIALEAH, FL",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.09
+      }
+    },
+    {
+      "a": "SWAN ENGINEERING",
+      "a_place": "ROCKLIN, CA",
+      "b": "SWAN ELECTRIC",
+      "b_place": "LANSING, MI",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.07
+      }
+    },
+    {
+      "a": "ASSOCIATED CONSTRUCTION",
+      "a_place": "HARTFORD, CT",
+      "b": "ASSOCIATED CONSTRUCTION",
+      "b_place": "SPOKANE, WA",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "possible",
+        "p_same": 0.25
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.105
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.105
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.19
+      }
+    },
+    {
+      "a": "GRAY CONSTRUCTION",
+      "a_place": "WATERTOWN, SD",
+      "b": "GRAY CONSTRUCTION",
+      "b_place": "LEXINGTON, KY",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.1
+      },
+      "jev-tuned": {
+        "bucket": "possible",
+        "p_same": 0.1
+      },
+      "jev-noul": {
+        "bucket": "possible",
+        "p_same": 0.21
+      }
+    },
+    {
+      "a": "UNITED ENERTECH",
+      "a_place": "CHATTANOOGA, TN",
+      "b": "ENERTECH ELECTRICAL",
+      "b_place": "LOWELLVILLE, OH",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.15
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.005
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.11
+      }
+    },
+    {
+      "a": "SERVICE CONTRACTING OF VIRGINIA",
+      "a_place": "DUBLIN, VA",
+      "b": "VIRGINIA TILE",
+      "b_place": "KANSAS CITY, KS",
+      "label": 0,
+      "red_flagged": false,
+      "llm": {
+        "bucket": "excluded",
+        "p_same": 0.05
+      },
+      "jev-choice": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-tuned": {
+        "bucket": "excluded",
+        "p_same": 0.0
+      },
+      "jev-noul": {
+        "bucket": "excluded",
+        "p_same": 0.06
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 # Site Safety Intelligence — common tasks
-.PHONY: setup download build dev api web test eval seed-demo add-user deploy refresh
+.PHONY: setup download build dev api web test eval eval-adjudication seed-demo add-user deploy refresh
 
 setup:            ## Python env, local Postgres databases, web deps
 	uv sync
@@ -28,6 +28,9 @@ test:
 eval:             ## Matching + foreman evals (foreman eval spends API credit)
 	uv run python -m eval.matching.run
 	uv run python -m eval.foreman.run
+
+eval-adjudication: ## Current LLM adjudicator vs Jev on uncertain matches (calls cached; Jev needs JEV_API_KEY)
+	uv run python -m eval.adjudication.run
 
 seed-demo:        ## Create the demo project through the real API
 	uv run python -m scripts.seed_demo

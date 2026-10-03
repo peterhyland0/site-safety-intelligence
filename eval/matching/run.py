@@ -3,6 +3,9 @@
 Labels come from OSHA's injury-tracking filings (ITA 300A), which carry the employer's tax ID (EIN):
   positive = two OSHA establishments that link exactly (name + zip) to ITA rows with the same EIN
   negative = two establishments with the same name core in the same state but different EINs
+  (optional, for eval/adjudication) cross-state negative = the same name core in two states, different EINs,
+             each EIN filing in one state only: two local firms, which leaves out national firms that file
+             under several EINs (the main source of wrong silver labels)
 For each pair we search as the GC would (A's name, city, state) and grade where B lands.
 
 Those searches use OSHA's own spellings, so two more checks cover a GC's typos:
@@ -34,7 +37,7 @@ from ssi.store import warehouse
 OUT = Path(__file__).parent
 
 
-def build_pairs(n: int, seed: int = 7) -> list[dict]:
+def build_pairs(n: int, seed: int = 7, cross_state: int = 0) -> list[dict]:
     warehouse.open_warehouse()
     base = """
       WITH linked AS (
@@ -57,9 +60,17 @@ def build_pairs(n: int, seed: int = 7) -> list[dict]:
       FROM e a JOIN e b ON a.name_core = b.name_core AND a.state = b.state AND a.ein <> b.ein
                         AND a.establishment_key < b.establishment_key AND a.name_core <> ''
       ORDER BY md5(a.establishment_key || b.establishment_key || ?) LIMIT ?""", [str(seed), n])
+    xneg = warehouse.rows(base + """,
+      ein_states AS (SELECT ein, count(DISTINCT state) AS n_states FROM e GROUP BY 1)
+      SELECT a.establishment_key AS a_key, b.establishment_key AS b_key, 0 AS label, 'other_state_different_ein' AS kind
+      FROM e a JOIN e b ON a.name_core = b.name_core AND a.state <> b.state AND a.ein <> b.ein
+                        AND a.establishment_key < b.establishment_key AND a.name_core <> ''
+      JOIN ein_states sa ON sa.ein = a.ein JOIN ein_states sb ON sb.ein = b.ein
+      WHERE sa.n_states = 1 AND sb.n_states = 1
+      ORDER BY md5(a.establishment_key || b.establishment_key || ?) LIMIT ?""", [str(seed), cross_state]) if cross_state else []
     # Deterministic sample: pairs ordered by a hash of their (stable) establishment keys. DuckDB's
     # REPEATABLE reservoir sample isn't repeatable across runs with multiple threads.
-    pairs = pos + neg
+    pairs = pos + neg + xneg
     keys = list({p["a_key"] for p in pairs} | {p["b_key"] for p in pairs})
     info = {r["establishment_key"]: r for r in warehouse.rows(
         "SELECT establishment_key, display_name, clean_name, city, state FROM entity.establishment "

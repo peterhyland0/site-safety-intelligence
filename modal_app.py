@@ -6,6 +6,7 @@
 Secrets (created by you, never committed):
     modal secret create ssi-db DATABASE_URL=postgresql://...      (Postgres for the app layer)
     modal secret create ssi-anthropic ANTHROPIC_API_KEY=...       (optional: AI matcher + foreman)
+    modal secret create ssi-jev JEV_API_KEY=...                   (optional: Jev adjudicates matches without red flags)
     modal secret create ssi-langsmith LANGSMITH_API_KEY=... LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
 
 Sign-in accounts live in the app database: create them with scripts/add_user.py (see docs/deploy.md).
@@ -39,9 +40,10 @@ app = modal.App("site-safety-intelligence", image=image)
 #                                     SSI_LLM_ADJUDICATOR_BASE_URL, SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET)
 #   SSI_WITH_ANTHROPIC=1  -> ssi-anthropic (ANTHROPIC_API_KEY)
 #   SSI_WITH_LANGSMITH=1  -> ssi-langsmith (LANGSMITH_API_KEY, LANGSMITH_PROJECT, LANGSMITH_TRACING)
+#   SSI_WITH_JEV=1        -> ssi-jev (JEV_API_KEY: Jev for clusters without red flags; see docs/adjudicator.md)
 web_secrets = [modal.Secret.from_name(name) for name, flag in
                (("ssi-db", "SSI_WITH_DB"), ("ssi-glm", "SSI_WITH_GLM"), ("ssi-anthropic", "SSI_WITH_ANTHROPIC"),
-                ("ssi-langsmith", "SSI_WITH_LANGSMITH"))
+                ("ssi-langsmith", "SSI_WITH_LANGSMITH"), ("ssi-jev", "SSI_WITH_JEV"))
                if os.environ.get(flag) == "1"]
 
 

@@ -219,7 +219,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 
 **Models.** Each role has its own model, chosen in `.env`:
 - **Foreman:** GLM 5.3, at low reasoning effort (`SSI_LLM_FOREMAN_REASONING_EFFORT`). It's a multi-step conversation with tool calls.
-- **Adjudicator:** DeepSeek V4.1 Flash. It makes many short same/different/unsure calls.
+- **Adjudicator:** Jev 1.13 (TypeSafe's decision model) for uncertain matches without red flags, DeepSeek V4.1 Flash for red-flagged ones, whose reason the GC reads. Many short same/different/unsure calls. Why: [docs/adjudicator.md](docs/adjudicator.md).
 
 Both are served from Modal as OpenAI-compatible APIs.
 
@@ -232,10 +232,11 @@ Both are served from Modal as OpenAI-compatible APIs.
 
 `SSI_LLM_PROVIDER=openai_compat` switches to any OpenAI-compatible endpoint, such as a self-hosted model on Modal. Without a key, the app runs **rules-only**: uncertain records stay "possible", and the chat says it needs a key. Every LLM call is traced in LangSmith when a key is set.
 
-**The AI adjudicator** ([ssi/llm/adjudicator.py](ssi/llm/adjudicator.py)):
+**The AI adjudicator** ([ssi/llm/adjudicator.py](ssi/llm/adjudicator.py), [ssi/llm/jev.py](ssi/llm/jev.py)):
+- **Who decides:** Jev for groups without red flags, the LLM for red-flagged ones (and for everything with `SSI_ADJUDICATOR=llm` or no Jev key). On a held-out sample Jev excluded 130 lookalikes against the LLM's 110, with 9 wrong exclusions against 13 and no wrong merges against 2 ([why and how it was tested](docs/adjudicator.md)).
 - **What it sees:** identity evidence only (names, addresses, years, trade codes, the GC's input). **Never safety history**, so a fatality can't bias whether a record is judged "the same company".
-- **Validation in code:** it must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded.
-- **Mapping:** "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible.
+- **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence ("Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records").
+- **Mapping:** LLM "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible. Jev's P(same) ≥0.85 → matched; ≤0.20 → excluded (≤0.06 for a record outside the sub's state, where a national firm's own branches are); otherwise possible.
 - **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
 ---
@@ -262,7 +263,7 @@ The surprise: **none of these merges OSHA records much.** Grouping by cleaned na
 DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──► warehouse-<id>.duckdb ─┐ CURRENT pointer
                                                                                           ▼
             React SPA (web/) ◄── FastAPI (ssi/api) ──► DuckDB (read-only facts) + Postgres (decisions)
-                                     └──► LLMs on Modal (GLM 5.3 foreman, DeepSeek V4.1 Flash adjudicator) · LangSmith traces
+                                     └──► LLMs on Modal (GLM 5.3 foreman, DeepSeek V4.1 Flash adjudicator) · Jev (TypeSafe API) · LangSmith traces
 ```
 
 - **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 210 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 24 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
@@ -280,11 +281,11 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 258 test cases:
+**Tests:** `uv run pytest`, 281 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
-- the adjudicator validator
+- the adjudicator validator, and Jev's thresholds, routing and reason line
 - the grounding checker
 - a fake-model end-to-end foreman loop
 - sign-in, sessions and lockout, and that chats stay private to their user and use the stored history, not the browser's
@@ -373,6 +374,29 @@ Not fixed: 936 federal citations recorded as serious or other-than-serious carry
 | Accents were cut out of a GC's names: `Muñoz` cleaned to `MU OZ`, `José Hernández` to a "distinctive" `JOS HERN NDEZ` that skipped the person-name rule | Accents folded in the cleaning macros and in city comparison. OSHA's records have none, so no establishment changes |
 | The foreman's grounding check skipped `#` inspection IDs and made chips by substring: an invented `(#9999999)` passed, a truncated real ID became a chip | IDs checked whole against the IDs the tools returned. Digits in field names (other than a percentile's) and sub IDs no longer count as figures. Replaying the 20 eval answers, it passes and fails the same ones as before |
 
+**Adjudicator**, on the same silver pairs plus 1,600 cross-state ones ([eval/adjudication/](eval/adjudication/)): the same name core in two states under different tax IDs, each filing in one state only (two local firms, which leaves out national firms that file under several tax IDs). Only the pairs the rules leave uncertain are adjudicated, with the packet the app would build. It compares the current model with Jev 1.13, TypeSafe's decision model (probabilities, no text; runs when `JEV_API_KEY` is set), asked as a same/different/unsure choice with the same guidance. Answers and the rules' cases are cached, so a re-run takes seconds: `make eval-adjudication`.
+
+Jev is scored two ways: at the app's thresholds, and "tuned": excluded when its P(same) is at most 0.20 for a record in the sub's state, 0.06 in another. The tuned thresholds were picked on the development sample (seed 7, [results](eval/adjudication/results.md)) and frozen, then checked on a held-out one (seed 11, [results](eval/adjudication/results-seed11.md)) that shares no pair or search with it:
+
+| Held out: 246 uncertain (matched · possible · excluded) | n | DeepSeek V4.1 Flash | Jev, app thresholds | Jev, tuned |
+|---|---|---|---|---|
+| Different company, same state | 62 | 2 · 39 · 21 | 0 · 27 · 35 | 0 · 20 · 42 |
+| Different company, other state | 110 | 0 · 21 · 89 | 0 · 13 · 97 | 0 · 22 · 88 |
+| Same company, same state | 16 | 4 · 11 · 1 | 0 · 16 · 0 | 0 · 16 · 0 |
+| Same company, other state | 58 | 0 · 46 · 12 | 0 · 41 · 17 | 0 · 49 · 9 |
+| Wrong merges / wrong exclusions | | 2 / 13 | 0 / 17 | **0 / 9** |
+| Median per packet | | 0.8 s | 0.23 s | 0.23 s |
+
+- **Tuned Jev beats DeepSeek on the held-out sample:** 130 lookalikes excluded against 110, 9 wrong exclusions against 13, no wrong merge against 2 (Barton Malow and Barton Malow Builders, Stellar Contracting and Stellar Group: corporate families under different tax IDs). It ranks same against different better too (AUC 0.84 against 0.77).
+- **The same-state threshold held; the other-state one loosened:** wrong exclusions of an out-of-state branch went from 2 of 66 on the development sample to 9 of 58 held out. They're three national firms (NPL Construction six times, NVR twice, PAR Electrical), each a lookalike name in another state with no shared address.
+- **Only DeepSeek ever matches:** 4 correct and 2 wrong. Jev's P(same) never reaches 0.85, so it only excludes; a same-company record stays possible, which isn't counted.
+- **No text from Jev.** The GC's red-flag questions show the AI's reason, so those stay with the LLM.
+- **Cost:** about a cent of Jev per run (307k input tokens held out).
+
+**Outcome:** the app now uses Jev with those tuned thresholds for groups without red flags ([docs/adjudicator.md](docs/adjudicator.md)).
+
+**What the cross-state pairs showed about the rules:** M3 ("same distinctive name, another state") auto-matched 51 of the 1,600 local-firm pairs (3%), such as Quinn Construction in Pennsylvania and Tennessee, and Straub Construction in California and Kansas. Those never reach the adjudicator: each attaches another company's history to the sub. The matching table above doesn't count them, because its different-company pairs are all same-state.
+
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 
 GLM 5.3, final run (full table in [eval/foreman/results.md](eval/foreman/results.md)):
@@ -436,6 +460,7 @@ Without them, enrichment is just empty.
 
   Check both endpoints with `uv run python -m scripts.check_llm`: one plain call, one JSON call and one tool call per role.
 - `LANGSMITH_API_KEY` (optional): traces and eval experiments.
+- `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`.
 
 **Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).
 
@@ -475,12 +500,12 @@ ssi/matching/      candidate search, ordered rules, adjudication flow
 ssi/queries/       named queries shared by the GC view and the foreman
 ssi/scoring/       verdict rules
 ssi/agent/         foreman tools, grounding, loop
-ssi/llm/           provider switch (Anthropic / OpenAI-compatible), adjudicator
+ssi/llm/           provider switch (Anthropic / OpenAI-compatible), adjudicator (Jev + LLM)
 ssi/api/           FastAPI app + API contract, sign-in and sessions, chats
 ssi/store/         DuckDB reader, Postgres pool, app schema
 web/               React SPA
-eval/              matching (silver labels) and foreman evaluations
+eval/              matching (silver labels), adjudicator (LLM vs Jev) and foreman evaluations
 scripts/           demo seed, account management (add_user)
-docs/              decision log, data profile, glossary
+docs/              decision log, data profile, glossary, why the adjudicator uses Jev
 modal_app.py       nightly build + web deployment
 ```

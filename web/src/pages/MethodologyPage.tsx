@@ -88,7 +88,8 @@ export function MethodologyPage() {
         </ul>
         <p>
           Rules decide most cases. Only the uncertain leftovers go to an AI adjudicator, which sees identity evidence only
-          (names, addresses, trade, years) and never the safety history, and must give a one-line rationale. Any uncertain
+          (names, addresses, trade, years) and never the safety history: a decision model (Jev) for most, a language
+          model for records with red flags. Each AI decision shows a one-line reason built from the evidence. Any uncertain
           record carrying a red flag becomes a yes/no question for the GC instead: a serious record is never silently
           added or dropped. You can move any establishment between buckets, and the method (rule, AI or GC) is always
           shown.

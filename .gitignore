@@ -8,6 +8,9 @@ data/
 .env.*
 !.env.example
 
+# eval: the rules' cases, rebuilt from the warehouse (the answer cache is kept)
+eval/adjudication/.cases-*.json
+
 # python
 .venv/
 __pycache__/
