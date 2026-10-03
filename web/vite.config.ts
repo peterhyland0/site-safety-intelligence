@@ -26,5 +26,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // form tests type whole sub lists with userEvent; 5 s (the default) is tight when the CPU is busy
+    testTimeout: 15000,
   },
 });
