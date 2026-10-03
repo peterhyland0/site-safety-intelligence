@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { MOCK_MODE } from "../api/client";
 import { IconShield } from "./Icons";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `inline-flex min-h-10 items-center rounded-lg px-2.5 text-sm font-medium sm:px-3 ${
@@ -50,6 +51,7 @@ export function Layout() {
             <NavLink to="/methodology" className={navClass}>
               Method
             </NavLink>
+            <ThemeToggle />
           </nav>
         </div>
       </header>

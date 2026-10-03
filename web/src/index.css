@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Restrained neutral palette; light and dark follow prefers-color-scheme.
+ * Design tokens. Restrained neutral palette; light and dark follow prefers-color-scheme unless the
+ * viewer picks one with the header toggle.
  * Verdict colours always ship with an icon and a text label (never colour alone).
  */
 :root {
@@ -43,8 +44,9 @@
   --chart-band: #f3f2ee;
 }
 
+/* Dark: follows the system unless the viewer picked a theme (data-theme on <html>, set by the header toggle). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --page: #121211;
     --surface: #1b1b1a;
@@ -80,6 +82,43 @@
     --chart-axis: #45453f;
     --chart-band: #222220;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211;
+  --surface: #1b1b1a;
+  --surface-2: #262624;
+  --ink: #f3f2ee;
+  --ink-2: #cfcec7;
+  --muted: #a3a29b;
+  --line: #31312e;
+  --line-strong: #46463f;
+  --accent: #79aef0;
+  --accent-hover: #9cc3f4;
+  --accent-ink: #0d1b2d;
+  --accent-soft: #1c2a3c;
+
+  --high-bg: #3a1617;
+  --high-fg: #ffb8b3;
+  --high-line: #74302f;
+  --review-bg: #36260b;
+  --review-fg: #ffd08f;
+  --review-line: #6e4d17;
+  --unknown-bg: #1b1b1a;
+  --unknown-fg: #dedcd5;
+  --unknown-line: #8a8981;
+  --recent-bg: #1d2531;
+  --recent-fg: #c3d3e8;
+  --recent-line: #3c4b60;
+  --clear-bg: #13291b;
+  --clear-fg: #a2e2b6;
+  --clear-line: #2f5b3d;
+
+  --chart-1: #3987e5;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #45453f;
+  --chart-band: #222220;
 }
 
 @theme inline {

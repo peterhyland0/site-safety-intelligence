@@ -243,7 +243,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 - **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 192 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 9 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
-- **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px.
+- **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px. Light and dark themes follow the system, with a header toggle that's remembered per browser.
 - **Deploy** ([modal_app.py](modal_app.py), prepared but not deployed: the app currently runs locally): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
 
 **Why these tools:**
@@ -263,7 +263,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - the grounding checker
 - a fake-model end-to-end foreman loop
 
-The web front end has 19 more (`npm test`).
+The web front end has 21 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.

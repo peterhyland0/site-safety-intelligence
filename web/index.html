@@ -9,6 +9,13 @@
     <meta name="theme-color" content="#121211" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="OSHA safety history for the subcontractors on your bid, with evidence." />
     <title>Site Safety Intelligence</title>
+    <script>
+      // Apply a saved light/dark choice before first paint (no flash). See src/lib/theme.ts.
+      try {
+        var t = localStorage.getItem("ssi-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
