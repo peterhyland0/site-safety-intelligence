@@ -32,6 +32,9 @@ def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
                  obj({"sub_id": sub}, ["sub_id"])),
         ToolSpec("trend_by_year", "A sub's inspections, citations and serious citations per year.",
                  obj({"sub_id": sub}, ["sub_id"])),
+        ToolSpec("injury_rates", "A sub's self-reported injury rates (TRIR, DART) per year from OSHA's 300A filings, "
+                 "with the industry rate for its trade, plus any state contractor licence on file.",
+                 obj({"sub_id": sub}, ["sub_id"])),
         ToolSpec("open_cases", "A sub's inspections that are still open (citations may still change).",
                  obj({"sub_id": sub}, ["sub_id"])),
         ToolSpec("inspection_list", "A sub's inspections, newest first (max 20), optionally since a year.",
@@ -149,6 +152,15 @@ class Toolbox:
 
     def t_trend_by_year(self, sub_id: str) -> dict:
         return {"years": [y.model_dump() for y in Q.trend(self.data(sub_id)["keys"])][-15:]}
+
+    def t_injury_rates(self, sub_id: str) -> dict:
+        d = self.data(sub_id)
+        return {"years": [{"year": r.year, "trir": r.trir, "dart": r.dart, "industry_trir": r.peer_trir,
+                           "hours": r.hours, "establishments": r.establishment_name, "excluded_as_implausible": r.flagged}
+                          for r in d["rates"]][-6:],
+                "note": "Self-reported OSHA 300A summaries; firms under 20 employees usually don't file, so no rate "
+                        "means not filed, not zero injuries.",
+                "licences": [l.model_dump() for l in d["licences"][:3]]}
 
     def t_open_cases(self, sub_id: str) -> dict:
         rows = Q.inspections(self.data(sub_id)["keys"], limit=20, open_only=True)
