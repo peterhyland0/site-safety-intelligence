@@ -108,7 +108,7 @@ export function EstablishmentItem({
                 <button
                   key={b}
                   type="button"
-                  className={`tab ${current ? "tab-active" : ""} disabled:cursor-not-allowed`}
+                  className={`tab px-2.5 sm:px-3.5 max-[359px]:text-xs ${current ? "tab-active" : ""} disabled:cursor-not-allowed`}
                   aria-pressed={current}
                   disabled={busy}
                   onClick={() => {

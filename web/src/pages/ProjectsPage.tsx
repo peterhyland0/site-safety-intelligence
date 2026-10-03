@@ -61,7 +61,9 @@ export function ProjectsPage() {
           <h2 id="your-projects" className="eyebrow">
             Your projects
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          {/* grid-cols-1 (minmax(0, 1fr)), not the implicit auto track: an auto track grows to a long
+              title's unwrapped width and pushes the cards off a phone screen instead of truncating it. */}
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {list.map((p) => (
               <li key={p.project_id}>
                 <ProjectRow project={p} />
