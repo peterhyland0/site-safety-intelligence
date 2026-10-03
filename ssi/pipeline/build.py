@@ -78,6 +78,21 @@ def ensure_hazard_stub(con) -> bool:
     return True
 
 
+def ensure_ref_ext_stubs(con) -> None:
+    """Without reference downloads the app still works; enrichment tables are just empty."""
+    con.execute("""CREATE TABLE IF NOT EXISTS wh.ref_ext.licence (source VARCHAR, number VARCHAR, entity_id VARCHAR,
+                   name VARCHAR, dba VARCHAR, clean_name VARCHAR, dba_clean VARCHAR, address VARCHAR, addr_key VARCHAR,
+                   city VARCHAR, state VARCHAR, zip5 VARCHAR, status VARCHAR, expires DATE, specialty VARCHAR)""")
+    con.execute("""CREATE TABLE IF NOT EXISTS wh.ref_ext.ita_establishment_year (establishment_id VARCHAR, year INTEGER,
+                   company_name VARCHAR, establishment_name VARCHAR, ein VARCHAR, naics VARCHAR, employees DOUBLE,
+                   hours DOUBLE, deaths INTEGER, dafw INTEGER, djtr INTEGER, other_cases INTEGER, trir DOUBLE,
+                   dart DOUBLE, dq_flags VARCHAR[])""")
+    con.execute("CREATE TABLE IF NOT EXISTS wh.entity.ref_link (establishment_key VARCHAR, source VARCHAR, ref_id VARCHAR, method VARCHAR)")
+    con.execute("""CREATE TABLE IF NOT EXISTS wh.mart.ita_benchmark (naics4 VARCHAR, year INTEGER, peer_n BIGINT,
+                   trir_pooled DOUBLE, dart_pooled DOUBLE, trir_p50 DOUBLE, trir_p75 DOUBLE, dart_p50 DOUBLE,
+                   dart_p75 DOUBLE)""")
+
+
 def rule_merge_counts(con) -> list[dict]:
     """Distinct construction employer names after each cleaning step (all years and since 2015)."""
     out, expr = [], "estab_name"
@@ -134,6 +149,10 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
                 report["refs_loaded"] = load_refs(con)
         if prefix == "32":
             hazard_stubbed = ensure_hazard_stub(con)
+        if prefix.startswith("6") and not (raw_dir / "reference").exists():
+            ensure_ref_ext_stubs(con)
+            report["steps"].append({"step": path.name, "skipped": "no data/raw/reference"})
+            continue
         t = time.time()
         con.execute(render(path.read_text(), raw_dir))
         report["steps"].append({"step": path.name, "seconds": round(time.time() - t, 1)})

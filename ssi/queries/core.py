@@ -271,6 +271,8 @@ def compute(sub: dict, project: dict) -> dict:
             h.insp_window = wmap.get(h.hazard_code, 0)
             if h.hazard_code != "other" and (h.insp_all >= 3 or h.insp_window >= 2):
                 h.evidence = hazard_evidence(keys, h.hazard_code)
+    rates = injury_rates(keys, n4)
+    lics = licences(keys)
     facts = Facts(
         as_of_year=aof.year, window_years=window, matched_establishments=len(keys),
         inspections_all=tot["insp_n"], inspections_window=tot["w_insp_n"], rated_window=tot["w_insp_rated_n"],
@@ -279,6 +281,7 @@ def compute(sub: dict, project: dict) -> dict:
         hazards=hfacts, open_serious_cases=open_serious, pending_questions=len(sc["pending_questions"]),
         benchmark_p75=bm["serious_plus_rate_p75"] if bm else None, benchmark_p90=bm["serious_plus_rate_p90"] if bm else None,
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,
+        ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),
     )
     verdict, reasons = evaluate(facts)
     est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, first_seen, last_seen
@@ -291,7 +294,7 @@ def compute(sub: dict, project: dict) -> dict:
     rate = (tot["w_viol_serious_plus_n"] / tot["w_insp_rated_n"]) if tot["w_insp_rated_n"] else None
     return {"scope": sc, "keys": keys, "facts": facts, "verdict": verdict, "reasons": reasons, "flags": flags,
             "hazards": hz, "benchmark": bm, "naics4": n4, "display_name": display, "est_by": est_by,
-            "rate": rate, "years": years, "window": window, "as_of": aof,
+            "rate": rate, "years": years, "window": window, "as_of": aof, "rates": rates, "licences": lics,
             "possible_inspections": sum(est_by[k]["insp_n"] for k in sc["possible"] if k in est_by),
             "states": sorted({e["state"] for e in matched_est if e["state"]})}
 
@@ -322,6 +325,8 @@ def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
         trade_p75=round(bm["serious_plus_rate_p75"], 2) if bm else None,
         states=d["states"], first_year=min(d["years"]) if d["years"] else None,
         last_year=max(d["years"]) if d["years"] else None,
+        trir_latest=next((r.trir for r in reversed(d["rates"]) if r.trir is not None), None),
+        licence_status=(f"{d['licences'][0].source}: {d['licences'][0].status}" if d["licences"] else None),
     )
 
 
@@ -343,3 +348,71 @@ def coverage(d: dict) -> S.Coverage:
                       possible_not_counted=d["possible_inspections"], inspections_all_time=d["facts"].inspections_all,
                       first_year=first, last_year=last, open_cases=open_n,
                       accident_detail_through=meta["accident_detail_through"] or "", sentence=sentence)
+
+
+# --- public-data enrichment ------------------------------------------------------------------------
+LICENCE_OK = {"ACTIVE", "CLEAR", "RE-LICENSED", "RELICENSED"}
+
+
+def injury_rates(keys: list[str], naics4: str | None) -> list[S.ItaYear]:
+    """Self-reported OSHA 300A summaries linked by exact name+zip/address (M1/M2) to the sub's records.
+    Rates are summed across linked establishments per year; implausible filings are excluded and flagged."""
+    if not keys:
+        return []
+    rs = warehouse.rows(f"""
+        WITH ids AS (SELECT DISTINCT ref_id FROM entity.ref_link
+                     WHERE source = 'ita' AND method IN ('M1', 'M2') AND establishment_key IN {_in(keys)})
+        SELECT y.year,
+               string_agg(DISTINCT coalesce(y.establishment_name, y.company_name), '; ') AS names,
+               sum(y.hours) FILTER (WHERE len(y.dq_flags) = 0) AS hours,
+               sum(y.employees) FILTER (WHERE len(y.dq_flags) = 0) AS employees,
+               sum(y.dafw + y.djtr + y.other_cases) FILTER (WHERE len(y.dq_flags) = 0) AS cases,
+               sum(y.dafw + y.djtr) FILTER (WHERE len(y.dq_flags) = 0) AS dart_cases,
+               sum(y.deaths) AS deaths,
+               bool_or(len(y.dq_flags) > 0) AS flagged
+        FROM ref_ext.ita_establishment_year y JOIN ids ON ids.ref_id = y.establishment_id
+        GROUP BY 1 ORDER BY 1""", [keys])
+    bench = {}
+    if naics4:
+        bench = {b["year"]: b for b in warehouse.rows("SELECT * FROM mart.ita_benchmark WHERE naics4 = ? AND peer_n >= 30", [naics4])}
+    out = []
+    for r in rs:
+        hours = float(r["hours"]) if r["hours"] else None
+        ok = hours is not None and hours >= 20000
+        out.append(S.ItaYear(
+            year=r["year"], establishment_name=r["names"][:120] if r["names"] else "", hours=hours,
+            employees=float(r["employees"]) if r["employees"] else None,
+            trir=round(float(r["cases"]) * 200000 / hours, 2) if ok else None,
+            dart=round(float(r["dart_cases"]) * 200000 / hours, 2) if ok else None,
+            deaths=int(r["deaths"]) if r["deaths"] is not None else None,
+            peer_trir=round(bench[r["year"]]["trir_pooled"], 2) if r["year"] in bench else None,
+            flagged=bool(r["flagged"]) or not ok))
+    return out
+
+
+def dart_above_p75_years(rates: list[S.ItaYear], naics4: str | None) -> list[int]:
+    if not naics4 or not rates:
+        return []
+    bench = {b["year"]: b for b in warehouse.rows("SELECT * FROM mart.ita_benchmark WHERE naics4 = ? AND peer_n >= 30", [naics4])}
+    last3 = [r for r in rates if r.dart is not None][-3:]
+    return [r.year for r in last3 if r.year in bench and (r.hours or 0) >= 50000 and r.dart >= bench[r.year]["dart_p75"]]
+
+
+def licences(keys: list[str]) -> list[S.Licence]:
+    if not keys:
+        return []
+    rs = warehouse.rows(f"""
+        SELECT DISTINCT l.source, l.number, l.name, l.status, l.expires::VARCHAR AS expires, l.specialty
+        FROM entity.ref_link k JOIN ref_ext.licence l
+          ON k.source = 'licence:' || l.source AND k.ref_id = l.number
+        WHERE k.method IN ('M1', 'M2') AND k.establishment_key IN {_in(keys)}
+        ORDER BY l.expires DESC NULLS LAST LIMIT 10""", [keys])
+    return [S.Licence(source=r["source"], number=r["number"], name=r["name"], status=r["status"],
+                      expires=r["expires"], specialty=r["specialty"]) for r in rs]
+
+
+def licence_lapsed(lics: list[S.Licence]) -> str | None:
+    if not lics or any((l.status or "").upper() in LICENCE_OK for l in lics):
+        return None
+    latest = lics[0]
+    return f"{(latest.status or 'not active').lower()} ({latest.source} {latest.number}, expires {latest.expires or 'unknown'})"

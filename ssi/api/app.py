@@ -131,7 +131,7 @@ def _detail(sub: dict, project: dict) -> S.SubDetail:
         matched=_bucket_rows(d, "matched"), possible=_bucket_rows(d, "possible"), excluded=_bucket_rows(d, "excluded"),
         red_flags=d["flags"][:100], trend=Q.trend(keys), hazards=d["hazards"],
         open_cases=Q.inspections(keys, limit=50, open_only=True), inspections=Q.inspections(keys, limit=25),
-        injury_rates=[], licences=[], dq_warnings=dq)
+        injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq)
 
 
 # --- routes ----------------------------------------------------------------------------------------

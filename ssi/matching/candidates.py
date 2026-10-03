@@ -105,3 +105,10 @@ def red_flag_counts(keys: list[str]) -> dict[str, int]:
         [keys],
     )
     return {r["establishment_key"]: r["n"] for r in rs}
+
+
+def establishments(keys: list[str]) -> list[dict]:
+    if not keys:
+        return []
+    return warehouse.rows(f"""SELECT {EST_COLS}, NULL::DOUBLE AS sim, ['licence'] AS srcs FROM entity.establishment e
+                             WHERE e.establishment_key IN (SELECT unnest(?::VARCHAR[]))""", [keys])

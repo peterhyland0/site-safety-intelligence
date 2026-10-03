@@ -243,7 +243,7 @@ class ItaYear(BaseModel):
     trir: float | None
     dart: float | None
     deaths: int | None
-    peer_p50_trir: float | None
+    peer_trir: float | None  # pooled industry rate for the sub's trade (all filers' cases / hours)
     flagged: bool  # implausible hours etc.
 
 

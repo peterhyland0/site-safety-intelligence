@@ -61,9 +61,25 @@ def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
     return q2, f"Searched OSHA's usual spelling '{best}' ({totals[best]} inspections) for '{q.core}'"
 
 
-def match(name: str, city: str | None, state: str | None, trade: str | None) -> dict:
+def licence_links(licence: str | None) -> tuple[set[str], set[str]]:
+    """Names and linked establishments for a licence number / UBI the GC entered."""
+    if not licence or not licence.strip():
+        return set(), set()
+    lic = licence.strip().upper()
+    rows = warehouse.rows("SELECT * FROM ref_ext.licence WHERE upper(number) = ? OR upper(entity_id) = ?", [lic, lic])
+    names = {n for r in rows for n in (r["clean_name"], r["dba_clean"]) if n}
+    keys = {r["establishment_key"] for r in warehouse.rows(
+        """SELECT DISTINCT k.establishment_key FROM entity.ref_link k JOIN ref_ext.licence l
+           ON k.source = 'licence:' || l.source AND k.ref_id = l.number
+           WHERE k.method IN ('M1', 'M2') AND (upper(l.number) = ? OR upper(l.entity_id) = ?)""", [lic, lic])}
+    return names, keys
+
+
+def match(name: str, city: str | None, state: str | None, trade: str | None, licence: str | None = None) -> dict:
     """Run the rules. Returns {query, note, decisions: [{row, decision}]}."""
     q, described = build_query(name, city, state, trade)
+    lic_names, lic_keys = licence_links(licence)
+    q.aliases |= lic_names
     if described["placeholder"] or not q.clean:
         return {"query": q, "note": "Name is empty or a placeholder", "decisions": []}
     generic = C.generic_tokens()
@@ -89,6 +105,16 @@ def match(name: str, city: str | None, state: str | None, trade: str | None) -> 
                     changed = changed or d.bucket == MATCHED
         if not changed:
             break
+    if lic_keys:  # records linked (exact name + zip/address) to the licence the GC entered
+        from ssi.matching.rules import Decision
+        missing = [k for k in lic_keys if k not in decided]
+        if missing:
+            for r in C.establishments(missing):
+                decided[r["establishment_key"]] = (r, None)
+        for k in lic_keys:
+            if k in decided:
+                decided[k] = (decided[k][0], Decision(MATCHED, "L1", "Linked to the licence number you entered"))
+        note = (note + "; " if note else "") + f"Licence {licence.strip()} linked {len(lic_keys)} OSHA record(s)"
     out = [{"row": r, "decision": d} for r, d in decided.values()]
     return {"query": q, "note": note, "decisions": out}
 
@@ -136,7 +162,8 @@ def persist(sub_id: str, result: dict) -> None:
 
 
 def match_and_persist(sub: dict, project_state: str | None) -> dict:
-    result = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state, sub.get("trade"))
+    result = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state, sub.get("trade"),
+                   sub.get("licence"))
     persist(str(sub["sub_id"]), result)
     return result
 
