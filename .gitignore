@@ -1,0 +1,23 @@
+# data and build outputs (never commit: ~10 GB)
+data/
+*.duckdb
+*.duckdb.wal
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# web
+web/node_modules/
+web/dist/
+
+# os
+.DS_Store
