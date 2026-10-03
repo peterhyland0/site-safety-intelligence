@@ -17,7 +17,7 @@ CREATE OR REPLACE TABLE raw_inspection_window AS
 SELECT * FROM raw_inspection
 WHERE try_cast(left(open_date, 10) AS DATE) >= (SELECT since FROM history_window);
 CREATE OR REPLACE TABLE name_clean AS
-SELECT estab_name, clean_name(estab_name) AS clean_name
+SELECT estab_name, clean_name(estab_name) AS clean_name, name_core(clean_name(estab_name)) AS core
 FROM (SELECT DISTINCT estab_name FROM raw_inspection);
 
 CREATE OR REPLACE TABLE addr_clean AS
@@ -26,7 +26,7 @@ FROM (SELECT DISTINCT mail_street FROM raw_inspection);
 
 CREATE OR REPLACE TABLE insp_key AS
 SELECT i.activity_nr,
-       n.clean_name,
+       n.clean_name, n.core,
        a.addr_key, a.addr_clean, a.addr_unit,
        zip5(i.mail_zip) AS zip5,
        nullif(upper(trim(i.mail_state)), '') AS mail_state,
@@ -47,14 +47,39 @@ FROM insp_key
 WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder
 GROUP BY 1;
 
+-- Related facilities: a construction company's plant, yard or shop is often coded under another industry
+-- (Tindall's Conley GA precast plant is concrete manufacturing), so scope by establishment misses it. Bring in
+-- records whose company name matches a construction establishment's, but only for names that are distinctive
+-- across ALL industries (5 or fewer full-name variants in any year), long enough (one word of 6+ letters, or
+-- several words), and not a person's name. They are 'related_name': the matcher never counts them on the
+-- name alone (only once confirmed, or at an address the company uses).
+CREATE OR REPLACE TABLE core_variety AS
+SELECT core, count(DISTINCT clean_name) AS variety
+FROM insp_key WHERE NOT is_placeholder AND core <> '' GROUP BY 1;
+
+CREATE OR REPLACE TABLE related_cores AS
+WITH g AS (SELECT list(upper(trim(name))) AS names FROM ref_given_name),
+c AS (SELECT DISTINCT k.core, string_split(k.core, ' ') AS tok
+      FROM insp_key k JOIN construction_keys USING (establishment_key)
+      WHERE NOT k.is_placeholder AND k.core <> '')
+SELECT c.core
+FROM c JOIN core_variety v USING (core), g
+WHERE v.variety <= {{DISTINCTIVE_MAX_VARIETY}}
+  AND CASE WHEN len(c.tok) = 1 THEN length(c.core) >= 6 ELSE length(c.core) >= 5 END
+  AND NOT (len(c.tok) BETWEEN 2 AND 4 AND regexp_full_match(c.core, '[A-Z]+( [A-Z]+)*')
+           AND (list_contains(g.names, c.tok[1]) OR (len(c.tok) = 2 AND list_contains(g.names, c.tok[2]))));
+
 -- same_establishment: coded as construction on another in-window inspection;
--- construction_history: coded as construction only before the window
+-- construction_history: coded as construction only before the window;
+-- related_name: another facility of a construction company (see above)
 CREATE OR REPLACE TABLE scope AS
 SELECT k.activity_nr, k.establishment_key,
        CASE WHEN k.is_naics23 THEN 'naics23'
             WHEN k.is_sic_construction THEN 'sic15_17'
             WHEN c.coded_in_window THEN 'same_establishment'
-            ELSE 'construction_history' END AS scope_reason
+            WHEN c.establishment_key IS NOT NULL THEN 'construction_history'
+            ELSE 'related_name' END AS scope_reason
 FROM insp_key k
 LEFT JOIN construction_keys c USING (establishment_key)
-WHERE k.in_window AND (k.is_naics23 OR k.is_sic_construction OR c.establishment_key IS NOT NULL);
+WHERE k.in_window AND (k.is_naics23 OR k.is_sic_construction OR c.establishment_key IS NOT NULL
+                       OR (NOT k.is_placeholder AND k.core IN (SELECT core FROM related_cores)));

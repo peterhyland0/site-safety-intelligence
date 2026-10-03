@@ -53,3 +53,12 @@ def test_many_red_flag_clusters_are_grouped_by_name_not_dropped():
     assert qs[0][1] == ["s1", "s2"]  # most red flags first
     assert "ATLANTA, GA; MACON, GA" in qs[0][0] and "mark those individually under Matches" in qs[0][0]
     assert qs[1][2] is None  # the AI leaned both ways across the group: no single suggestion
+
+
+def test_question_says_when_a_facility_isnt_coded_as_construction():
+    from ssi.matching.adjudicate import question_text
+    rows = [{"establishment_key": "k", "evidence": {"name": "TINDALL CORPORATION", "city": "CONLEY", "state": "GA", "address": "PO BOX 280",
+                                                     "years": ["2026-08-09", "2026-08-09"], "inspections": 1,
+                                                     "related_only": True, "naics4": "3273"}}]
+    text = question_text({"entered_name": "Tindall Corporation"}, rows)
+    assert "isn't coded as construction (industry code 3273)" in text and "Tindall Corporation" in text

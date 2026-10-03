@@ -170,6 +170,9 @@ export interface MatchedEstablishment {
   confidence: number | null;
   rationale: string | null;
   has_red_flags: boolean;
+  /** in scope only by company name: a plant, yard or shop not coded as construction */
+  related_only?: boolean;
+  industry_code?: string | null;
 }
 
 export interface MatchQuestion {

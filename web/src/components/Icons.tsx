@@ -108,6 +108,13 @@ export const IconArrowLeft = (p: IconProps) => (
   </Svg>
 );
 
+export const IconX = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  </Svg>
+);
+
 export const IconSend = (p: IconProps) => (
   <Svg {...p}>
     <path d="M22 2 11 13" />

@@ -52,6 +52,7 @@ class Candidate:
     sibling_suffix: str | None
     initials_only: bool
     at_matched_address: bool = False  # filled by the address-expansion pass
+    related_only: bool = False  # a facility in scope only by company name (not coded as construction)
 
 
 @dataclass
@@ -133,6 +134,9 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     def matched(rule: str, reason: str) -> Decision:
         if conflict:
             return Decision(UNCERTAIN, rule + "_trade", reason + ", but OSHA lists a different trade")
+        if c.related_only and not c.at_matched_address:
+            # N1: a plant/yard/shop not coded as construction, linked by name only: confirm before counting
+            return Decision(UNCERTAIN, "N1", reason + ", but this facility isn't coded as construction")
         return Decision(MATCHED, rule, reason)
 
     if same_full and same_state and (distinctive or same_city):

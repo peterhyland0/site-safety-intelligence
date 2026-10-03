@@ -12,7 +12,7 @@ from ssi.store import warehouse
 EST_COLS = """e.establishment_key, e.clean_name, e.name_core, e.legal_name, e.dba_name, e.display_name,
               e.name_variants, e.address, e.city, e.state, e.zip5, e.addr_key, e.primary_naics4, e.primary_sic4,
               e.first_seen::VARCHAR AS first_seen, e.last_seen::VARCHAR AS last_seen, e.insp_n, e.sibling_suffix,
-              e.is_jv, initials_only(e.clean_name) AS initials_only"""
+              e.is_jv, initials_only(e.clean_name) AS initials_only, coalesce(e.related_only, false) AS related_only"""
 
 MAX_CANDIDATES = 400
 

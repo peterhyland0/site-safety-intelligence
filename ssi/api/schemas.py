@@ -121,6 +121,8 @@ class MatchedEstablishment(BaseModel):
     confidence: float | None
     rationale: str | None
     has_red_flags: bool
+    related_only: bool = False  # in scope only by company name: a facility not coded as construction
+    industry_code: str | None = None
 
 
 class MatchQuestion(BaseModel):

@@ -47,6 +47,16 @@ export function EstablishmentItem({
               </span>
             ) : null}
           </p>
+          {est.related_only ? (
+            <p className="mt-0.5">
+              <span
+                className="pill border-review-line bg-review-bg text-review-fg"
+                title="Found by company name: this facility isn't coded as construction, so it's only counted once confirmed"
+              >
+                Facility not coded as construction{est.industry_code ? ` (industry ${est.industry_code})` : ""}
+              </span>
+            </p>
+          ) : null}
           {address ? <p className="text-sm text-ink-2">{address}</p> : null}
           <p className="text-sm text-muted">
             {[est.trade_label, plural(est.inspections, "inspection"), years ? `seen ${years}` : null].filter(Boolean).join(" · ")}

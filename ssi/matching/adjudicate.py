@@ -36,13 +36,18 @@ def question_text(sub: dict, ev_rows: list[dict]) -> str:
     n = sum(r["evidence"]["inspections"] or 0 for r in ev_rows)
     places = list(dict.fromkeys(", ".join(x for x in ((r["evidence"] or {}).get("city"), (r["evidence"] or {}).get("state")) if x)
                                 for r in ev_rows))
+    facility = ""
+    if any((r["evidence"] or {}).get("related_only") for r in ev_rows):
+        code = ev.get("naics4")
+        facility = (" This facility isn't coded as construction" + (f" (industry code {code})" if code else "")
+                    + ": it may be a plant, yard or shop of the same company.")
     if len(places) <= 1:
         place = ", ".join(x for x in (ev.get("address"), ev.get("city"), ev.get("state")) if x) or "no address on file"
-        return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' ({place}) that include serious red flags. "
-                f"Is this the same company as your sub '{sub['entered_name']}'?")
+        return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' ({place}) that include serious red flags."
+                f"{facility} Is this the same company as your sub '{sub['entered_name']}'?")
     where = "; ".join(p or "no address" for p in places[:5]) + (f" and {len(places) - 5} more places" if len(places) > 5 else "")
-    return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' in {where} that include serious red flags. "
-            f"Are these the same company as your sub '{sub['entered_name']}'? If only some are, mark those "
+    return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' in {where} that include serious red flags."
+            f"{facility} Are these the same company as your sub '{sub['entered_name']}'? If only some are, mark those "
             f"individually under Matches instead.")
 
 

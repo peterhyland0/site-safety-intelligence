@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 import { api, errorMessage } from "../api/client";
 import type { AskResponse, ChatTurn } from "../api/types";
 import { useApi } from "../api/useApi";
-import { IconArrowLeft, IconInfo, IconSend } from "../components/Icons";
+import { IconArrowLeft, IconInfo, IconSend, IconX } from "../components/Icons";
 import { EvidenceChip } from "../components/InspectionSheet";
 import { Markdown } from "../lib/markdown";
 import { useTitle } from "../lib/useTitle";
@@ -45,11 +45,24 @@ const newId = () => `m${Date.now().toString(36)}${seq++}`;
 
 export function AskPage() {
   const { projectId = "" } = useParams();
+  useTitle("Foreman assistant");
   // Keyed so switching projects starts from that project's own conversation.
-  return <AskChat key={projectId} projectId={projectId} />;
+  return <ForemanChat key={projectId} projectId={projectId} variant="page" />;
 }
 
-function AskChat({ projectId }: { projectId: string }) {
+/**
+ * The foreman's chat. "page" is the full-screen /ask route (phones, the foreman on site); "panel" docks beside the
+ * scorecard on wide screens so the GC can check answers against the data. Both read and write the same conversation.
+ */
+export function ForemanChat({
+  projectId,
+  variant,
+  onClose,
+}: {
+  projectId: string;
+  variant: "page" | "panel";
+  onClose?: () => void;
+}) {
   const project = useApi((signal) => api.getProject(projectId, signal), [projectId]);
   const health = useApi(() => api.health(), []);
   const [messages, setMessages] = useState<Msg[]>(() => loadMessages(projectId));
@@ -57,7 +70,6 @@ function AskChat({ projectId }: { projectId: string }) {
   const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  useTitle("Foreman assistant");
 
   useEffect(() => saveMessages(projectId, messages), [projectId, messages]);
 
@@ -116,15 +128,18 @@ function AskChat({ projectId }: { projectId: string }) {
   const scorecardHref = `/projects/${encodeURIComponent(projectId)}`;
   const projectName = project.data?.project.name;
   const llmOff = health.data && !health.data.llm_enabled;
+  const Heading = variant === "page" ? "h1" : "h2";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-line px-4 py-2">
-        <Link to={scorecardHref} className="btn btn-ghost btn-sm -ml-2 px-2" aria-label="Back to scorecard">
-          <IconArrowLeft size={20} />
-        </Link>
+        {variant === "page" ? (
+          <Link to={scorecardHref} className="btn btn-ghost btn-sm -ml-2 px-2" aria-label="Back to scorecard">
+            <IconArrowLeft size={20} />
+          </Link>
+        ) : null}
         <div className="min-w-0 flex-1">
-          <h1 className="text-base leading-tight font-extrabold tracking-[-0.02em] text-ink">Foreman assistant</h1>
+          <Heading className="text-base leading-tight font-extrabold tracking-[-0.02em] text-ink">Foreman assistant</Heading>
           <p className="truncate text-xs text-muted">{projectName ?? (project.error ? "Project unavailable" : "Loading project…")}</p>
         </div>
         {messages.length ? (
@@ -137,6 +152,11 @@ function AskChat({ projectId }: { projectId: string }) {
             }}
           >
             New chat
+          </button>
+        ) : null}
+        {onClose ? (
+          <button type="button" className="btn btn-ghost btn-sm -mr-2 px-2" onClick={onClose} aria-label="Close the foreman assistant">
+            <IconX size={20} />
           </button>
         ) : null}
       </div>
@@ -237,6 +257,7 @@ function AskChat({ projectId }: { projectId: string }) {
             className="field min-h-12 flex-1 resize-none py-3 text-[17px] leading-6"
             enterKeyHint="send"
             autoComplete="off"
+            autoFocus={variant === "panel"}
             maxLength={500}
           />
           <button

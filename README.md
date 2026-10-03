@@ -108,6 +108,7 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 | No company ID | 266k distinct names across 377k construction inspections since 2015 | Establishments + matching (§3) |
 | Per-inspection IDs inside names | 17.6% of names, e.g. `WA317965935 - BARNHART CRANE`; mostly WA, NC and OR | Stripped by a cleaning rule; measured per rule each build |
 | Industry codes drift | 44% of firms with 5+ inspections carry several NAICS codes; SIC→NAICS changed in the 2000s | Scope = every inspection of any establishment with ≥1 construction-coded inspection **in any year** (+175k inspections recovered) |
+| A construction company's plant, yard or shop is coded under another industry | Tindall's Conley GA precast plant (concrete manufacturing) had an open fatality/catastrophe investigation from Aug 2026 that no construction scope could see | **Related facilities**: records sharing a company name that is distinctive across *all* industries (≤5 variants, long enough, not a person's name) come in as `related_name` (28,726 inspections). They are shown as "facility not coded as construction" and only count once confirmed |
 | Accident detail is stale | Accident records end 2025-03-28. Coverage of accident-type inspections falls from 85% (2017–19) to 0% (2026) | Fatality status from the inspection type when there's no detail; the coverage note says so |
 | Shared-site duplication | 32% of construction inspections share a site and date with another employer | `accident_inspection` M:N; "cited vs not cited" |
 | Recent data is provisional | 65% of 2026 and 49% of 2025 citations are from open cases; settlements cut penalties 18–36% | Open cases flagged "provisional"; initial *and* current penalty shown |
@@ -154,6 +155,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 | U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE) | Uncertain |
 | X1–X4 | Different real name word; different common name; common name in another state | Excluded |
 | R1 | Safety net: a red-flagged record at an address this company uses is never excluded by a rule; it goes to the GC | Uncertain |
+| N1 | A related facility (in scope by company name, not coded as construction) is never counted on the name alone; at an address the company uses it counts like any record | Uncertain |
 
 **Name distinctiveness** is measured from the data, not hand-listed: how many distinct full names share the name's core.
 - `BRASFIELD GORRIE` has 3, so it's distinctive.

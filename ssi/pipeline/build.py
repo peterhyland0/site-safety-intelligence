@@ -195,8 +195,12 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     report: dict = {"build_id": build_id, "started_at": datetime.now(timezone.utc).isoformat(), "steps": []}
     t0 = time.time()
     hazard_stubbed = False
+    refs_loaded = False
     for path in sorted(config.SQL_DIR.glob("*.sql")):
         prefix = path.name.split("_")[0]
+        if prefix >= "20" and not refs_loaded:  # scope (20) already needs ref.given_name; schemas exist after 00
+            report["refs_loaded"] = load_refs(con)
+            refs_loaded = True
         if from_step and prefix < from_step and not prefix.startswith("0"):
             continue
         if prefix == "31" or (prefix >= "32" and not hazard_stubbed and not (config.SQL_DIR / "31_hazard_map.sql").exists()):

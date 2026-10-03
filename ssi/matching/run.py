@@ -31,6 +31,7 @@ def _candidate(r: dict, at_address: bool = False) -> Candidate:
         legal_name=r["legal_name"], dba_name=r["dba_name"], state=r["state"], city=r["city"], zip5=r["zip5"],
         addr_key=r["addr_key"], primary_naics4=r["primary_naics4"], sibling_suffix=r["sibling_suffix"],
         initials_only=bool(r["initials_only"]), at_matched_address=at_address,
+        related_only=bool(r.get("related_only")),
     )
 
 
@@ -147,6 +148,7 @@ def _evidence(r: dict, d, q: Query) -> dict:
         "rule": d.rule_id, "reason": d.reason, "similarity": round(r["sim"], 3) if r.get("sim") is not None else None,
         "name": r["clean_name"], "state": r["state"], "city": r["city"], "zip": r["zip5"], "address": r["address"],
         "years": [r["first_seen"], r["last_seen"]], "inspections": r["insp_n"], "naics4": r["primary_naics4"],
+        "related_only": bool(r.get("related_only")),
         "query": {"clean": q.clean, "core": q.core, "tier": q.tier},
     }
 

@@ -34,7 +34,8 @@ SELECT * FROM (VALUES
   ('scope_recount_matches', 'error', 0,
      ((SELECT count(*) FROM insp_key k WHERE k.in_window AND (k.is_naics23 OR k.is_sic_construction
           OR k.establishment_key IN (SELECT establishment_key FROM insp_key
-                                     WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder)))
+                                     WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder)
+          OR (NOT k.is_placeholder AND k.core IN (SELECT core FROM related_cores))))
       - (SELECT count(*) FROM wh.osha.inspection))::DOUBLE),
   -- citations recounted from the raw file: every raw citation of an in-scope inspection is in osha.violation
   ('citations_recount_from_raw', 'error', 0,

@@ -4,7 +4,8 @@ import { api, errorMessage, MOCK_MODE } from "../api/client";
 import type { LookbackYears, ProjectDetail, SubCard as SubCardT, Verdict } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AddSubsBox } from "../components/AddSubsBox";
-import { IconChat, IconDownload, IconPlus } from "../components/Icons";
+import { AskForemanButton } from "../components/AskForemanButton";
+import { IconDownload, IconPlus } from "../components/Icons";
 import { LookbackToggle } from "../components/LookbackToggle";
 import { SubCard } from "../components/SubCard";
 import { BackLink, ErrorBanner, InlineError, Loading } from "../components/ui";
@@ -62,7 +63,6 @@ export function ProjectPage() {
 
   const { project, subs, data_as_of, history_since } = detail.data;
   const showAdd = adding || subs.length === 0;
-  const askHref = `/projects/${encodeURIComponent(project.project_id)}/ask`;
 
   return (
     <div className="space-y-5">
@@ -82,10 +82,7 @@ export function ProjectPage() {
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-3">
           <LookbackToggle value={project.lookback_years} onChange={changeLookback} disabled={savingLookback} />
           <div className="flex flex-wrap gap-2">
-            <Link to={askHref} className="btn btn-primary btn-sm">
-              <IconChat size={16} />
-              Ask the foreman assistant
-            </Link>
+            <AskForemanButton projectId={projectId} />
             <ExportLink projectId={project.project_id} disabled={!subs.length} />
           </div>
         </div>

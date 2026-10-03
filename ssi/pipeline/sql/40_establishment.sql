@@ -25,6 +25,7 @@ WITH base AS (
          max(open_date) AS last_seen,
          count(*) AS insp_n,
          count(*) FILTER (WHERE scope_reason IN ('naics23', 'sic15_17')) AS construction_insp_n,
+         bool_and(scope_reason = 'related_name') AS related_only,  -- another facility of a construction company
          list(DISTINCT site_state ORDER BY site_state) FILTER (WHERE site_state IS NOT NULL) AS site_states
   FROM (SELECT *,
                count(*) OVER (PARTITION BY establishment_key, estab_name_raw) AS name_n,

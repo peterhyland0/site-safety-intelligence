@@ -1,0 +1,35 @@
+import { createContext, useContext, useSyncExternalStore } from "react";
+
+/** Wide enough for the scorecard (~860px) and the chat panel side by side. Narrower screens use the full-page /ask route. */
+export const DOCK_QUERY = "(min-width: 1280px)";
+export const CHAT_PANEL_ID = "foreman-panel";
+export const ASK_TOGGLE_ID = "ask-toggle";
+
+export type ChatPanel = {
+  /** True when the screen is wide enough to dock the chat beside the page. */
+  canDock: boolean;
+  /** The project whose chat is open in the panel, if any. */
+  openProjectId: string | null;
+  open: (projectId: string) => void;
+  close: () => void;
+};
+
+/** Provided by Layout. Null outside it (tests that render a page alone), which falls back to the full-page chat. */
+export const ChatPanelContext = createContext<ChatPanel | null>(null);
+
+export function useChatPanel(): ChatPanel | null {
+  return useContext(ChatPanelContext);
+}
+
+export function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (typeof window.matchMedia !== "function") return () => {};
+      const mql = window.matchMedia(query);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    () => typeof window.matchMedia === "function" && window.matchMedia(query).matches,
+    () => false,
+  );
+}

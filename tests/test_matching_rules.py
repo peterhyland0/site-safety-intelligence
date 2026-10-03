@@ -168,3 +168,14 @@ def test_person_name_with_a_misspelt_city_is_unsure_not_excluded():
     d = decide(heuston, c("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", city="HOUSTON"), GENERIC)
     assert (d.bucket, d.rule_id) == (UNCERTAIN, "P1")
     assert decide(heuston, c("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", city="DALLAS"), GENERIC).rule_id == "X5"
+
+
+# --- related facilities (plants, yards, shops not coded as construction) are never counted on name alone
+def test_related_facility_by_name_is_unsure_not_matched():
+    tindall = q("TINDALL CORPORATION", "TINDALL", state="SC")
+    plant = c("TINDALL CORPORATION", "TINDALL", state="GA")
+    plant.related_only = True
+    d = decide(tindall, plant, GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "N1") and "isn't coded as construction" in d.reason
+    plant.at_matched_address = True  # at an address the company uses: counted like any other record
+    assert decide(tindall, plant, GENERIC).bucket == MATCHED

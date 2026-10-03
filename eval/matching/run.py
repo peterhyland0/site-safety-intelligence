@@ -34,7 +34,8 @@ def build_pairs(n: int, seed: int = 7) -> list[dict]:
         WHERE k.source = 'ita' AND k.method = 'M1' AND y.ein IS NOT NULL),
       one_ein AS (SELECT establishment_key, min(ein) AS ein FROM linked GROUP BY 1 HAVING count(DISTINCT ein) = 1),
       e AS (SELECT o.ein, x.* FROM one_ein o JOIN entity.establishment x USING (establishment_key)
-            WHERE NOT x.is_placeholder AND x.city IS NOT NULL AND x.insp_n >= 1)
+            WHERE NOT x.is_placeholder AND x.city IS NOT NULL AND x.insp_n >= 1
+              AND NOT coalesce(x.related_only, false))  -- construction records only: related facilities are never auto-matched
     """
     pos = warehouse.rows(base + """
       SELECT a.establishment_key AS a_key, b.establishment_key AS b_key, 1 AS label,
