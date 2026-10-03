@@ -110,6 +110,8 @@ def test_initials_and_sibling(con):
 @pytest.mark.parametrize("a,b", [
     ("3021 7th Ave South", "3021 7TH AVE S"),
     ("3021 Seventh-street placeholder", "3021 SEVENTH"),
+    ("P. O. Box 10383", "PO BOX 10383"),
+    ("P O BOX 10383", "Post Office Box 10383"),
 ])
 def test_addr_key_variants(con, a, b):
     assert q(con, "addr_key(?)", a) == q(con, "addr_key(?)", b)

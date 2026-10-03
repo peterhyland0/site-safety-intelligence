@@ -121,7 +121,7 @@ CREATE OR REPLACE MACRO clean_addr(s) AS trim(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(
-   regexp_replace(upper(coalesce(s, '')), '[^A-Z0-9 ]', ' ', 'g'),
+   regexp_replace(regexp_replace(upper(coalesce(s, '')), '[^A-Z0-9 ]', ' ', 'g'), '\s+', ' ', 'g'),
    '\b(P O|POST OFFICE|P0)\s+BOX\b', 'PO BOX', 'g'),
    '\bSTREET\b', 'ST', 'g'), '\bAVENUE\b', 'AVE', 'g'), '\bROAD\b', 'RD', 'g'), '\bDRIVE\b', 'DR', 'g'),
    '\bBOULEVARD\b', 'BLVD', 'g'), '\bSUITE\b', 'STE', 'g'), '\bHIGHWAY\b', 'HWY', 'g'), '\bPARKWAY\b', 'PKWY', 'g'),
