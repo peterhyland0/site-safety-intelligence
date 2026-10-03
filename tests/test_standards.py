@@ -58,6 +58,9 @@ PARSE_CASES = [
     ("15410001 A01", "CA", "state_CA", "T8 CCR 1541.1", "T8 CCR 1541.1(a)(1)"),
     ("43000029 A", "CA", "state_CA", "T8 CCR 14300.29", "T8 CCR 14300.29(a)"),
     ("341.1(H)(2)(B)", "CA", "state_CA", "T8 CCR 341.1", "T8 CCR 341.1(h)(2)(B)"),
+    ("3410001 E02", "CA", "state_CA", "T8 CCR 341.1", "T8 CCR 341.1(e)(2)"),
+    ("8 AAC 61.600", "AK", "state_other", "AK 8 AAC 61.600", "AK 8 AAC 61.600"),
+    ("6 B", "PR", "state_other", "PR 6", "PR 6 B"),
     # other state plans: state-qualified raw code
     ("182.653(08)", "MN", "state_other", "MN 182.653", "MN 182.653(08)"),
     ("12 NYCRR PART 801.4", "NY", "state_other", "NY 12 NYCRR PART 801.4", "NY 12 NYCRR PART 801.4"),
@@ -232,6 +235,11 @@ def test_hazard_map_ranges_are_nested_or_disjoint(con):
     ("1509 B", "CA", "safety_program_training"),
     ("15410001 A01", "CA", "excavation_trenching"),
     ("1716.2(E)", "CA", "fall_protection"),
+    ("05-104(A)", "MD", "general_duty"),
+    ("95.129(01)", "NC", "general_duty"),
+    ("12 NYCRR PART 801.29(A)", "NY", "recordkeeping"),
+    ("09.12.32.04(A)(2)", "MD", "heat"),
+    ("182.653(08)", "MN", "safety_program_training"),
 ])
 def test_shipped_map_known_codes(con, raw, state, hazard):
     con.execute(f"CREATE OR REPLACE TEMP TABLE ref_standard_hazard_map AS SELECT * FROM "

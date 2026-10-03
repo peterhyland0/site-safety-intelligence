@@ -29,9 +29,11 @@
 --                  old packed '4084011401' = R 408.40114 para 01; '40801011' = MCL 408.1011
 --                  'RULE 4(1)'             key 'MI RULE 4'         (MIOSHA COVID-19 emergency rules, 2020-21)
 --   state_CA       '3395(H)' / '1509 B' / '15410001 A01'  key 'T8 CCR 3395' / 'T8 CCR 1509' / 'T8 CCR 1541.1'
---                  cite 'T8 CCR 3395(h)'; the packed 8-digit form is SSSS + 4-digit decimal (1541.1);
---                  '1430dddd'/'4300dddd' are recordkeeping section 14300.d; '6401dddd' is Labor Code 6401.d
---   state_other    any other state's own code: key '<ST> <code without paragraph>', cite '<ST> <raw>'
+--                  cite 'T8 CCR 3395(h)'; packed forms are SSSS + 4-digit decimal (15410001 = 1541.1) and
+--                  SSS + 4-digit decimal (3410001 = 341.1); '1430dddd'/'4300dddd' are recordkeeping section
+--                  14300.d; '6401dddd' is Labor Code 6401.d (key 'LC 6401.9')
+--   state_other    any other state's own code: key '<ST> <code before the first "(">' (or before a trailing
+--                  packed paragraph like '6 B' -> 'PR 6'), cite '<ST> <raw>'; without a state the '<ST> ' is omitted
 --   unknown        blank, no digits, or encoding damage
 -- Paragraph letter case follows each code's convention where it can be inferred from depth:
 --   CFR (a)(1)(i)(A) · WAC/MI (1)(a)(i)(A) · OAR (1)(a)(A)(i) · Title 8 (a)(1)(A)(i).
@@ -234,7 +236,8 @@ CREATE OR REPLACE MACRO ssi_other_base(s) AS
   trim(CASE
     WHEN strpos(s, '(') > 1 THEN left(s, strpos(s, '(') - 1)
     -- packed number followed by space-separated paragraph tokens ('1904 32 A 1', '6 B', '17 IV B 1')
-    WHEN regexp_matches(s, '^[0-9]+ ([A-Z]{1,4}|[A-Z]{1,2}[0-9]{1,3}|[0-9]{1,3})( |$)') THEN regexp_extract(s, '^([0-9]+) ', 1)
+    -- (one or two letters, so '8 AAC 61.600' and '12 NYCRR ...' keep their full text)
+    WHEN regexp_matches(s, '^[0-9]+ ([A-Z]{1,2}[0-9]{0,3}|[0-9]{1,3})( |$)') THEN regexp_extract(s, '^([0-9]+) ', 1)
     ELSE s
   END);
 
