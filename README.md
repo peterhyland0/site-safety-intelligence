@@ -133,7 +133,8 @@ GC enters: name, city, state (+ optional trade, licence #)
   2. Candidates: exact alias · same name core · rarest name words (typo-tolerant) · records at matched addresses
   3. Ordered rules → MATCHED / UNCERTAIN / EXCLUDED, each with rule_id + reason
   4. UNCERTAIN only → AI adjudicator (identity evidence only, validated in code)
-  5. Any uncertain record carrying a red flag → a yes/no question to the GC (max 3 per sub)
+  5. Any uncertain record carrying a red flag → a yes/no question to the GC, whichever way the AI leans
+     (past 3 questions for a sub, one question per OSHA name, so none is dropped)
 ```
 
 **Cleaning** ([ssi/cleaning/macros.sql](ssi/cleaning/macros.sql)). It only removes noise that never distinguishes companies: case, punctuation, legal forms at the end, ID prefixes, `&`/`AND`/`-`, and runs of initials. It keeps trade words, initials, numbers and place words. 42 trap tests cover the edge cases: `C AND A` ≠ `C AND S`, `BRASFIELD CONSTRUCTION` ≠ `BRASFIELD & GORRIE`, `84 LUMBER` unchanged. The cleanup cuts distinct names since 2015 from 265,936 to 195,124 (−27%).
@@ -211,6 +212,7 @@ Both are served from Modal as OpenAI-compatible APIs.
 - **What it sees:** identity evidence only (names, addresses, years, trade codes, the GC's input). **Never safety history**, so a fatality can't bias whether a record is judged "the same company".
 - **Validation in code:** it must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded.
 - **Mapping:** "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible.
+- **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
 ---
 

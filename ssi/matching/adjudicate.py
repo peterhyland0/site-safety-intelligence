@@ -1,6 +1,7 @@
 """Resolve a sub's UNCERTAIN records. Rules-only by default; an LLM adjudicator can be plugged in
 (see ssi/llm). Red-flag override: an uncertain record carrying a fatality/willful/repeat/FTA flag is
-never decided by machine; it becomes a yes/no question to the GC and is not counted until answered."""
+never decided by machine, in either direction. It becomes a yes/no question to the GC (with the AI's
+lean as a suggestion) and is not counted until answered; past a few, questions are grouped by name."""
 from __future__ import annotations
 
 import json
@@ -33,9 +34,41 @@ def question_text(sub: dict, ev_rows: list[dict]) -> str:
     first = min((r["evidence"]["years"][0] or "") for r in ev_rows)[:4]
     last = max((r["evidence"]["years"][1] or "") for r in ev_rows)[:4]
     n = sum(r["evidence"]["inspections"] or 0 for r in ev_rows)
-    place = ", ".join(x for x in (ev.get("address"), ev.get("city"), ev.get("state")) if x) or "no address on file"
-    return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' ({place}) that include serious red flags. "
-            f"Is this the same company as your sub '{sub['entered_name']}'?")
+    places = list(dict.fromkeys(", ".join(x for x in ((r["evidence"] or {}).get("city"), (r["evidence"] or {}).get("state")) if x)
+                                for r in ev_rows))
+    if len(places) <= 1:
+        place = ", ".join(x for x in (ev.get("address"), ev.get("city"), ev.get("state")) if x) or "no address on file"
+        return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' ({place}) that include serious red flags. "
+                f"Is this the same company as your sub '{sub['entered_name']}'?")
+    where = "; ".join(p or "no address" for p in places[:5]) + (f" and {len(places) - 5} more places" if len(places) > 5 else "")
+    return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' in {where} that include serious red flags. "
+            f"Are these the same company as your sub '{sub['entered_name']}'? If only some are, mark those "
+            f"individually under Matches instead.")
+
+
+RedCluster = tuple[list[dict], dict | None, str | None, int]  # rows, AI decision, rationale, red-flag count
+
+
+def questions_for(sub: dict, red: list[RedCluster]) -> list[tuple[str, list[str], str | None, str | None]]:
+    """Every red-flagged uncertain cluster reaches the GC. Up to QUESTION_GROUP_THRESHOLD clusters get a
+    question each; past that, one question per OSHA name (all its states), so none is dropped.
+    Returns (text, establishment keys, AI suggestion, AI rationale), most red flags first."""
+    if len(red) <= config.QUESTION_GROUP_THRESHOLD:
+        groups = [[c] for c in red]
+    else:
+        by_name: dict[str | None, list[RedCluster]] = defaultdict(list)
+        for c in red:
+            by_name[(c[0][0]["evidence"] or {}).get("name")].append(c)
+        groups = list(by_name.values())
+    groups.sort(key=lambda g: -sum(c[3] for c in g))
+    out = []
+    for g in groups:
+        rows = [r for c in g for r in c[0]]
+        leans = [c[1]["decision"] for c in g if c[1] and not c[1].get("rejected")]
+        suggestion = leans[0] if len(leans) == len(g) and len(set(leans)) == 1 else None
+        rationale = g[0][2] if len(g) == 1 and g[0][1] else None
+        out.append((question_text(sub, rows), [r["establishment_key"] for r in rows], suggestion, rationale))
+    return out
 
 
 def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, list[dict]], dict] | None = None) -> dict:
@@ -49,41 +82,42 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
     flags = C.red_flag_counts([r["establishment_key"] for r in rows])
     clusters = sorted(_clusters(rows).items(), key=lambda kv: -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1]))
     stats = {"clusters": len(clusters), "questions": 0, "llm_calls": 0}
+    updates, red = [], []
+    for i, (_, crow) in enumerate(clusters):
+        keys = [r["establishment_key"] for r in crow]
+        decision = None
+        if llm and packet_fn and i < config.ADJUDICATE_MAX_CLUSTERS:
+            decision = llm(packet_fn(sub, crow))
+            stats["llm_calls"] += 1
+        bucket, method, conf, rationale = "possible", "rule", None, crow[0]["rationale"]
+        if decision:
+            conf = float(decision.get("confidence") or 0)
+            rationale = decision.get("rationale") or rationale
+            if decision.get("rejected"):
+                method = "llm_rejected"
+            else:
+                method = "llm"
+                if decision["decision"] == "same" and conf >= 0.85:
+                    bucket = "matched"
+                elif decision["decision"] == "different" and conf >= 0.80:
+                    bucket = "excluded"
+        n_flags = sum(flags.get(k, 0) for k in keys)
+        if n_flags:  # red-flag override: never settled by machine, whichever way the AI leans
+            bucket = "possible"
+            red.append((crow, decision, rationale if decision else None, n_flags))
+        updates.append((bucket, method, conf, rationale, keys))
+    questions = questions_for(sub, red)
+    stats["questions"] = len(questions)
     with pg.conn() as c:
-        for i, (_, crow) in enumerate(clusters):
-            keys = [r["establishment_key"] for r in crow]
-            has_flags = any(flags.get(k) for k in keys)
-            decision = None
-            if llm and packet_fn and i < config.ADJUDICATE_MAX_CLUSTERS:
-                decision = llm(packet_fn(sub, crow))
-                stats["llm_calls"] += 1
-            bucket, method, conf, rationale = "possible", "rule", None, crow[0]["rationale"]
-            if decision:
-                conf = float(decision.get("confidence") or 0)
-                rationale = decision.get("rationale") or rationale
-                if decision.get("rejected"):
-                    method = "llm_rejected"
-                else:
-                    method = "llm"
-                    if decision["decision"] == "same" and conf >= 0.85:
-                        bucket = "matched"
-                    elif decision["decision"] == "different" and conf >= 0.80:
-                        bucket = "excluded"
-            if has_flags and bucket != "excluded" and stats["questions"] >= config.MAX_QUESTIONS_PER_SUB:
-                bucket = "possible"  # too many lookalikes to ask about: visible, flagged, not counted
-            elif has_flags and bucket != "excluded":
-                bucket = "possible"  # red-flag override: the GC decides
-                c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
-                             VALUES (%s, %s, %s, %s, %s)""",
-                          [sub_id, keys, question_text(sub, crow),
-                           decision.get("decision") if decision and not decision.get("rejected") else None,
-                           rationale if decision else None])
-                stats["questions"] += 1
+        for bucket, method, conf, rationale, keys in updates:
             c.execute("""UPDATE app.sub_match SET bucket = %s, method = %s, confidence = %s, rationale = %s,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
                          WHERE sub_id = %s AND establishment_key = ANY(%s)""",
                       [bucket, method, conf, rationale, _ai_label() if method.startswith("llm") else "rules",
                        sub_id, keys])
+        for text, keys, suggestion, rationale in questions:
+            c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
+                         VALUES (%s, %s, %s, %s, %s)""", [sub_id, keys, text, suggestion, rationale])
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])
     return stats
 
@@ -110,8 +144,13 @@ def override(sub_id: str, establishment_key: str, bucket: str) -> None:
                      WHERE sub_id = %s AND establishment_key = %s""", [bucket, sub_id, establishment_key])
         # answering by override also settles any open question about that record
         c.execute("""UPDATE app.match_question SET answer = %s, answered_at = now()
-                     WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL""",
+                     WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL
+                       AND cardinality(establishment_keys) = 1""",
                   ["yes" if bucket == "matched" else "no", sub_id, establishment_key])
+        # a grouped question ("these records under one name") stays open for the rest of its records
+        c.execute("""UPDATE app.match_question SET establishment_keys = array_remove(establishment_keys, %s)
+                     WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL""",
+                  [establishment_key, sub_id, establishment_key])
 
 
 def evidence_packet(sub: dict, crow: list[dict]) -> dict:
