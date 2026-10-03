@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ssi-api",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "uvicorn", "ssi.api.app:app", "--reload", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "ssi-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "web", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}
