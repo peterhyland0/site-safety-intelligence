@@ -76,6 +76,11 @@ def tokens(s: str | None) -> list[str]:
     return [t for t in (s or "").split(" ") if t]
 
 
+def near_spelling(x: str, y: str) -> bool:
+    """Two words a slip apart: similar, and about one letter apart in length (COLMEX vs COLE is not)."""
+    return jw(x, y) >= 0.9 and abs(len(x) - len(y)) <= 1
+
+
 def typo_equal(a: str, b: str) -> bool:
     """Cores that differ only by spelling slips (GORIE/GORRIE, BRASFIEL/BRASFIELD)."""
     if not a or not b:
@@ -83,9 +88,10 @@ def typo_equal(a: str, b: str) -> bool:
     if a == b:
         return True
     ta, tb = tokens(a), tokens(b)
-    if len(ta) == len(tb) and all(jw(x, y) >= 0.9 for x, y in zip(ta, tb)):
+    # a slip changes a word by about one letter: COLMEX vs COLE (two letters short) is another name
+    if len(ta) == len(tb) and all(near_spelling(x, y) for x, y in zip(ta, tb)):
         return True
-    return jw(a, b) >= 0.94
+    return jw(a, b) >= 0.94 and abs(len(a) - len(b)) <= 1
 
 
 def only_generic_difference(a: str, b: str, generic: frozenset[str]) -> bool:
@@ -142,6 +148,8 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
         if q.state and c.state and not same_state:
             return Decision(EXCLUDED, "X5", f"A person's name in another state ({c.state}): usually a different person")
         if q.city and c.city and not same_city:
+            if jw(norm_city(q.city), norm_city(c.city)) >= 0.9:  # "heuston": maybe a typo, maybe a nearby town
+                return Decision(UNCERTAIN, "P1", f"A person's name; the city is spelled differently ({c.city.title()})")
             return Decision(EXCLUDED, "X5", f"A person's name in a different city ({c.city.title()}): usually a different person")
         return Decision(UNCERTAIN, "P1", "A person's name: a city or address is needed to tell people apart")
     if (same_full or descriptor_diff) and not same_state and distinctive:
@@ -151,7 +159,7 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     if q.core and c.name_core and not core_equal and not typo_equal(q.core, c.name_core):
         # do the cores differ on a real (non-generic) word that has no near-spelling on the other side?
         qa, ca = set(tokens(q.core)), set(tokens(c.name_core))
-        unmatched = [t for t in qa ^ ca if t not in generic and not any(jw(t, u) >= 0.9 for u in (ca if t in qa else qa))]
+        unmatched = [t for t in qa ^ ca if t not in generic and not any(near_spelling(t, u) for u in (ca if t in qa else qa))]
         if unmatched:
             return Decision(EXCLUDED, "X1", "Different company name (" + ", ".join(sorted(unmatched)[:3]) + ")")
     if not q.core and not c.name_core and not same_full:

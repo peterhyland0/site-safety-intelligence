@@ -156,3 +156,15 @@ def test_spelling_correction_needs_a_clearly_dominant_spelling(monkeypatch):
     slip = q("BRASFEILD GORRIE", "BRASFEILD GORRIE")
     q3, note = run.correct_spelling(slip, [_row("BRASFEILD GORRIE", 1), _row("BRASFIELD GORRIE", 300)])
     assert q3.core == "BRASFIELD GORRIE" and note
+
+
+def test_typo_means_about_one_letter():
+    assert rules.typo_equal("GORIE", "GORRIE") and rules.typo_equal("BRASFEILD", "BRASFIELD")
+    assert not rules.typo_equal("COLMEX", "COLE")  # two letters short: another name
+
+
+def test_person_name_with_a_misspelt_city_is_unsure_not_excluded():
+    heuston = q("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", tier="person", city="heuston")
+    d = decide(heuston, c("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", city="HOUSTON"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "P1")
+    assert decide(heuston, c("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", city="DALLAS"), GENERIC).rule_id == "X5"
