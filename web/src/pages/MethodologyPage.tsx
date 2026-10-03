@@ -27,7 +27,7 @@ export function MethodologyPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">How it works</h1>
+        <h1 className="page-title">How it works</h1>
         <p className="mt-1 text-ink-2">
           Site Safety Intelligence turns OSHA's public enforcement records into a prequalification view of the subs on a
           bid. It reports what the record shows, with links to every inspection. It does not rate companies' safety

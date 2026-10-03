@@ -54,7 +54,7 @@ export function QuestionCard({
       <div className="mt-3 grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="btn min-h-14 border-2 border-accent bg-accent text-base text-accent-ink hover:bg-accent-hover"
+          className="btn btn-primary min-h-14 text-base"
           onClick={() => onAnswer("yes")}
           disabled={busy}
         >

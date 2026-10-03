@@ -22,14 +22,14 @@ export function LookbackToggle({
       <span aria-hidden="true" className="text-sm text-muted">
         {label}
       </span>
-      <div className="inline-flex rounded-lg border border-line-strong bg-surface p-0.5">
+      <div className="tabbar">
         {OPTIONS.map((y) => {
           const checked = value === y;
           return (
             <label
               key={y}
-              className={`relative inline-flex min-h-9 min-w-12 cursor-pointer items-center justify-center rounded-md px-2.5 text-sm font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
-                checked ? "bg-accent text-accent-ink" : "text-ink-2 hover:bg-surface-2"
+              className={`tab relative min-w-12 cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cta ${
+                checked ? "tab-active" : ""
               }`}
             >
               <input

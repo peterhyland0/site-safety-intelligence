@@ -124,7 +124,7 @@ function AskChat({ projectId }: { projectId: string }) {
           <IconArrowLeft size={20} />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-base leading-tight font-semibold text-ink">Foreman assistant</h1>
+          <h1 className="text-base leading-tight font-extrabold tracking-[-0.02em] text-ink">Foreman assistant</h1>
           <p className="truncate text-xs text-muted">{projectName ?? (project.error ? "Project unavailable" : "Loading project…")}</p>
         </div>
         {messages.length ? (
@@ -143,7 +143,7 @@ function AskChat({ projectId }: { projectId: string }) {
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {llmOff ? (
-          <p className="mb-4 flex gap-2 rounded-lg border border-line bg-surface-2 p-3 text-sm text-ink-2">
+          <p className="mb-4 flex gap-2 rounded-xl border border-line bg-surface p-3 text-sm text-ink-2">
             <IconInfo size={16} className="mt-0.5 shrink-0" />
             The assistant's AI is switched off on this deployment, so questions can't be answered here. The scorecard and sub
             pages still have every figure.
@@ -211,7 +211,7 @@ function AskChat({ projectId }: { projectId: string }) {
                 <li key={s}>
                   <button
                     type="button"
-                    className="pill min-h-9 border-line-strong bg-surface px-3 text-sm whitespace-nowrap text-ink-2 hover:border-accent hover:text-accent"
+                    className="pill min-h-9 border-transparent bg-surface px-3.5 text-sm whitespace-nowrap text-ink-2 shadow-[var(--shadow-card)] hover:bg-accent-soft hover:text-ink"
                     onClick={() => void send(s)}
                     disabled={pending}
                   >
@@ -256,7 +256,7 @@ function AskChat({ projectId }: { projectId: string }) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-[16px] whitespace-pre-wrap text-accent-ink">
+      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-bubble px-4 py-2.5 text-[16px] whitespace-pre-wrap text-bubble-ink">
         <span className="sr-only">You: </span>
         {text}
       </p>
@@ -289,7 +289,7 @@ function AssistantBubble({
     <div className="max-w-[95%] sm:max-w-[85%]">
       <div
         className={`rounded-2xl rounded-bl-md border px-4 py-3 text-[16px] leading-relaxed ${
-          muted ? "border-line bg-surface-2 text-ink-2" : "border-line bg-surface text-ink"
+          muted ? "border-line-strong bg-surface text-ink-2" : "border-line bg-surface text-ink"
         }`}
       >
         <span className="sr-only">Assistant: </span>

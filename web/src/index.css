@@ -1,128 +1,115 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Restrained neutral palette; light and dark follow prefers-color-scheme unless the
- * viewer picks one with the header toggle.
+ * Design tokens: Inter, near-black ink, a light-green call to action,
+ * forest green, "concrete" grey bands and hairline borders. Light by default; dark is a forest-green
+ * variant chosen with the header toggle (data-theme="dark" on <html>).
  * Verdict colours always ship with an icon and a text label (never colour alone).
  */
 :root {
   color-scheme: light;
-  --page: #f6f6f3;
+  --page: #f0f2ef; /* concrete */
   --surface: #ffffff;
-  --surface-2: #f0efeb;
-  --ink: #141413;
-  --ink-2: #44433f;
-  --muted: #64635e;
-  --line: #e0dfd9;
-  --line-strong: #c9c8c1;
-  --accent: #1d5aa6;
-  --accent-hover: #174a8a;
+  --surface-2: #f0f2ef;
+  --ink: #111111;
+  --ink-2: #3f4550;
+  --muted: #5e6778; /* slate, darkened slightly for AA on concrete */
+  --line: rgb(0 0 0 / 0.08);
+  --line-strong: rgb(0 0 0 / 0.16);
+  --accent: #2b7a22; /* links, focus, active marks */
+  --accent-hover: #1f5c18;
   --accent-ink: #ffffff;
-  --accent-soft: #e8f0fa;
+  --accent-soft: #e6f9e0;
+
+  /* button and band colours */
+  --cta: #bef8b0;
+  --cta-hover: #8ae07a;
+  --cta-ink: #111111;
+  --forest: #263122;
+  --bar: rgb(15 15 15 / 0.9); /* dark pill tab bar */
+  --bar-ink: rgb(255 255 255 / 0.6);
+  --bubble: #263122;
+  --bubble-ink: #ffffff;
+  --grad-from: #3db832;
+  --grad-to: #7ed16f;
+  --shadow-card: 0 1px 4px rgb(0 0 0 / 0.06);
 
   /* verdicts: background / foreground / border */
-  --high-bg: #fdeeee;
-  --high-fg: #9a1b1b;
-  --high-line: #eeb1b1;
-  --review-bg: #fff4e2;
-  --review-fg: #844600;
-  --review-line: #edc68a;
+  --high-bg: #fbedeb;
+  --high-fg: #9e3a2f;
+  --high-line: #efc2bb;
+  --review-bg: #fff4e0;
+  --review-fg: #7a4a00;
+  --review-line: #f0cf91;
   --unknown-bg: #ffffff;
-  --unknown-fg: #3d3c38;
-  --unknown-line: #8f8e88;
-  --recent-bg: #eef2f7;
-  --recent-fg: #33465b;
-  --recent-line: #bfcbd9;
-  --clear-bg: #eaf6ee;
-  --clear-fg: #1b6632;
-  --clear-line: #a6d5b4;
+  --unknown-fg: #3f4550;
+  --unknown-line: #9aa1ad;
+  --recent-bg: #eef1f5;
+  --recent-fg: #3f4a5c;
+  --recent-line: #c5ccd6;
+  --clear-bg: #e6f9e0;
+  --clear-fg: #1f5c18;
+  --clear-line: #a9e89a;
 
-  /* charts (dataviz reference palette, slot 1 + chrome) */
-  --chart-1: #2a78d6;
-  --chart-grid: #e1e0d9;
-  --chart-axis: #c3c2b7;
-  --chart-band: #f3f2ee;
+  /* charts */
+  --chart-1: #2f9e27;
+  --chart-grid: #e3e6e1;
+  --chart-axis: #c4c9c2;
+  --chart-band: #f0f2ef;
 }
 
-/* Dark: follows the system unless the viewer picked a theme (data-theme on <html>, set by the header toggle). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --page: #121211;
-    --surface: #1b1b1a;
-    --surface-2: #262624;
-    --ink: #f3f2ee;
-    --ink-2: #cfcec7;
-    --muted: #a3a29b;
-    --line: #31312e;
-    --line-strong: #46463f;
-    --accent: #79aef0;
-    --accent-hover: #9cc3f4;
-    --accent-ink: #0d1b2d;
-    --accent-soft: #1c2a3c;
-
-    --high-bg: #3a1617;
-    --high-fg: #ffb8b3;
-    --high-line: #74302f;
-    --review-bg: #36260b;
-    --review-fg: #ffd08f;
-    --review-line: #6e4d17;
-    --unknown-bg: #1b1b1a;
-    --unknown-fg: #dedcd5;
-    --unknown-line: #8a8981;
-    --recent-bg: #1d2531;
-    --recent-fg: #c3d3e8;
-    --recent-line: #3c4b60;
-    --clear-bg: #13291b;
-    --clear-fg: #a2e2b6;
-    --clear-line: #2f5b3d;
-
-    --chart-1: #3987e5;
-    --chart-grid: #2c2c2a;
-    --chart-axis: #45453f;
-    --chart-band: #222220;
-  }
-}
-
+/* Dark: forest bands. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #121211;
-  --surface: #1b1b1a;
-  --surface-2: #262624;
-  --ink: #f3f2ee;
-  --ink-2: #cfcec7;
-  --muted: #a3a29b;
-  --line: #31312e;
-  --line-strong: #46463f;
-  --accent: #79aef0;
-  --accent-hover: #9cc3f4;
-  --accent-ink: #0d1b2d;
-  --accent-soft: #1c2a3c;
+  --page: #0e120d;
+  --surface: #161c15;
+  --surface-2: #1f281d;
+  --ink: #f2f5f0;
+  --ink-2: #c9d0c6;
+  --muted: #98a296;
+  --line: rgb(255 255 255 / 0.09);
+  --line-strong: rgb(255 255 255 / 0.18);
+  --accent: #bef8b0;
+  --accent-hover: #d6fbcc;
+  --accent-ink: #111111;
+  --accent-soft: #233320;
 
-  --high-bg: #3a1617;
-  --high-fg: #ffb8b3;
-  --high-line: #74302f;
+  --cta: #bef8b0;
+  --cta-hover: #8ae07a;
+  --cta-ink: #111111;
+  --forest: #263122;
+  --bar: rgb(0 0 0 / 0.55);
+  --bar-ink: rgb(255 255 255 / 0.6);
+  --bubble: #bef8b0;
+  --bubble-ink: #111111;
+  --grad-from: #7ed16f;
+  --grad-to: #bef8b0;
+  --shadow-card: 0 1px 4px rgb(0 0 0 / 0.4);
+
+  --high-bg: #3a1714;
+  --high-fg: #ffb8ad;
+  --high-line: #74302a;
   --review-bg: #36260b;
   --review-fg: #ffd08f;
   --review-line: #6e4d17;
-  --unknown-bg: #1b1b1a;
-  --unknown-fg: #dedcd5;
-  --unknown-line: #8a8981;
-  --recent-bg: #1d2531;
+  --unknown-bg: #161c15;
+  --unknown-fg: #dde3da;
+  --unknown-line: #7f8a7c;
+  --recent-bg: #1a2230;
   --recent-fg: #c3d3e8;
   --recent-line: #3c4b60;
-  --clear-bg: #13291b;
-  --clear-fg: #a2e2b6;
-  --clear-line: #2f5b3d;
+  --clear-bg: #1b2e17;
+  --clear-fg: #bef8b0;
+  --clear-line: #3a5e31;
 
-  --chart-1: #3987e5;
-  --chart-grid: #2c2c2a;
-  --chart-axis: #45453f;
-  --chart-band: #222220;
+  --chart-1: #8ae07a;
+  --chart-grid: #263122;
+  --chart-axis: #3a4636;
+  --chart-band: #1a2218;
 }
 
 @theme inline {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: Inter, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --color-page: var(--page);
@@ -137,6 +124,14 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-cta-ink: var(--cta-ink);
+  --color-forest: var(--forest);
+  --color-bar: var(--bar);
+  --color-bar-ink: var(--bar-ink);
+  --color-bubble: var(--bubble);
+  --color-bubble-ink: var(--bubble-ink);
 
   --color-high-bg: var(--high-bg);
   --color-high-fg: var(--high-fg);
@@ -194,37 +189,64 @@
 
 @layer components {
   .card {
-    @apply rounded-xl border border-line bg-surface;
+    @apply rounded-2xl border border-line bg-surface;
+    box-shadow: var(--shadow-card);
   }
   .link {
     @apply text-accent underline decoration-1 underline-offset-2 hover:text-accent-hover;
   }
+  /* Buttons are full pills: a light-green call to action, an outlined pill, plain text. */
   .btn {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-[15px] font-medium transition-colors disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition-colors disabled:opacity-60;
   }
   .btn-primary {
-    @apply bg-accent text-accent-ink hover:bg-accent-hover;
+    @apply bg-cta font-bold text-cta-ink hover:bg-cta-hover;
   }
   .btn-secondary {
-    @apply border border-line-strong bg-surface text-ink hover:bg-surface-2;
+    @apply border border-ink bg-transparent text-ink hover:bg-ink hover:text-surface;
   }
   .btn-ghost {
     @apply text-ink-2 hover:bg-surface-2;
   }
   .btn-sm {
-    @apply min-h-9 px-3 text-sm;
+    @apply min-h-9 px-3.5 text-sm;
   }
   .field {
-    @apply block w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-base text-ink placeholder:text-muted;
+    @apply block w-full rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-muted;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-ink-2;
+    @apply mb-1 block text-sm font-semibold text-ink-2;
   }
   .section-title {
-    @apply text-base font-semibold text-ink;
+    @apply text-base font-bold tracking-[-0.01em] text-ink;
+  }
+  .page-title {
+    @apply text-[26px] leading-[1.1] font-extrabold tracking-[-0.035em] text-ink sm:text-[30px];
+  }
+  /* small uppercase label for section headers */
+  .eyebrow {
+    @apply text-[11px] font-extrabold tracking-[0.08em] text-muted uppercase;
+  }
+  /* the green gradient on headline phrases */
+  .text-gradient {
+    background-image: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
   .pill {
-    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+  }
+  /* dark pill tab bar with a green active tab */
+  .tabbar {
+    @apply inline-flex rounded-full bg-bar p-1;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.06);
+  }
+  .tab {
+    @apply inline-flex min-h-9 items-center justify-center rounded-full px-3.5 text-sm font-semibold text-bar-ink hover:text-white;
+  }
+  .tab-active {
+    @apply bg-cta font-bold text-cta-ink hover:text-cta-ink;
   }
 }
 

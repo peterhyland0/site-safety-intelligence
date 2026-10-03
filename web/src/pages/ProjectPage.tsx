@@ -70,7 +70,7 @@ export function ProjectPage() {
         <BackLink to="/">All projects</BackLink>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">{project.name}</h1>
+            <h1 className="page-title">{project.name}</h1>
             <p className="mt-0.5 text-sm text-muted">
               {[project.state ? `Job site: ${US_STATES[project.state] ?? project.state}` : null, plural(project.sub_count || subs.length, "sub")]
                 .filter(Boolean)

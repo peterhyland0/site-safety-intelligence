@@ -31,7 +31,7 @@ describe("Theme toggle", () => {
     const user = userEvent.setup();
     render(<ThemeToggle />);
 
-    // jsdom has no system preference, so it starts light and offers dark
+    // light is the default, so it offers dark first
     await user.click(screen.getByRole("button", { name: "Switch to dark mode" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("ssi-theme")).toBe("dark");

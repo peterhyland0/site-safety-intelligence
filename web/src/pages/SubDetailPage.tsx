@@ -103,14 +103,14 @@ export function SubDetailPage() {
         <BackLink to={scorecardHref}>Scorecard</BackLink>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight break-words text-ink">{c.entered_name}</h1>
+            <h1 className="page-title break-words">{c.entered_name}</h1>
             <p className="text-sm text-muted">{[where, c.trade_label ?? c.trade].filter(Boolean).join(" · ")}</p>
             {c.display_name ? <p className="text-sm text-muted">OSHA name: {c.display_name}</p> : null}
           </div>
           <VerdictChip verdict={c.verdict} label={c.verdict_label} size="lg" />
         </div>
         <p className="mt-2 text-sm text-ink-2">{VERDICTS[c.verdict].meaning}</p>
-        <p className="mt-2 rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">{d.coverage.sentence}</p>
+        <p className="mt-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-2">{d.coverage.sentence}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link to={`/projects/${encodeURIComponent(projectId)}/ask`} className="btn btn-secondary btn-sm">
             <IconChat size={16} />

@@ -5,7 +5,7 @@ import { IconShield } from "./Icons";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-10 items-center rounded-lg px-2.5 text-sm font-medium sm:px-3 ${
+  `inline-flex min-h-10 items-center rounded-full px-3 text-sm font-semibold sm:px-3.5 ${
     isActive ? "bg-surface-2 text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
   }`;
 
@@ -26,14 +26,14 @@ export function Layout() {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-line bg-page/95 backdrop-blur supports-[backdrop-filter]:bg-page/80">
+      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-          <Link to="/" className="mr-auto flex min-h-10 items-center gap-2 font-semibold text-ink">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent text-accent-ink">
-              <IconShield size={16} />
+          <Link to="/" className="mr-auto flex min-h-10 items-center gap-2.5 text-ink">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-forest text-cta">
+              <IconShield size={17} />
             </span>
-            <span className="text-[15px] leading-tight whitespace-nowrap">
-              Site Safety<span className="hidden sm:inline"> Intelligence</span>
+            <span className="text-[17px] leading-tight font-bold tracking-[-0.02em] whitespace-nowrap">
+              Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>
             </span>
           </Link>
           {MOCK_MODE ? (

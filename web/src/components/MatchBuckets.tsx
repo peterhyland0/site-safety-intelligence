@@ -76,7 +76,7 @@ export function EstablishmentItem({
             {busy ? "Saving…" : "Bucket"}
           </span>
           <div
-            className="inline-flex rounded-lg border border-line-strong bg-surface p-0.5"
+            className="tabbar"
             role="group"
             aria-labelledby={`move-${est.establishment_key}`}
             aria-describedby={`est-${est.establishment_key}`}
@@ -87,9 +87,7 @@ export function EstablishmentItem({
                 <button
                   key={b}
                   type="button"
-                  className={`min-h-9 rounded-md px-3 text-sm font-medium ${
-                    current ? "bg-accent text-accent-ink" : "text-ink-2 hover:bg-surface-2"
-                  } disabled:cursor-not-allowed`}
+                  className={`tab ${current ? "tab-active" : ""} disabled:cursor-not-allowed`}
                   aria-pressed={current}
                   disabled={busy}
                   onClick={() => {
