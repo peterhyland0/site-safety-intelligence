@@ -36,7 +36,8 @@ def question_text(sub: dict, ev_rows: list[dict]) -> str:
     places = list(dict.fromkeys(", ".join(x for x in ((r["evidence"] or {}).get("city"), (r["evidence"] or {}).get("state")) if x)
                                 for r in ev_rows))
     facility = ""
-    if any((r["evidence"] or {}).get("related_only") for r in ev_rows):
+    # only for a facility linked by the sub's own company name (N1), not one flagged for sharing an address
+    if any((r["evidence"] or {}).get("related_only") and (r["evidence"] or {}).get("rule") == "N1" for r in ev_rows):
         code = ev.get("naics4")
         several = len(ev_rows) > 1
         facility = ((" These facilities aren't coded as construction" if several else " This facility isn't coded as construction")

@@ -59,7 +59,7 @@ def test_question_says_when_a_facility_isnt_coded_as_construction():
     from ssi.matching.adjudicate import question_text
     rows = [{"establishment_key": "k", "evidence": {"name": "TINDALL CORPORATION", "city": "CONLEY", "state": "GA", "address": "PO BOX 280",
                                                      "years": ["2026-08-09", "2026-08-09"], "inspections": 1,
-                                                     "related_only": True, "naics4": "3273"}}]
+                                                     "related_only": True, "naics4": "3273", "rule": "N1"}}]
     text = question_text({"entered_name": "Tindall Corporation"}, rows)
     assert "isn't coded as construction (industry code 3273)" in text and "Tindall Corporation" in text
 
@@ -86,3 +86,11 @@ def test_peoples_names_are_never_grouped():
         red.append((rows, d, r, f))
     qs = questions_for({"entered_name": "Jose Hernandez"}, red)
     assert len(qs) == 4 and all(len(q[1]) == 1 for q in qs)  # one question per record, past the threshold too
+
+
+def test_facility_wording_only_for_records_linked_by_the_subs_name():
+    from ssi.matching.adjudicate import question_text
+    rows = [{"establishment_key": "k", "evidence": {"name": "NEEL SCHAFFER", "city": "JACKSON", "state": "MS",
+                                                     "address": "4450 OLD CANTON RD STE 100", "years": ["2021-01-01", "2024-01-01"],
+                                                     "inspections": 2, "related_only": True, "naics4": "5413", "rule": "R1"}}]
+    assert "plant, yard or shop" not in question_text({"entered_name": "Brasfield & Gorrie"}, rows)
