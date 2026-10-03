@@ -107,6 +107,15 @@ CREATE OR REPLACE MACRO ssi_generic_tokens() AS [
   'PREMIUM','BEST','ALL','ADVANCED','SUPERIOR','ELITE','TOTAL','COMPLETE','UNITED','NATIONAL','AMERICAN','USA',
   'CO','INC','LLC','CORP','COMPANY','LTD','LP','LLP','GP','PLLC','PC'
 ];
+-- Descriptor words: generic words that do NOT signal a different line of business. Two names with the
+-- same core that differ only by these (BRASFIELD GORRIE vs BRASFIELD GORRIE GENERAL CONTRACTOR) are the same
+-- company; names that differ by a TRADE word (WAUSAU HOMES vs WAUSAU TILE) are usually sister companies.
+CREATE OR REPLACE MACRO ssi_descriptor_tokens() AS [
+  'OF','DE','DBA','AT','A','N','GENERAL','CONTRACTOR','CONTRACTORS','CONTRACTING','CONSTRUCTION','CONSTRUCTORS',
+  'SERVICES','SERVICE','GROUP','ENTERPRISES','ENTERPRISE','COMPANIES','HOLDINGS','ASSOCIATES','INDUSTRIES',
+  'SOLUTIONS','MANAGEMENT','BROTHERS','BROS','SONS','SON','UNITED','NATIONAL','AMERICAN','USA','TOTAL','COMPLETE',
+  'CO','INC','LLC','CORP','COMPANY','LTD','LP','LLP','GP','PLLC','PC'
+];
 CREATE OR REPLACE MACRO name_core(clean) AS
   coalesce(array_to_string(list_filter(string_split(legal_part(clean), ' '),
     lambda t: t <> '' AND NOT list_contains(ssi_generic_tokens(), t)), ' '), '');

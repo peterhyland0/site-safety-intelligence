@@ -1,8 +1,10 @@
 """Matching rules on synthetic candidates: every trap from the profile and the evaluation."""
+from ssi.matching import rules
 from ssi.matching.rules import EXCLUDED, MATCHED, UNCERTAIN, Candidate, Query, decide
 
 GENERIC = frozenset({"CONSTRUCTION", "CONTRACTING", "CONTRACTORS", "CONTRACTOR", "GENERAL", "ROOFING", "GROUP",
-                     "CONCRETE", "ELECTRIC", "HOMES", "OF", "AT", "COMPANY"})
+                     "CONCRETE", "ELECTRIC", "HOMES", "TILE", "MASONRY", "OF", "AT", "COMPANY"})
+DESCRIPTORS = frozenset({"CONSTRUCTION", "CONTRACTING", "CONTRACTORS", "CONTRACTOR", "GENERAL", "GROUP", "OF", "AT", "COMPANY"})
 
 
 def q(clean, core, state="AL", tier="distinctive", city=None, trade=None, initials=False, sibling=None):
@@ -24,6 +26,7 @@ def test_same_distinctive_name_same_state_matches():
 
 
 def test_generic_word_difference_matches_for_distinctive_core():
+    rules.DESCRIPTORS = DESCRIPTORS
     d = decide(BG, c("BRASFIELD GORRIE GENERAL CONTRACTOR", "BRASFIELD GORRIE"), GENERIC)
     assert (d.bucket, d.rule_id) == (MATCHED, "M1b")
 
@@ -81,3 +84,11 @@ def test_trade_conflict_demotes():
     bg = q("ACME", "ACME", state="AL", trade="electrical")
     d = decide(bg, c("ACME", "ACME", naics4="2381"), GENERIC)
     assert d.bucket == UNCERTAIN and d.rule_id.endswith("_trade")
+
+
+def test_trade_word_difference_is_a_sister_company():
+    rules.DESCRIPTORS = DESCRIPTORS
+    w = q("WAUSAU HOMES", "WAUSAU", state="WI")
+    assert decide(w, c("WAUSAU TILE", "WAUSAU", state="WI"), GENERIC).bucket == UNCERTAIN
+    t = q("TURNKEY CONSTRUCTION", "TURNKEY", state="PA")
+    assert decide(t, c("TURNKEY ELECTRIC", "TURNKEY", state="PA", at_addr=True), GENERIC).bucket == UNCERTAIN

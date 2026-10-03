@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "pairs": 300,
+    "positives": 150,
+    "negatives": 150,
+    "matched_precision": 0.901,
+    "matched_recall": 0.607,
+    "candidate_recall": 0.953,
+    "positives_left_uncertain": 0.333,
+    "false_exclusion_rate": 0.013,
+    "negatives_kept_out": 0.933
+  },
+  "by_kind": {
+    "different_name": {
+      "matched": 0,
+      "uncertain": 2,
+      "excluded": 2,
+      "not_found": 6
+    },
+    "same_core_different_ein": {
+      "matched": 6,
+      "uncertain": 26,
+      "excluded": 103,
+      "not_found": 1
+    },
+    "same_name_different_ein": {
+      "matched": 4,
+      "uncertain": 10,
+      "excluded": 0,
+      "not_found": 0
+    },
+    "same_name_other_address": {
+      "matched": 91,
+      "uncertain": 48,
+      "excluded": 0,
+      "not_found": 1
+    }
+  },
+  "seconds": 146
+}

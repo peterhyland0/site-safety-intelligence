@@ -33,6 +33,14 @@ def generic_tokens() -> frozenset[str]:
     return frozenset(warehouse.one("SELECT ssi_generic_tokens() AS t")["t"])
 
 
+def descriptor_tokens() -> frozenset[str]:
+    try:
+        return frozenset(warehouse.one("SELECT ssi_descriptor_tokens() AS t")["t"])
+    except Exception:  # warehouse built before descriptor words existed
+        from ssi.cleaning import install_macros
+        return frozenset({"GENERAL", "CONTRACTOR", "CONTRACTORS", "CONTRACTING", "CONSTRUCTION", "SERVICES", "GROUP"})
+
+
 def search(clean: str, core: str, state: str | None, aliases: list[str]) -> list[dict]:
     """Candidate establishments for a cleaned query name."""
     return warehouse.rows(

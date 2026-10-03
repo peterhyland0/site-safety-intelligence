@@ -78,13 +78,25 @@ def only_generic_difference(a: str, b: str, generic: frozenset[str]) -> bool:
     return all(t in generic for t in diff)
 
 
-def decide(q: Query, c: Candidate, generic: frozenset[str]) -> Decision:
+DESCRIPTORS: frozenset[str] = frozenset()  # set from the warehouse macro ssi_descriptor_tokens() (see run.py)
+
+
+def only_descriptor_difference(a: str, b: str, descriptors: frozenset[str] | None = None) -> bool:
+    """True when two names differ only by descriptor words (GENERAL, CONTRACTORS, SERVICES…), not by a
+    trade word (HOMES vs TILE): the eval showed trade-word differences are usually sister companies."""
+    d = descriptors if descriptors is not None else DESCRIPTORS
+    diff = set(tokens(a)) ^ set(tokens(b))
+    return all(t in d for t in diff)
+
+
+def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozenset[str] | None = None) -> Decision:
     same_full = c.clean_name == q.clean or c.clean_name in q.aliases or q.clean in {c.legal_name, c.dba_name}
     core_equal = bool(q.core) and c.name_core == q.core
     same_state = bool(q.state) and c.state == q.state
     same_city = bool(q.city) and bool(c.city) and c.city.upper() == q.city.upper()
     distinctive = q.tier == "distinctive"
     generic_diff = core_equal and only_generic_difference(c.clean_name, q.clean, generic)
+    descriptor_diff = core_equal and only_descriptor_difference(c.clean_name, q.clean, descriptors)
     conflict = trade_conflict(q.trade, c.primary_naics4)
 
     # S1: "… OF OREGON" vs "… OF AMERICA", "… AT ELAN" vs "… AT MERIDIAN": usually sibling companies
@@ -98,12 +110,16 @@ def decide(q: Query, c: Candidate, generic: frozenset[str]) -> Decision:
 
     if same_full and same_state and (distinctive or same_city):
         return matched("M1", "Same name in the same state" + ("" if distinctive else " and city"))
-    if generic_diff and same_state and distinctive:
-        return matched("M1b", "Same distinctive name, differing only by generic words, in the same state")
-    if c.at_matched_address and (core_equal or typo_equal(q.core, c.name_core) or jw(q.clean, c.clean_name) >= 0.88):
+    if descriptor_diff and same_state and distinctive:
+        return matched("M1b", "Same distinctive name, differing only by words like GENERAL or CONTRACTORS, in the same state")
+    if c.at_matched_address and (same_full or descriptor_diff or jw(q.clean, c.clean_name) >= 0.93
+                                 or (typo_equal(q.core, c.name_core) and only_generic_difference(c.clean_name, q.clean, generic)
+                                     and not core_equal)):
         return matched("M2", "Same address as a matched record; name differs only by spelling")
-    if (same_full or generic_diff) and not same_state and distinctive:
+    if (same_full or descriptor_diff) and not same_state and distinctive:
         return matched("M3", f"Same distinctive name, another state ({c.state or 'unknown'})")
+    if generic_diff and not descriptor_diff and distinctive:
+        return Decision(UNCERTAIN, "U3", "Same family name but a different trade; often a sister company")
     if q.core and c.name_core and not core_equal and not typo_equal(q.core, c.name_core):
         # do the cores differ on a real (non-generic) word that has no near-spelling on the other side?
         qa, ca = set(tokens(q.core)), set(tokens(c.name_core))

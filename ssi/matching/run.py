@@ -83,11 +83,12 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     if described["placeholder"] or not q.clean:
         return {"query": q, "note": "Name is empty or a placeholder", "decisions": []}
     generic = C.generic_tokens()
+    descriptors = C.descriptor_tokens()
     rows = C.search(q.clean, q.core, q.state, sorted(q.aliases))
     q, note = correct_spelling(q, rows)
     decided: dict[str, tuple[dict, object]] = {}
     for r in rows:
-        decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic))
+        decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic, descriptors))
     # address expansion (two passes): records at a matched address whose name differs only by spelling
     for _ in range(2):
         matched = [k for k, (_, d) in decided.items() if d.bucket == MATCHED]
@@ -98,7 +99,7 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
             prev = decided.get(k)
             if prev and prev[1].bucket == MATCHED:
                 continue
-            d = decide(q, _candidate(r, at_address=True), generic)
+            d = decide(q, _candidate(r, at_address=True), generic, descriptors)
             if d.bucket == MATCHED or not prev:
                 if d.bucket == MATCHED or d.bucket == UNCERTAIN:
                     decided[k] = (prev[0] if prev else r, d)
