@@ -1,0 +1,15 @@
+code,label,is_accident,decode_confirmed,source
+A,Accident,true,true,https://apiprod.dol.gov/v4/datasets/10334
+B,Complaint,false,true,https://apiprod.dol.gov/v4/datasets/10334
+C,Referral,false,true,https://apiprod.dol.gov/v4/datasets/10334
+D,Monitoring,false,true,https://apiprod.dol.gov/v4/datasets/10334
+E,Variance,false,true,https://apiprod.dol.gov/v4/datasets/10334
+F,Follow-up,false,true,https://apiprod.dol.gov/v4/datasets/10334
+G,Unprogrammed related (official abbreviation 'Unprog Rel'),false,true,https://apiprod.dol.gov/v4/datasets/10334
+H,Planned (programmed),false,true,https://apiprod.dol.gov/v4/datasets/10334
+I,Programmed related (official abbreviation 'Prog Related'),false,true,https://apiprod.dol.gov/v4/datasets/10334
+J,Unprogrammed other (official abbreviation 'Unprog Other'),false,true,https://apiprod.dol.gov/v4/datasets/10334
+K,Programmed other (official abbreviation 'Prog Other'),false,true,https://apiprod.dol.gov/v4/datasets/10334
+L,Other (official label 'Other-L'),false,true,https://apiprod.dol.gov/v4/datasets/10334
+M,Fatality/Catastrophe (official abbreviation 'Fat/Cat'; first used 2011-04),true,true,https://apiprod.dol.gov/v4/datasets/10334
+N,Unprogrammed emphasis (official abbreviation 'Unprog Emph'; expansion inferred; first used 2025-05),false,true,https://apiprod.dol.gov/v4/datasets/10334

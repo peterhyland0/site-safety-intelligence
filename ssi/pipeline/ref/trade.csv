@@ -1,0 +1,54 @@
+code,code_type,label,naics4
+2361,naics4,Residential Building Construction,2361
+2362,naics4,Nonresidential Building Construction,2362
+2371,naics4,Utility System Construction,2371
+2372,naics4,Land Subdivision,2372
+2373,naics4,"Highway, Street, and Bridge Construction",2373
+2379,naics4,Other Heavy and Civil Engineering Construction,2379
+2381,naics4,"Foundation, Structure, and Building Exterior Contractors",2381
+2382,naics4,Building Equipment Contractors,2382
+2383,naics4,Building Finishing Contractors,2383
+2389,naics4,Other Specialty Trade Contractors,2389
+1500,sic4,"Building Construction - General Contractors and Operative Builders (major group 15, no detail)",
+1520,sic4,General Building Contractors - Residential (industry group 152),2361
+1521,sic4,General Contractors - Single-Family Houses,2361
+1522,sic4,"General Contractors - Residential Buildings, Other Than Single-Family",2361
+1530,sic4,Operative Builders (industry group 153),2361
+1531,sic4,Operative Builders,2361
+1540,sic4,General Building Contractors - Nonresidential (industry group 154),2362
+1541,sic4,General Contractors - Industrial Buildings and Warehouses,2362
+1542,sic4,"General Contractors - Nonresidential Buildings, Other Than Industrial Buildings and Warehouses",2362
+1600,sic4,"Heavy Construction Other Than Building Construction - Contractors (major group 16, no detail)",
+1610,sic4,"Highway and Street Construction, Except Elevated Highways (industry group 161)",2373
+1611,sic4,"Highway and Street Construction, Except Elevated Highways",2373
+1620,sic4,"Heavy Construction, Except Highway and Street (industry group 162)",
+1622,sic4,"Bridge, Tunnel, and Elevated Highway Construction",2373
+1623,sic4,"Water, Sewer, Pipeline, and Communications and Power Line Construction",2371
+1629,sic4,"Heavy Construction, Not Elsewhere Classified",2379
+1700,sic4,"Construction - Special Trade Contractors (major group 17, no detail)",
+1710,sic4,"Plumbing, Heating and Air-Conditioning (industry group 171)",2382
+1711,sic4,"Plumbing, Heating and Air-Conditioning",2382
+1720,sic4,Painting and Paper Hanging (industry group 172),2383
+1721,sic4,Painting and Paper Hanging,2383
+1730,sic4,Electrical Work (industry group 173),2382
+1731,sic4,Electrical Work,2382
+1740,sic4,"Masonry, Stonework, Tile Setting, and Plastering (industry group 174)",
+1741,sic4,"Masonry, Stone Setting, and Other Stone Work",2381
+1742,sic4,"Plastering, Drywall, Acoustical, and Insulation Work",2383
+1743,sic4,"Terrazzo, Tile, Marble, and Mosaic Work",2383
+1750,sic4,Carpentry and Floor Work (industry group 175),
+1751,sic4,Carpentry Work,2381
+1752,sic4,"Floor Laying and Other Floor Work, Not Elsewhere Classified",2383
+1760,sic4,"Roofing, Siding, and Sheet Metal Work (industry group 176)",2381
+1761,sic4,"Roofing, Siding, and Sheet Metal Work",2381
+1770,sic4,Concrete Work (industry group 177),2381
+1771,sic4,Concrete Work,2381
+1780,sic4,Water Well Drilling (industry group 178),2371
+1781,sic4,Water Well Drilling,2371
+1790,sic4,Miscellaneous Special Trade Contractors (industry group 179),
+1791,sic4,Structural Steel Erection,2381
+1793,sic4,Glass and Glazing Work,2381
+1794,sic4,Excavation Work,2389
+1795,sic4,Wrecking and Demolition Work,2389
+1796,sic4,"Installation or Erection of Building Equipment, Not Elsewhere Classified",2382
+1799,sic4,"Special Trade Contractors, Not Elsewhere Classified",2389

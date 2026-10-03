@@ -1,0 +1,7 @@
+code,label,severity_rank,serious_plus
+W,Willful,1,true
+R,Repeat,2,true
+S,Serious,3,true
+U,Unclassified (often a settled citation with the willful/repeat label removed),4,true
+O,Other-than-serious,5,false
+P,"Undocumented code P (11 rows, issued 2012-2015; not in OSHA's definitions; its gravity values suggest serious-class)",9,false

@@ -1,0 +1,21 @@
+hazard_code,label,fatal_four,sort
+fall_protection,"Fall protection (unprotected edges, holes, roofs, guardrails, personal fall arrest)",true,1
+scaffolds,"Scaffolds and aerial lifts",true,2
+ladders,"Ladders and stairways",true,3
+electrical,"Electrical (wiring, grounding, power lines, power transmission)",true,4
+excavation_trenching,"Excavation, trenching and underground work",true,5
+cranes_rigging,"Cranes, hoists and rigging",true,6
+motor_vehicles_equipment,"Vehicles, heavy equipment, forklifts and traffic control",true,7
+tools_machine_guarding,"Hand and power tools, machine guarding and lockout",false,8
+steel_concrete_masonry,"Steel erection, concrete, masonry and framing",false,9
+demolition,"Demolition",false,10
+confined_space,"Confined spaces",false,11
+ppe,"Personal protective equipment (head, eye/face, hands, foot, body)",false,12
+health_silica_lead_asbestos_noise,"Health hazards (silica, lead, asbestos, noise, respirators, toxic substances)",false,13
+heat,"Heat illness",false,14
+hazcom,"Hazard communication (chemical labels, safety data sheets, training)",false,15
+fire_explosion,"Fire, hot work, flammables, explosives and emergency egress",false,16
+safety_program_training,"Safety program, training, first aid and sanitation",false,17
+recordkeeping,"Recordkeeping, injury reporting, posting and abatement certification",false,18
+general_duty,"General Duty Clause (recognized hazard with no specific standard)",false,19
+other,"Other or unmapped standard",false,99

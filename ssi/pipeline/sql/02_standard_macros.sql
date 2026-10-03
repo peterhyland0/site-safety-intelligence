@@ -199,6 +199,7 @@ CREATE OR REPLACE MACRO ssi_ca_old_m(s) AS
   regexp_extract(s, '^([0-9]{3,8})(?: (.*))?$', ['num', 'tail']);
 CREATE OR REPLACE MACRO ssi_ca_packed_sec(num) AS
   CASE
+    WHEN length(num) = 7 THEN left(num, 3) || CASE WHEN right(num, 4) = '0000' THEN '' ELSE '.' || ssi_unpad(right(num, 4)) END  -- 3410001 = 341.1
     WHEN length(num) < 8 THEN num
     WHEN left(num, 4) IN ('1430', '4300') THEN '14300.' || ssi_unpad(substr(num, 5, 4))   -- recordkeeping 14300.x
     WHEN substr(num, 5, 4) = '0000' THEN left(num, 4)
