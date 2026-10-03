@@ -166,6 +166,12 @@ Common names and people's names need a city match to auto-match. A GC's typo (`B
 
 **What the GC sees:** *Matched* (counted) · *Possible* ("+N inspections if these are yours", not counted) · *Excluded lookalikes* (collapsed). The GC can move any record between buckets; that's stored as `method = 'gc'` and always wins.
 
+**One entry per company.** Four Colmex entries on one test project once gave three different answers. One said "no record": the city and state were typed into the name, so it searched for a company called "COLMEX CONTRACTING LLC. BUNNELL FL". One showed an Iowa company that had been marked as theirs. Two were the right company. Now:
+- **The server turns away a sub that's already on the project.** Names are compared with the same `clean_name()` (so `Colmex Contracting, L.L.C.` = `COLMEX CONTRACTING`), plus the state. Nothing in the batch is added, and the form highlights the repeated rows ([ssi/api/duplicates.py](ssi/api/duplicates.py)).
+- **Trade words still count,** so ABC Roofing and ABC Electric are two subs. The city doesn't, so a typo'd city can't let a company in twice.
+- **Spellings the cleaner doesn't merge are caught after matching.** "Colmex" vs "Colmex Contracting": when two subs share a matched record, both cards say so.
+- **A city and state typed into the name** gets a warning in the form, with a button that moves them into their fields.
+
 ---
 
 ## 4. Verdicts: flags with evidence, not a score
@@ -261,7 +267,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 160 test cases:
+**Tests:** `uv run pytest`, 190 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -269,7 +275,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - the grounding checker
 - a fake-model end-to-end foreman loop
 
-The web front end has 21 more (`npm test`).
+The web front end has 40 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
@@ -391,6 +397,7 @@ Without them, enrichment is just empty.
 - **Injury data coverage.** ITA covers firms with 20+ employees, and most small subs won't have a rate.
 - **California licences.** The CSLB file is partial.
 - **Benchmarks.** They compare a sub (possibly multi-establishment) with single establishments; per-inspection rates make that tolerable.
+- **Duplicate subs are blocked in the app, not by a database constraint.** The name key comes from the DuckDB cleaning macros, which Postgres doesn't have. Storing the key on each sub would allow a unique index.
 
 **Next steps**
 - Daily incremental updates through the DOL API (`load_dt`, `case_mod_date`) instead of full rebuilds.
