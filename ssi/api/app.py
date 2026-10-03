@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ssi import config
 from ssi.api import schemas as S
+from ssi.llm import client as llm_client
 from ssi.matching import adjudicate as ADJ
 from ssi.matching.run import match_and_persist
 from ssi.queries import core as Q
@@ -148,7 +149,7 @@ def health():
         db_ok = False
     m = warehouse.meta()
     return S.Health(status="ok" if db_ok else "degraded", data_as_of=m["data_as_of"], build_id=m["build_id"],
-                    llm_enabled=bool(config.ANTHROPIC_API_KEY), db_ok=db_ok)
+                    llm_enabled=llm_client.available(), db_ok=db_ok)
 
 
 @app.get("/api/projects", response_model=list[S.Project])

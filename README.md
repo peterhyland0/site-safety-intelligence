@@ -260,19 +260,26 @@ The web front end has 18 more (`npm test`).
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
 - **Negatives:** same name core and state, different tax IDs.
 
-300 pairs, repeatable sample; full table in [eval/matching/results.md](eval/matching/results.md):
+300 pairs, repeatable sample, run on the default 10-year data. Full table in [eval/matching/results.md](eval/matching/results.md):
 
-| Metric | Value | Meaning |
-|---|---|---|
-| Precision of automatic matches | **0.90** (silver) | Of records auto-matched, the share with the same tax ID |
-| Candidate recall | 0.95 | The right record was found at all |
-| False exclusions | 0.013 | Same-company records wrongly excluded |
-| Different companies kept out | 0.93 | Not auto-matched |
-| Same-company records left "possible" | 0.33 | Sent to the AI adjudicator or the GC, not counted |
+| Metric | 10-year data | All years | Meaning |
+|---|---|---|---|
+| Precision of automatic matches | **0.83** | 0.90 | Of records auto-matched, the share with the same tax ID |
+| Candidate recall | 0.96 | 0.95 | The right record was found at all |
+| False exclusions | 0.00 | 0.013 | Same-company records wrongly excluded |
+| Different companies kept out | 0.86 | 0.93 | Not auto-matched |
+| Same-company records left "possible" | 0.27 | 0.33 | Sent to the AI adjudicator or the GC, not counted |
 
-**Reading the precision honestly.** All 10 auto-matches the labels call "different" are the same business name in the same or a neighbouring city, under another tax ID. Examples: `BL SHEET METAL ROOFING` twice in Bloomington, `RD GRAHAM ELECTRIC` in High Point and Greensboro, `HENKEL CONSTRUCTION` vs `HENKEL GENERAL CONSTRUCTION`. A GC would most likely treat each as one company. The labels are "silver" for exactly this reason: big firms file under several tax IDs, and sister companies sometimes share one.
+**Reading the precision honestly.** I reviewed the disagreements by hand. The auto-matches the labels call "different" are corporate families filing under several tax IDs, not different businesses that happen to share a name:
+- D.R. Horton's regional divisions in NC, TX and CA
+- Hensel Phelps in Honolulu and Kaneohe
+- `HAGERMAN` vs `HAGERMAN CONSTRUCTION`
+- `LOBAR` vs `LOBAR ASSOCIATES`
+- `BL SHEET METAL ROOFING` twice in Bloomington
 
-**What the first run taught.** Auto-matching names that differed only by *trade* words (`WAUSAU HOMES` vs `WAUSAU TILE`, `TURNKEY CONSTRUCTION` vs `TURNKEY ELECTRIC`) was the real error. Splitting generic words into *descriptors* (GENERAL, CONTRACTORS, SERVICES) and *trade words* removed it. Precision rose from 0.87 to 0.90 on the silver labels.
+A GC would most likely treat each as one company. Precision is lower on 10-year data because, with less history, fewer spelling variants exist per name, so more names count as "distinctive" and auto-match across offices. The labels are "silver" for exactly this reason.
+
+**What the first run taught.** Auto-matching names that differed only by *trade* words (`WAUSAU HOMES` vs `WAUSAU TILE`, `TURNKEY CONSTRUCTION` vs `TURNKEY ELECTRIC`) was the real error. Splitting generic words into *descriptors* (GENERAL, CONTRACTORS, SERVICES) and *trade words* removed it. On all-years data, precision rose from 0.87 to 0.90.
 
 **Foreman.** 20 questions with expected tools, statuses and phrases ([eval/foreman/](eval/foreman/)). It spends API credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Results are logged to LangSmith.
 
