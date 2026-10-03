@@ -152,6 +152,56 @@ The GC enters the sub's name plus city and state, which they already have from b
 - **Red-flag override:** any "possible" record carrying a fatality, willful, repeat or failure-to-abate citation becomes a direct yes/no question to the GC. A dangerous record is never silently dropped and never silently attributed.
 - **Assumption, stated in the README:** matching is automatic, and the GC is only asked to confirm uncertain matches that carry red flags.
 
+### Where the LLM adjudicator runs
+
+The adjudicator runs in one place only: **when the GC adds a sub, and only on the candidates the rules can't sort confidently.** It never touches the pipeline, the scorecard numbers or the red flags.
+
+```
+GC enters sub (name, city, state)
+   │
+   ▼
+1. Find candidates ─────── fuzzy name search + records at known addresses      (Postgres, no LLM)
+   │
+   ▼
+2. Rules sort them ─────── same cleaned name in GC's state → MATCHED            (no LLM)
+   │                       same name at a matched address → MATCHED
+   │                       distinctive name in other states → MATCHED
+   │                       no shared name core → EXCLUDED
+   │                       everything else → UNCERTAIN
+   ▼
+3. LLM adjudicator ─────── runs ONLY on the UNCERTAIN ones (usually 0–10 per sub)
+   │                       → returns bucket + confidence + one-line rationale
+   ▼
+4. Red-flag check ──────── uncertain record with a fatality/willful/repeat?
+                           → the LLM's rationale becomes the yes/no question to the GC
+```
+
+**What counts as uncertain:**
+
+| Case | Why the rules can't decide | What the LLM weighs |
+|---|---|---|
+| Generic name in another state | "ABC Roofing" in two states could be one company or two | Same trade? Overlapping years? Any shared address? |
+| Similar name, different address | Typo or a different company? | e.g. `BRASFIELD AND GORRIE GENERAL CONTRACTOR` at a Birmingham address that isn't the HQ |
+| Related legal entities | Same family, different company | e.g. `CLARK CONCRETE CONTRACTORS` vs `CLARK CONSTRUCTION GROUP` at the same HQ |
+| DBA vs legal name | Two names for the same thing | e.g. `XYZ LLC DBA ABC ROOFING` vs `ABC ROOFING` |
+
+**What it sees and returns:**
+- **Identity evidence only:** what the GC entered, the candidate's name spellings, addresses, trade code and years active, and the establishments already matched. **It is not shown the safety history**, so a fatality can't bias whether a record is judged "the same company".
+- **Structured output checked in code:** `{ "bucket": "possible", "confidence": 0.55, "rationale": "Same trade (roofing) and active 2016–2023 like the matched records, but a different city and no shared address." }`. Code rejects any rationale that cites evidence not in its input.
+- **Saved and auditable:** the decision is stored in `app.sub_match` with `method = 'llm'` and never re-run for the same pair.
+
+**The limits on what it decides:**
+- **High-confidence "same"** → matched, labelled as decided by AI rather than hidden.
+- **Low confidence** → possible: shown as "+N if these are yours" and not counted.
+- **"Different"** → excluded.
+- **Anything carrying a red flag** → the LLM never decides alone. It drafts the question; the GC answers.
+
+**Other LLM uses are separate:**
+- **Foreman Q&A:** picking a named query and phrasing the answer.
+- **Optional in the pipeline:** parsing the odd DBA or joint-venture name that rules can't split.
+
+**Without an API key, the app still works** in a rules-only mode: uncertain candidates stay "possible".
+
 ## 6. Answering the foreman's questions
 
 **Named queries, not free-form SQL.** This is also from the ContextOne paper ("Named Queries").
