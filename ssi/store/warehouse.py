@@ -51,7 +51,7 @@ def rows(sql: str, params: list | tuple = ()) -> list[dict]:
     cur = cursor()
     try:
         res = cur.execute(sql, list(params))
-        cols = [d[0] for d in res.description]
+        cols = [d[0].lower() for d in res.description]
         return [dict(zip(cols, r)) for r in res.fetchall()]
     finally:
         cur.close()
