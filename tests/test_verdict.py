@@ -45,7 +45,10 @@ def test_rate_needs_enough_inspections_and_peers():
 
 
 def test_recurring_hazard_and_open_cases():
-    h = [HazardFact("fall_protection", "Fall protection", 3, 1, 2012, 2024, [1, 2, 3])]
+    h = [HazardFact("fall_protection", "Fall protection (edges, holes)", 3, 1, 2012, 2024, [1, 2, 3])]
     v, r = evaluate(facts(hazards=h))
-    assert v == "review" and "Fall protection cited in 3" in r[0].label
+    assert v == "review" and r[0].label.startswith("Fall protection cited in 3")
+    old = [HazardFact("electrical", "Electrical", 9, 0, 1975, 1999, [4])]
+    v, r = evaluate(facts(hazards=old))
+    assert v == "no_flags" and r[0].severity == "info"
     assert evaluate(facts(open_serious_cases=[9]))[0] == "review"

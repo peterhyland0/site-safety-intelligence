@@ -53,14 +53,14 @@ def load_refs(con) -> list[str]:
     for name, cols in REF_STUBS.items():
         path = config.REF_DIR / f"{name}.csv"
         if path.exists():
-            con.execute(f"CREATE OR REPLACE TABLE ref_{name} AS SELECT * FROM read_csv('{path}', header = true)")
+            con.execute(f"CREATE OR REPLACE TABLE ref_{name} AS SELECT * FROM read_csv('{path}', header = true, all_varchar = true)")
             loaded.append(name)
         else:
             con.execute(f"CREATE OR REPLACE TABLE ref_{name} ({cols})")
         con.execute(f"CREATE OR REPLACE TABLE wh.ref.{name} AS SELECT * FROM ref_{name}")
     for path in sorted(config.REF_DIR.glob("*.csv")):  # any extra ref CSVs
         if path.stem not in REF_STUBS:
-            con.execute(f"CREATE OR REPLACE TABLE ref_{path.stem} AS SELECT * FROM read_csv('{path}', header = true)")
+            con.execute(f"CREATE OR REPLACE TABLE ref_{path.stem} AS SELECT * FROM read_csv('{path}', header = true, all_varchar = true)")
             con.execute(f"CREATE OR REPLACE TABLE wh.ref.{path.stem} AS SELECT * FROM ref_{path.stem}")
             loaded.append(path.stem)
     return loaded

@@ -119,12 +119,17 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
         add("R_rate", f"Serious citations per inspection ({rate:.2f}) above most {f.benchmark_label}",
             "review", rate=round(rate, 2), p75=round(f.benchmark_p75, 2))
     for h in f.hazards:
-        if h.hazard_code == "other":
+        if h.hazard_code == "other" or not (h.insp_all >= 3 or h.insp_window >= 2):
             continue
-        if h.insp_all >= 3 or h.insp_window >= 2:
+        short = h.label.split(" (")[0]
+        if h.insp_window >= 1:  # an active pattern: still being cited inside the project window
             add(f"R_recurring_{h.hazard_code}",
-                f"{h.label} cited in {h.insp_all} separate inspections ({h.first_year}–{h.last_year})",
+                f"{short} cited in {h.insp_all} separate inspections ({h.first_year}–{h.last_year})",
                 "review", evidence=h.evidence[:20], inspections=h.insp_all, in_window=h.insp_window)
+        else:  # a pattern that has stopped: shown, but doesn't drive the verdict
+            add(f"I_past_{h.hazard_code}",
+                f"{short} cited in {h.insp_all} separate inspections ({h.first_year}–{h.last_year}), none in the last {f.window_years} years",
+                "info", evidence=h.evidence[:20], inspections=h.insp_all)
     if f.open_serious_cases:
         add("R_open", f"{len(f.open_serious_cases)} open case(s) with serious citations (still provisional)",
             "review", evidence=f.open_serious_cases[:20], count=len(f.open_serious_cases))

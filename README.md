@@ -64,7 +64,7 @@ flowchart LR
 
 | Layer | What it holds | Rebuilt from source? |
 |---|---|---|
-| `ref` | Hand-maintained lookups in versioned CSVs: violation types, inspection types, hazard categories, and a standard-code → hazard map that covers **state-plan codes too** | From the repo |
+| `ref` | Hand-maintained lookups in versioned CSVs: violation types, inspection types (all 14 codes confirmed against DOL's metadata), 20 hazard categories, and a ~540-rule standard-code → hazard map covering **state-plan codes too** (99.6% of construction citations since 2015 map to a real category; [docs/hazard-map.md](docs/hazard-map.md)) | From the repo |
 | `osha` | OSHA's records, cleaned and typed, never judged. Bad values are flagged (`dq_flags`), never deleted. Rows that fail integrity checks go to `quarantine` with a reason | Yes |
 | `entity` | Inspections grouped into **establishments**: identical cleaned name + address key + zip + state. Plus name variants, distinctiveness stats, shared-office stats, and links to reference data | Yes |
 | `ref_ext` | Outside data: ITA 300A injury summaries and WA/OR/CA contractor licences | Yes |
@@ -165,7 +165,7 @@ A GC has to be able to defend turning a sub down, so the tool gives **reasons wi
 | Verdict | Triggered by |
 |---|---|
 | **High concern** | Any of the following:<br>• a cited fatality, willful violation, failure-to-abate or fatality/catastrophe investigation with serious citations, recent<br>• repeat violations in ≥2 separate inspections within W<br>• serious citations per inspection in the trade's top 10% (≥5 inspections, ≥30 peers) |
-| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections<br>• open cases with serious citations<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• a recent fatality on site where the sub wasn't cited |
+| **Review** | Any of the following:<br>• the same events but older than 10 years<br>• one repeat within W<br>• a rate above most peers<br>• a hazard cited in ≥3 separate inspections with at least one inside the window (older patterns show as information)<br>• open cases with serious citations<br>• a pending match question<br>• self-reported lost-time rate (DART) above the trade's 75th percentile in 2 of the last 3 years<br>• a lapsed licence<br>• a recent fatality on site where the sub wasn't cited |
 | **No OSHA record** | No matched records: **"unknown, not clean"**. Ask the sub for its EMR, TRIR and 300 logs |
 | **No recent record** | Matched records exist, but none in W |
 | **No flags** | Matched records in W and nothing above |
@@ -307,7 +307,7 @@ Without them, enrichment is just empty.
 **Assumptions**
 - **Matching is automatic;** the GC only confirms uncertain matches that carry red flags. The point is a *quick* view, and a wrong red flag is the costly error.
 - **No record is not a clean record.** OSHA inspects a small share of employers.
-- **Two decodes are evidence-based, not officially documented:** the inspection-type codes for accident and fatality investigations (`A`, `M`), and `reporting_id`'s third digit marking state-plan offices. Both are labelled in the methodology.
+- **One decode is evidence-based, not officially documented:** `reporting_id`'s third digit `5` marking state-plan offices. It holds for 99.98% of inspections citing state-specific codes, and all 188 such office IDs on OSHA's office list are state plans. The inspection-type codes (`A` accident, `M` fatality/catastrophe and the rest) are confirmed against DOL's own dataset metadata.
 
 **Limitations**
 - **Unidentified employers.** Placeholder employers (`UNKNOWN ROOFER`, ~1,800 inspections) may be real subs, but can't be matched.
