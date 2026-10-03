@@ -7,10 +7,10 @@ reading content; server-side fallbacks ("default" form) re-run a declined reques
 from __future__ import annotations
 
 import json
-import os
 
 import anthropic
 
+from ssi import config
 from ssi.llm.base import Reply, ToolCall, ToolSpec, Usage
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -23,7 +23,7 @@ class AnthropicProvider:
         self.model = model
         self.effort = effort
         client = anthropic.Anthropic(max_retries=2, timeout=60.0)
-        if os.environ.get("LANGSMITH_API_KEY"):
+        if config.TRACING:
             from langsmith.wrappers import wrap_anthropic
             client = wrap_anthropic(client)
         self.client = client

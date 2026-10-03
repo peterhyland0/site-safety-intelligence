@@ -10,9 +10,9 @@ Guards enforced in code, not in the prompt:
 from __future__ import annotations
 
 import json
-import os
 import time
 
+from ssi import config
 from ssi.agent import grounding
 from ssi.agent.tools import Toolbox, specs
 from ssi.api import schemas as S
@@ -60,7 +60,7 @@ def _hazard_codes() -> list[str]:
 
 
 def _traceable(fn):
-    if os.environ.get("LANGSMITH_API_KEY"):
+    if config.TRACING:
         from langsmith import traceable
         return traceable(name="foreman.answer", run_type="chain")(fn)
     return fn

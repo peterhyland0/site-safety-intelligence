@@ -39,8 +39,11 @@ def question_text(sub: dict, ev_rows: list[dict]) -> str:
     facility = ""
     if any((r["evidence"] or {}).get("related_only") for r in ev_rows):
         code = ev.get("naics4")
-        facility = (" This facility isn't coded as construction" + (f" (industry code {code})" if code else "")
-                    + ": it may be a plant, yard or shop of the same company.")
+        several = len(ev_rows) > 1
+        facility = ((" These facilities aren't coded as construction" if several else " This facility isn't coded as construction")
+                    + (f" (industry code {code})" if code and not several else "")
+                    + (": they may be plants, yards or shops of the same company." if several
+                       else ": it may be a plant, yard or shop of the same company."))
     if len(places) <= 1:
         place = ", ".join(x for x in (ev.get("address"), ev.get("city"), ev.get("state")) if x) or "no address on file"
         return (f"OSHA has {n} inspection(s) {first}–{last} under '{ev.get('name')}' ({place}) that include serious red flags."

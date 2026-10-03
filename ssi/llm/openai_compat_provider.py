@@ -9,6 +9,7 @@ import warnings
 
 from openai import OpenAI
 
+from ssi import config
 from ssi.llm.base import Reply, ToolCall, ToolSpec, Usage
 
 # The OpenAI SDK's response models carry provider-specific extras (e.g. reasoning metadata from vLLM/SGLang
@@ -28,7 +29,7 @@ class OpenAICompatProvider:
         if not model:  # ask the endpoint which model it serves (vLLM/SGLang-style servers list one)
             model = client.models.list().data[0].id
         self.model = model
-        if os.environ.get("LANGSMITH_API_KEY"):
+        if config.TRACING:
             from langsmith.wrappers import wrap_openai
             client = wrap_openai(client)
         self.client = client

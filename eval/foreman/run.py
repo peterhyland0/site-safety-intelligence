@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import time
 from pathlib import Path
 
+from ssi import config
 from ssi.agent import foreman
 from ssi.llm import client as llm
 from ssi.store import pg, warehouse
@@ -65,7 +65,7 @@ def main() -> None:
               for r in rows]
     (HERE / "results.md").write_text("\n".join(lines) + "\n")
     (HERE / "results.json").write_text(json.dumps(rows, indent=2))
-    if os.environ.get("LANGSMITH_API_KEY"):
+    if config.TRACING:
         # Log the answers above as a LangSmith experiment (no second round of model calls). The dataset name
         # carries a hash of questions.json, so editing an expectation creates a new dataset version.
         from langsmith import Client

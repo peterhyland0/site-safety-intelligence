@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import time
 from pathlib import Path
 
+from ssi import config
 from ssi.matching import run as M
 from ssi.store import warehouse
 
@@ -87,7 +87,7 @@ def metrics(rows: list[dict]) -> dict:
 
 
 def to_langsmith(pairs: list[dict]) -> str | None:
-    if not os.environ.get("LANGSMITH_API_KEY"):
+    if not config.TRACING:
         return None
     from langsmith import Client
     client = Client()

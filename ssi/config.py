@@ -20,6 +20,10 @@ SQL_DIR = PIPELINE_DIR / "sql"
 REF_DIR = PIPELINE_DIR / "ref"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost:5432/ssi")
+# LangSmith tracing: on when a key is set, unless LANGSMITH_TRACING=false (e.g. the plan's monthly trace
+# allowance is used up; the AI calls still work, only their logging is rejected).
+TRACING = bool(os.environ.get("LANGSMITH_API_KEY")) and \
+    os.environ.get("LANGSMITH_TRACING", "true").strip().lower() not in ("false", "0", "no", "off")
 MODEL = os.environ.get("SSI_MODEL", "claude-sonnet-5-5")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY") or None
 DAILY_TOKEN_BUDGET = int(os.environ.get("SSI_DAILY_TOKEN_BUDGET", "2000000"))

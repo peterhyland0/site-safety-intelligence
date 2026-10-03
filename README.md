@@ -17,6 +17,7 @@ A GC bidding a job enters its 10–15 subcontractors (one row of fields each, or
 Supporting docs:
 - [docs/thought-process.md](docs/thought-process.md): the full decision log
 - [docs/data-profile.md](docs/data-profile.md): how messy the data is, with numbers
+- [docs/data-flow.html](docs/data-flow.html): a diagram of every step from raw OSHA files to a sub's verdict, with the problem each step fixes (open it in a browser)
 - [docs/domain-cheat-sheet.md](docs/domain-cheat-sheet.md): construction safety terms
 
 ---
