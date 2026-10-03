@@ -13,25 +13,39 @@ def _norm(tok: str) -> str:
     return tok.replace("$", "").replace(",", "").replace("%", "").rstrip(".")
 
 
+# Figures the instructions themselves use ("OSHA 300 logs", TRIR per 200,000 hours / 100 workers).
+CONSTANTS = {"100", "200000", "300", "300A"}
+DATE_RE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+
+
+def _list_lengths(obj, out: set[str]) -> None:
+    """Counting the rows a tool returned is quoting, not computing: allow every list length."""
+    if isinstance(obj, dict):
+        for v in obj.values():
+            _list_lengths(v, out)
+    elif isinstance(obj, list):
+        out.add(str(len(obj)))
+        for v in obj:
+            _list_lengths(v, out)
+
+
 def allowed_numbers(tool_outputs: list, extra_text: str = "") -> set[str]:
     """Every number that appears anywhere in the tool outputs, plus common renderings of it."""
     blob = json.dumps(tool_outputs, default=str, ensure_ascii=False) + " " + extra_text
-    out: set[str] = set()
-    for raw in re.findall(r"-?\d+(?:\.\d+)?", blob):
+    out: set[str] = set(CONSTANTS)
+    for raw in re.findall(r"\d+(?:\.\d+)?", blob):  # unsigned: the "-11" in "2025-11-13" is a month, not -11
         n = _norm(raw)
         out.add(n)
-        try:
-            f = float(n)
-        except ValueError:
-            continue
+        f = float(n)
         out.add(str(int(f)) if f == int(f) else n)
         for d in (0, 1, 2):  # rounded renderings of decimals
             out.add(f"{f:.{d}f}")
         if 0 < f <= 1:  # shares quoted as percentages
             out.add(f"{f * 100:.0f}")
             out.add(f"{f * 100:.1f}")
-    for date in re.findall(r"\b(\d{4})-\d{2}-\d{2}\b", blob):  # years from dates
-        out.add(date)
+    for y, m, d in DATE_RE.findall(blob):  # "2025-11-03" may be written "November 3, 2025"
+        out.update({y, m, d, str(int(m)), str(int(d))})
+    _list_lengths(tool_outputs, out)
     return out
 
 
@@ -47,9 +61,6 @@ def check(answer: str, tool_outputs: list, question: str = "") -> list[str]:
             f = float(n)
             if f == int(f) and str(int(f)) in allowed:
                 continue
-            if f <= 12 and f == int(f):  # tiny counts ("2 subs", "1 case") rarely mislead; ordinal words etc.
-                if str(int(f)) in allowed:
-                    continue
         except ValueError:
             pass
         bad.append(tok)

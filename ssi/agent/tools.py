@@ -37,7 +37,8 @@ def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
                  obj({"sub_id": sub}, ["sub_id"])),
         ToolSpec("open_cases", "A sub's inspections that are still open (citations may still change).",
                  obj({"sub_id": sub}, ["sub_id"])),
-        ToolSpec("inspection_list", "A sub's inspections, newest first (max 20), optionally since a year.",
+        ToolSpec("inspection_list", "A sub's inspections, newest first (lists up to 20; total and with_citations count all), "
+                 "optionally since a year.",
                  obj({"sub_id": sub, "since_year": {"type": "integer"}}, ["sub_id", "since_year"])),
         ToolSpec("inspection_detail", "Every citation in one inspection, plus any accident narrative.",
                  obj({"activity_nr": {"type": "integer"}}, ["activity_nr"])),
@@ -86,6 +87,10 @@ class Toolbox:
             pre = self._precondition(args["sub_id"])
             if pre:
                 return pre
+            out = fn(**args)
+            if isinstance(out, dict) and "sub" not in out:  # name the sub in every per-sub result
+                out = {"sub": self.subs[args["sub_id"]]["entered_name"], **out}
+            return out
         return fn(**args)
 
     # --- tools ---------------------------------------------------------------------------------------
@@ -113,6 +118,10 @@ class Toolbox:
                 "rate_vs_median": (f"{rate / p50:.1f}x" if rate is not None and p50 else None),
                 "states": c.states, "first_year": c.first_year, "last_year": c.last_year,
                 "possible_inspections_not_counted": c.possible_inspections,
+                "pending_match_questions": c.pending_questions,
+                "possible_note": ("Possible records might be this sub but weren't confirmed, so they don't count toward "
+                                  "the verdict. The GC is only asked about possible records that carry red flags; "
+                                  "pending_match_questions says whether any are waiting."),
                 "coverage": Q.coverage(d).sentence}
 
     def t_red_flags(self, sub_id: str, kinds: list[str]) -> dict:
@@ -148,7 +157,8 @@ class Toolbox:
                         "serious_citations": det.serious_plus if det else None,
                         "narrative": (acc.narrative or acc.description or "")[:400] if acc else "not published"})
         return {"total": len(fat), "events": out,
-                "note": f"OSHA's accident narratives are published through {Q.warehouse.meta()['accident_detail_through']}."}
+                "note": (f"Covers OSHA inspections since {Q.warehouse.meta()['history_since']}; accident narratives are "
+                         f"published through {Q.warehouse.meta()['accident_detail_through']}.")}
 
     def t_trend_by_year(self, sub_id: str) -> dict:
         return {"years": [y.model_dump() for y in Q.trend(self.data(sub_id)["keys"])][-15:]}
@@ -169,10 +179,11 @@ class Toolbox:
                 "penalty_current": r.penalty_current} for r in rows]}
 
     def t_inspection_list(self, sub_id: str, since_year: int) -> dict:
-        rows = Q.inspections(self.data(sub_id)["keys"], limit=20, since_year=since_year or None)
-        return {"inspections": [{"inspection_id": r.activity_nr, "opened": r.open_date, "type": r.insp_type_label,
+        rows = Q.inspections(self.data(sub_id)["keys"], limit=1000, since_year=since_year or None)
+        return {"total": len(rows), "with_citations": sum(1 for r in rows if r.citations), "shown": min(len(rows), 20),
+                "inspections": [{"inspection_id": r.activity_nr, "opened": r.open_date, "type": r.insp_type_label,
                                  "city": r.site_city, "state": r.site_state, "citations": r.citations,
-                                 "serious": r.serious_plus, "open": r.is_open} for r in rows]}
+                                 "serious": r.serious_plus, "open": r.is_open} for r in rows[:20]]}
 
     def t_inspection_detail(self, activity_nr: int) -> dict:
         det = Q.inspection_detail(activity_nr)

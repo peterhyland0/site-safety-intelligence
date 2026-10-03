@@ -187,7 +187,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 
 **Guards enforced in code, not in the prompt** ([ssi/agent/foreman.py](ssi/agent/foreman.py)):
 1. **Precondition.** A sub with unanswered match questions returns `needs_confirmation` from every tool.
-2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Queries precompute every figure the model might quote, and the prompt says "quote, never compute". A failure gets one retry, then a deterministic fallback.
+2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Queries precompute every figure the model might quote (totals, counts with citations), and the prompt says "quote, never compute". The check accepts a date written out ("November 3, 2025" for `2025-11-03`) and the number of rows a tool returned. A failure gets one retry, then a deterministic fallback rendered from the tool results; an empty reply gets one nudge, then the same fallback.
 3. **Citations.** Inspection IDs become osha.gov links.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
@@ -232,16 +232,16 @@ The surprise: **none of these merges OSHA records much.** Grouping by cleaned na
 ## 7. Architecture
 
 ```
-DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min; nightly on Modal) ──► warehouse-<id>.duckdb ─┐ CURRENT pointer
-                                                                                                ▼
+DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──► warehouse-<id>.duckdb ─┐ CURRENT pointer
+                                                                                          ▼
             React SPA (web/) ◄── FastAPI (ssi/api) ──► DuckDB (read-only facts) + Postgres (decisions)
-                                     └──► Claude (adjudicator, foreman) · LangSmith traces
+                                     └──► LLMs on Modal (GLM 5.3 foreman, DeepSeek V4.1 Flash adjudicator) · LangSmith traces
 ```
 
 - **Pipeline** ([ssi/pipeline/](ssi/pipeline/)): ordered SQL files; about a minute end to end, a 192 MB warehouse with the 10-year default. Intermediate tables go in a scratch DB; only final layers go in the warehouse. 9 data-quality checks run each build, and error-level failures stop the pointer swap. The build report records per-rule merge counts and timings.
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`. Basic auth when configured.
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px.
-- **Deploy** ([modal_app.py](modal_app.py)): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
+- **Deploy** ([modal_app.py](modal_app.py), prepared but not deployed: the app currently runs locally): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
 
 **Why these tools:**
 - **DuckDB** builds 18M raw rows in about a minute on a laptop, reads the CSVs directly, and serves read-only analytical queries in-process. Polars would also have worked; I wanted one language, SQL, across pipeline and queries.
@@ -252,7 +252,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min; nightly on Modal) ─�
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 70 tests:
+**Tests:** `uv run pytest`, 160 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -287,7 +287,30 @@ A GC would most likely treat each as one company. Precision is lower on 10-year 
 
 **What the first run taught.** Auto-matching names that differed only by *trade* words (`WAUSAU HOMES` vs `WAUSAU TILE`, `TURNKEY CONSTRUCTION` vs `TURNKEY ELECTRIC`) was the real error. Splitting generic words into *descriptors* (GENERAL, CONTRACTORS, SERVICES) and *trade words* removed it. On all-years data, precision rose from 0.87 to 0.90.
 
-**Foreman.** 20 questions with expected tools, statuses and phrases ([eval/foreman/](eval/foreman/)). It spends API credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Results are logged to LangSmith.
+**Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
+
+GLM 5.3, final run (full table in [eval/foreman/results.md](eval/foreman/results.md)):
+
+| Check | First run | Final run |
+|---|---|---|
+| Used an expected tool | 20/20 | 20/20 |
+| Expected status | 15/20 | 20/20 |
+| Grounded (passed the number check) | 17/20 | 20/20 |
+| Required phrases present | 14/20 | 20/20 |
+| No forbidden phrases | 20/20 | 20/20 |
+
+Median 2.6 s per answer, slowest 6.9 s.
+
+**What the runs taught:**
+- **The number check was too strict about dates.** It read the "-11" in "2025-11-13" as minus eleven, so an answer that wrote the date out was rejected. Dates now count by their parts, and so does the number of rows a tool returned.
+- **The model sometimes ended its turn with no text.** It now gets one nudge, then a fallback rendered from the tool results, so the foreman never sees a blank answer.
+- **Counts the model added up itself were the remaining grounding failures.** The inspection list now returns its own total and the number with citations.
+- **Tool results didn't name the sub,** so one answer said "the insulation sub" instead of 31-W Insulation. Every per-sub result now carries the name.
+- **A partial name was assumed to be a project sub:** "Smith Electric" was answered as Allison-Smith. The prompt now says to ask (with an example that isn't in the eval), and the eval forbids "assuming you mean".
+- **"Possible" records read as needing GC action.** The tool now says they only need the GC when they carry red flags.
+- **Three expectations were wrong, not the model.** "Smith Electric" may be a clarify; Quality Roofing has no pending question after adjudication, so "why is it flagged?" is a false premise to correct; a "last 5 years" count can come from the year-by-year trend. Each change is in the git history of `questions.json`.
+
+20 questions is a smoke test, not a benchmark: it catches regressions in the guards and the prompt, and it's small enough to read every answer, which is how most of the issues above were found.
 
 ---
 

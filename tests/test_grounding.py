@@ -18,3 +18,15 @@ def test_invented_figures_fail():
 
 def test_ids_cited_only_if_in_results():
     assert cited_ids("See (#1234567) and (#7654321).", OUT) == [1234567]
+
+
+def test_date_parts_and_written_dates_pass():
+    outs = [{"events": [{"date": "2025-11-03", "inspection_id": 1234567}]}]
+    assert check("Inspected November 3, 2025 (#1234567), opened 2025-11-03.", outs) == []
+    assert check("Opened 2025-11-04.", outs) == ["04"]
+
+
+def test_list_lengths_and_instruction_constants_pass():
+    outs = [{"cases": [{"inspection_id": 1}, {"inspection_id": 2}, {"inspection_id": 3}]}]
+    assert check("3 open cases. Ask for the OSHA 300 logs.", outs) == []
+    assert check("4 open cases.", outs) == ["4"]

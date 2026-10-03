@@ -37,8 +37,11 @@ suggest asking the sub for its EMR, TRIR and OSHA 300 logs.
 - Open cases are provisional; say so when you mention them.
 - If the question could mean more than one sub (e.g. "the electrician" with two electrical subs), call \
 ask_which_sub instead of guessing.
+- Never assume a name that only partly matches means a project sub ("Lee Electric" is not "Lee Steel \
+Erectors"): ask whether they mean that sub or a company that isn't on the project.
 - For a company that is not on the project, you need its name, city and state before calling \
 lookup_company; ask for whatever is missing, and say its result is unconfirmed.
+- When you name a sub, use its name from the project list.
 - If a tool returns needs_confirmation, tell the foreman the GC has to confirm that sub's possible matches first.
 - If no tool can answer, call report_unanswerable and say what you can't answer."""
 
@@ -75,7 +78,7 @@ def _context(project: dict, subs: list[dict]) -> str:
 
 
 def _fallback_text(outputs: list) -> str:
-    """Deterministic rendering used when the model's figures can't be verified twice."""
+    """Deterministic rendering used when the model's answer can't be verified (or never arrives)."""
     for out in reversed(outputs):
         if "subs" in out:
             return "Here is the scorecard straight from the data:\n" + "\n".join(
@@ -83,6 +86,13 @@ def _fallback_text(outputs: list) -> str:
                 for r in out["subs"])
         if "reasons" in out:
             return f"{out['sub']}: {out['verdict']}\n" + "\n".join(f"- {r['label']}" for r in out["reasons"][:4])
+        rows = out.get("events") or out.get("cases") or out.get("inspections") or out.get("inspection_list")
+        if rows and isinstance(rows, list) and isinstance(rows[0], dict) and "inspection_id" in rows[0]:
+            return "Straight from the records:\n" + "\n".join(
+                f"- #{r['inspection_id']}, " + ", ".join(str(r[k]) for k in ("kind", "status", "date", "opened", "city",
+                                                                            "state") if r.get(k))
+                + (f", {r['citations']} citations" if isinstance(r.get("citations"), int) else "")
+                for r in rows[:8])
     return "I couldn't verify the figures for that answer. Please check the sub's detail page."
 
 
@@ -119,7 +129,7 @@ def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
 
     outputs, tool_log, clarify, status = [], [], [], "answered"
     usage = [0, 0]
-    retried, final, ungrounded = False, "", []
+    retried, nudged, final, ungrounded = False, False, "", []
     history_text = " ".join(h.get("content", "") for h in history) + " " + question
     for _ in range(MAX_TURNS):
         reply = provider.chat(system, messages, tools)
@@ -150,6 +160,14 @@ def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
                 break
             continue
         final = reply.text.strip()
+        if not final:  # the model occasionally ends its turn with no text: ask once, then fall back
+            if not nudged:
+                nudged = True
+                messages.append(provider.user_message("Please give the foreman your answer now, using only the "
+                                                      "tool results above."))
+                continue
+            final, status = _fallback_text(outputs), "guard_failed"
+            break
         ungrounded = grounding.check(final, outputs, history_text)
         if ungrounded and not retried:
             retried = True
@@ -161,8 +179,9 @@ def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
         if ungrounded:
             final, status = _fallback_text(outputs), "guard_failed"
         break
-    else:
-        final = final or _fallback_text(outputs)
+    else:  # out of turns: never return an empty or unverified answer
+        if not final or ungrounded:
+            final, status = _fallback_text(outputs), "guard_failed"
 
     if any(o.get("status") == "needs_confirmation" for o in outputs) and status == "answered":
         status = "needs_confirmation"

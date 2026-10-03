@@ -9,14 +9,14 @@
   {"q": "What's Dixie Roofing's injury rate?", "tools": ["injury_rates"], "status": "answered", "mentions": ["TRIR"]},
   {"q": "How's the mechanical sub doing?", "tools": ["ask_which_sub"], "status": "clarify", "mentions": []},
   {"q": "Is ABC Roofing in Dallas, TX any good?", "tools": ["lookup_company"], "status": "answered", "mentions": ["unconfirmed"]},
-  {"q": "What about Smith Electric?", "tools": [], "status": "answered", "mentions": ["city"]},
-  {"q": "Has Brasfield had any recent problems?", "tools": ["sub_summary", "red_flags"], "status": "answered", "mentions": ["10 years"]},
+  {"q": "What about Smith Electric?", "tools": [], "status": ["clarify", "answered"], "mentions": [], "mentions_any": ["city", "which sub"], "must_not": ["assuming you mean"]},
+  {"q": "Has Brasfield had any recent problems?", "tools": ["sub_summary", "red_flags"], "status": "answered", "mentions": [], "mentions_any": ["not cited", "wasn't cited", "was not cited", "no serious"]},
   {"q": "What fall protection citations does Fugate have?", "tools": ["citations_by_hazard"], "status": "answered", "mentions": ["fall"]},
   {"q": "Show me Barnhart's inspections since 2024", "tools": ["inspection_list"], "status": "answered", "mentions": []},
-  {"q": "Why is Quality Roofing flagged?", "tools": ["sub_summary"], "status": "needs_confirmation", "mentions": ["confirm"]},
+  {"q": "Why is Quality Roofing flagged?", "tools": ["sub_summary", "compare_subs"], "status": "answered", "mentions": [], "mentions_any": ["no osha record", "no record", "not flagged", "isn't flagged", "not counted"]},
   {"q": "What's the weather on site tomorrow?", "tools": ["report_unanswerable"], "status": "unanswerable", "mentions": []},
   {"q": "Which sub should I worry about most?", "tools": ["compare_subs"], "status": "answered", "mentions": []},
   {"q": "Did Cooper Steel get a willful violation?", "tools": ["red_flags", "sub_summary"], "status": "answered", "mentions": ["willful"]},
-  {"q": "How many inspections did Tindall have in the last 5 years?", "tools": ["sub_summary"], "status": "answered", "mentions": []},
+  {"q": "How many inspections did Tindall have in the last 5 years?", "tools": ["sub_summary", "trend_by_year", "inspection_list"], "status": "answered", "mentions": []},
   {"q": "Is McKenney's licence active?", "tools": ["injury_rates", "sub_summary"], "status": "answered", "mentions": []}
 ]
