@@ -17,7 +17,7 @@ MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "accident_outcome_unknown", "none"]
 AskStatus = Literal["answered", "clarify", "unanswerable", "guard_failed", "needs_confirmation", "no_api_key"]
 
-OSHA_INSPECTION_URL = "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}"
+OSHA_INSPECTION_URL = "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}.015"
 
 
 # --- projects and subs ---------------------------------------------------------------------------

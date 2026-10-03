@@ -1,8 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AskResponse } from "../api/types";
+import type { AskResponse, InspectionDetail } from "../api/types";
 import { toProjectDetail } from "../mock/derive";
 import { seedProjects } from "../mock/fixtures";
 import { AskPage } from "../pages/AskPage";
@@ -11,12 +11,51 @@ const api = vi.hoisted(() => ({
   getProject: vi.fn(),
   health: vi.fn(),
   ask: vi.fn(),
+  getInspection: vi.fn(),
 }));
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
   return { ...actual, MOCK_MODE: false, api };
 });
+
+const OSHA_URL = "https://www.osha.gov/ords/imis/establishment.inspection_detail?id=1598712.015";
+
+const inspection: InspectionDetail = {
+  activity_nr: 1598712,
+  open_date: "2022-03-14",
+  close_date: "2022-09-01",
+  is_open: false,
+  insp_type_label: "Fatality/catastrophe",
+  site_city: "Nashville",
+  site_state: "TN",
+  jurisdiction: "state_plan",
+  establishment_name: "SUMMIT RIDGE ROOFING LLC",
+  citations: 1,
+  serious_plus: 1,
+  penalty_initial: 15625,
+  penalty_current: 9375,
+  fatality_status: "fatality_cited",
+  shared_site_n: 0,
+  dq_flags: [],
+  url: OSHA_URL,
+  citation_rows: [
+    {
+      citation_id: "01001",
+      viol_type: "S",
+      viol_type_label: "Serious",
+      standard: "1926.501(b)(13)",
+      hazard_label: "Fall protection",
+      issued: "2022-08-20",
+      penalty_initial: 15625,
+      penalty_current: 9375,
+      is_deleted: false,
+      is_fta: false,
+      contested: false,
+    },
+  ],
+  accidents: [],
+};
 
 const answer = (r: Partial<AskResponse>): AskResponse => ({
   status: "answered",
@@ -58,18 +97,34 @@ describe("Foreman chat", () => {
     resolve(
       answer({
         answer: "**Summit Ridge Roofing**: fatality investigation with 3 serious citations, Mar 14, 2022.",
-        citations: [{ activity_nr: 1598712, url: "https://www.osha.gov/ords/imis/establishment.inspection_detail?id=1598712" }],
+        citations: [{ activity_nr: 1598712, url: OSHA_URL }],
         coverage: "Checked all 9 subs, all years.",
       }),
     );
 
     expect(await screen.findByText("Summit Ridge Roofing")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Inspection 1598712 on osha.gov/ })).toHaveAttribute(
-      "href",
-      "https://www.osha.gov/ords/imis/establishment.inspection_detail?id=1598712",
-    );
+    expect(screen.getByRole("button", { name: "Inspection 1598712: show the record" })).toBeInTheDocument();
     expect(screen.getByText("Checked all 9 subs, all years.")).toBeInTheDocument();
     expect(screen.queryByText(/checking the records/)).not.toBeInTheDocument();
+  });
+
+  it("opens a cited inspection's record in the app, with osha.gov as a secondary link", async () => {
+    const user = userEvent.setup();
+    api.ask.mockResolvedValue(answer({ answer: "See the fatality.", citations: [{ activity_nr: 1598712, url: OSHA_URL }] }));
+    api.getInspection.mockResolvedValue(inspection);
+    renderChat();
+
+    await user.click(screen.getByRole("button", { name: "Which subs had a fatality?" }));
+    await user.click(await screen.findByRole("button", { name: "Inspection 1598712: show the record" }));
+
+    expect(api.getInspection).toHaveBeenCalledWith(1598712);
+    const sheet = await screen.findByRole("dialog", { name: "Inspection 1598712" });
+    expect(await within(sheet).findByText(/Fall protection/)).toBeInTheDocument();
+    expect(within(sheet).getByText("SUMMIT RIDGE ROOFING LLC")).toBeInTheDocument();
+    expect(within(sheet).getByRole("link", { name: /Inspection 1598712 on osha.gov/ })).toHaveAttribute("href", OSHA_URL);
+
+    await user.click(within(sheet).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("turns clarify options into tap buttons that send 'I mean <name>' with history", async () => {

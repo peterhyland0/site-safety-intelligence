@@ -4,7 +4,7 @@ import { api, errorMessage } from "../api/client";
 import type { AskResponse, ChatTurn } from "../api/types";
 import { useApi } from "../api/useApi";
 import { IconArrowLeft, IconInfo, IconSend } from "../components/Icons";
-import { EvidenceChip } from "../components/ui";
+import { EvidenceChip } from "../components/InspectionSheet";
 import { Markdown } from "../lib/markdown";
 import { useTitle } from "../lib/useTitle";
 
@@ -345,7 +345,7 @@ function AssistantBubble({
             <p className="mb-1 text-xs text-muted">Inspections cited (osha.gov)</p>
             <div className="flex flex-wrap gap-1.5">
               {r.citations.map((c) => (
-                <EvidenceChip key={c.activity_nr} activityNr={c.activity_nr} url={c.url} />
+                <EvidenceChip key={c.activity_nr} activityNr={c.activity_nr} />
               ))}
             </div>
           </div>

@@ -8,7 +8,7 @@ A GC bidding a job pastes in its 10–15 subcontractors and gets a ranked scorec
   - Matching is automatic. The GC is only asked yes/no when an uncertain record carries a red flag.
   - "No OSHA record" is shown as *unknown*, never as clean.
 - **The foreman's view.** A phone chat that answers only from a fixed set of named queries.
-  - Every figure is checked against the query results, and every event links to osha.gov.
+  - Every figure is checked against the query results, and every cited inspection opens its record (citations, penalties, accident narrative), with a link to osha.gov.
   - If "the mechanical sub" could mean two subs, it asks which one.
 - **Data:** the last 10 years of OSHA construction enforcement: 322,607 inspections and 584,919 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
@@ -188,7 +188,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 **Guards enforced in code, not in the prompt** ([ssi/agent/foreman.py](ssi/agent/foreman.py)):
 1. **Precondition.** A sub with unanswered match questions returns `needs_confirmation` from every tool.
 2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Queries precompute every figure the model might quote (totals, counts with citations), and the prompt says "quote, never compute". The check accepts a date written out ("November 3, 2025" for `2025-11-03`) and the number of rows a tool returned. A failure gets one retry, then a deterministic fallback rendered from the tool results; an empty reply gets one nudge, then the same fallback.
-3. **Citations.** Inspection IDs become osha.gov links.
+3. **Citations.** Inspection IDs become chips that open the inspection's record in the app. Each record links to OSHA's page (`establishment.inspection_detail?id=<activity_nr>.015`) as a secondary check: osha.gov puts a human-verification step in front of it, so the app doesn't rely on it.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
 **Models.** Each role has its own model, chosen in `.env`:
@@ -260,7 +260,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - the grounding checker
 - a fake-model end-to-end foreman loop
 
-The web front end has 18 more (`npm test`).
+The web front end has 19 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.

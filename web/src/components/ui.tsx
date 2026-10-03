@@ -101,22 +101,6 @@ export function OshaLink({ url, activityNr, compact = false }: { url: string; ac
   );
 }
 
-/** Small tappable chip linking an activity number to osha.gov. */
-export function EvidenceChip({ url, activityNr }: { url: string; activityNr: number }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line-strong bg-surface px-2.5 text-xs font-medium text-accent tabular-nums hover:bg-accent-soft"
-      aria-label={`Inspection ${activityNr} on osha.gov (opens in a new tab)`}
-    >
-      {activityNr}
-      <IconExternal size={12} />
-    </a>
-  );
-}
-
 export function BackLink({ to, children }: { to: string; children: ReactNode }) {
   return (
     <Link to={to} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-accent hover:underline">

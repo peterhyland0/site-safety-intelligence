@@ -28,7 +28,7 @@ export type AskStatus =
 export type LookbackYears = 3 | 5 | 10;
 
 export const OSHA_INSPECTION_URL =
-  "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}";
+  "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}.015";
 
 export function oshaInspectionUrl(activityNr: number): string {
   return OSHA_INSPECTION_URL.replace("{activity_nr}", String(activityNr));

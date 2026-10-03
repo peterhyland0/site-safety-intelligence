@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api, errorMessage } from "../api/client";
-import { oshaInspectionUrl, type Bucket, type SubDetail } from "../api/types";
+import type { Bucket, SubDetail } from "../api/types";
 import { useApi } from "../api/useApi";
 import { HazardBreakdown, InjuryRates, LicenceCard, QuestionCard, RedFlagsTable } from "../components/EvidenceSections";
 import { IconChat, IconInfo, IconSpinner, IconTrash } from "../components/Icons";
@@ -9,7 +9,8 @@ import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
 import { TrendChart } from "../components/TrendChart";
-import { BackLink, ErrorBanner, EvidenceChip, InlineError, Loading, OshaLink, Section } from "../components/ui";
+import { EvidenceChip } from "../components/InspectionSheet";
+import { BackLink, ErrorBanner, InlineError, Loading, OshaLink, Section } from "../components/ui";
 import { VerdictChip } from "../components/VerdictChip";
 import { formatDate, formatMoney, formatRate, plural, yearRange } from "../lib/format";
 import { useAdjudication } from "../lib/useAdjudication";
@@ -175,7 +176,7 @@ export function SubDetailPage() {
                 {r.evidence.length ? (
                   <div className="mt-1.5 flex flex-wrap gap-1.5 pl-6" aria-label="Evidence inspections">
                     {r.evidence.slice(0, 12).map((nr) => (
-                      <EvidenceChip key={nr} activityNr={nr} url={oshaInspectionUrl(nr)} />
+                      <EvidenceChip key={nr} activityNr={nr} />
                     ))}
                     {r.evidence.length > 12 ? <span className="text-xs text-muted">+{r.evidence.length - 12} more</span> : null}
                   </div>

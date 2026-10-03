@@ -131,7 +131,7 @@ function InspectionItem({ row }: { row: InspectionRow }) {
   );
 }
 
-function InspectionDetailView({ detail }: { detail: InspectionDetail }) {
+export function InspectionDetailView({ detail }: { detail: InspectionDetail }) {
   return (
     <div className="space-y-3 text-sm">
       {detail.is_open ? (
@@ -188,7 +188,8 @@ function InspectionDetailView({ detail }: { detail: InspectionDetail }) {
       ) : null}
 
       <p>
-        <OshaLink url={detail.url} activityNr={detail.activity_nr} /> <span className="text-muted">for the official record.</span>
+        <OshaLink url={detail.url} activityNr={detail.activity_nr} />{" "}
+        <span className="text-muted">on osha.gov for the official record (it may ask you to confirm you're human first).</span>
       </p>
     </div>
   );
