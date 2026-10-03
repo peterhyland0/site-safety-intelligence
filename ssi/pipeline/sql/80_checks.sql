@@ -14,7 +14,7 @@ SELECT * FROM (VALUES
   ('red_flags_have_inspections', 'error', 0,
      (SELECT count(*) FROM wh.mart.red_flag r WHERE NOT EXISTS (SELECT 1 FROM wh.osha.inspection i WHERE i.activity_nr = r.activity_nr))::DOUBLE),
   ('construction_coded_inspections_all_in_scope', 'error', 0,
-     ((SELECT count(*) FROM insp_key WHERE is_naics23 OR is_sic_construction)
+     ((SELECT count(*) FROM insp_key WHERE in_window AND (is_naics23 OR is_sic_construction))
       - (SELECT count(*) FROM wh.osha.inspection WHERE scope_reason IN ('naics23', 'sic15_17')))::DOUBLE),
   -- a 3-digit SIC code is a 4-digit code missing its leading zero (0175 orchards), never construction
   ('short_sic_codes_in_scope', 'error', 0,
@@ -26,6 +26,16 @@ SELECT * FROM (VALUES
   -- a person's name must never count as a distinctive company name
   ('person_names_rated_distinctive', 'error', 0,
      (SELECT count(*) FROM wh.entity.core_stats WHERE is_person AND tier = 'distinctive')::DOUBLE),
+  -- no merged injury row may mix two people (different sex, or ages more than 2 years apart)
+  ('injury_rows_mixing_two_people', 'error', 0,
+     (SELECT count(*) FROM stg_injury WHERE person_conflict)::DOUBLE),
+  -- scope recounted directly from the keys: every in-window inspection that is construction-coded or belongs
+  -- to an establishment ever coded as construction (any year) is in osha.inspection, and nothing else is
+  ('scope_recount_matches', 'error', 0,
+     ((SELECT count(*) FROM insp_key k WHERE k.in_window AND (k.is_naics23 OR k.is_sic_construction
+          OR k.establishment_key IN (SELECT establishment_key FROM insp_key
+                                     WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder)))
+      - (SELECT count(*) FROM wh.osha.inspection))::DOUBLE),
   ('hazard_other_share_pct', 'warn', 5,
      (SELECT 100.0 * count(*) FILTER (WHERE hazard_code = 'other') / count(*) FROM wh.osha.violation WHERE NOT is_deleted)::DOUBLE),
   ('orphan_violations_quarantined', 'warn', 374,

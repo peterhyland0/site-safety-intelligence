@@ -1,5 +1,5 @@
 -- Accidents, injuries and the many-to-many link to inspections.
--- * Injury rows are copied once per employer inspected at the site; the true injury is (summary_nr, line_nr).
+-- * Injury rows are copied once per employer inspected at the site; a person is (summary_nr, line_nr, person_n).
 -- * The 2026 load batch puts the construction-operation code in const_op_cause instead of const_op
 --   (matched in 394 of 394 accidents present in both batches); it is moved back here.
 -- * Codes are stored as floats ('12.0'); age 0 means unknown.
@@ -29,19 +29,38 @@ SELECT accident_code AS code_family,
        accident_letter AS code_letter, accident_value AS label
 FROM raw_accident_lookup;
 
--- one row per injured person (merge the per-employer copies; fatal wins on degree)
+-- Which person is each row? OSHA copies each injury row once per employer inspected at the site, so
+-- (summary_nr, line_nr) is normally one person. But the 2026 load restarts line numbers for each
+-- employer, so the same (summary_nr, line_nr) can be two people (accident 221610942: a 43-year-old woman
+-- and a 47-year-old man, both killed). A new person starts when sex differs or age jumps by more than
+-- 2 years (1-2 years is a typo in one copy); rows without age/sex join the first person.
+CREATE OR REPLACE TABLE injury_person AS
+WITH fp AS (
+  SELECT DISTINCT summary_nr, line_nr, age, sex FROM stg_injury_rows WHERE age IS NOT NULL AND sex IS NOT NULL
+), steps AS (
+  SELECT *, CASE WHEN lag(sex) OVER w IS NULL OR lag(sex) OVER w <> sex OR age - lag(age) OVER w > 2
+                 THEN 1 ELSE 0 END AS new_person
+  FROM fp WINDOW w AS (PARTITION BY summary_nr, line_nr ORDER BY sex, age)
+)
+SELECT summary_nr, line_nr, age, sex,
+       sum(new_person) OVER (PARTITION BY summary_nr, line_nr ORDER BY sex, age ROWS UNBOUNDED PRECEDING) AS person_n
+FROM steps;
+
+-- one row per injured person (merge the per-employer copies; fatal wins on degree; ties pick the lowest code)
 CREATE OR REPLACE TABLE stg_injury AS
-SELECT summary_nr, line_nr,
-       max(age) AS age, any_value(sex) FILTER (WHERE sex IS NOT NULL) AS sex,
-       min(nullif(degree_code, 0)) AS degree_code,
-       any_value(nature_code) FILTER (WHERE nature_code > 0) AS nature_code,
-       any_value(body_code) FILTER (WHERE body_code > 0) AS body_code,
-       any_value(fat_cause_code) FILTER (WHERE fat_cause_code > 0) AS fat_cause_code,
-       any_value(const_op_code) FILTER (WHERE const_op_code > 0) AS const_op_code,
-       any_value(task_code) FILTER (WHERE task_code > 0) AS task_code,
-       max(fall_distance_ft) AS fall_distance_ft
-FROM stg_injury_rows
-GROUP BY ALL;
+SELECT r.summary_nr, r.line_nr, coalesce(p.person_n, 1) AS person_n,
+       max(r.age) AS age, min(r.sex) AS sex,
+       min(nullif(r.degree_code, 0)) AS degree_code,
+       min(r.nature_code) FILTER (WHERE r.nature_code > 0) AS nature_code,
+       min(r.body_code) FILTER (WHERE r.body_code > 0) AS body_code,
+       min(r.fat_cause_code) FILTER (WHERE r.fat_cause_code > 0) AS fat_cause_code,
+       min(r.const_op_code) FILTER (WHERE r.const_op_code > 0) AS const_op_code,
+       min(r.task_code) FILTER (WHERE r.task_code > 0) AS task_code,
+       max(r.fall_distance_ft) AS fall_distance_ft,
+       count(DISTINCT r.sex) > 1 OR max(r.age) - min(r.age) > 2 AS person_conflict  -- build check: never true
+FROM stg_injury_rows r
+LEFT JOIN injury_person p ON p.summary_nr = r.summary_nr AND p.line_nr = r.line_nr AND p.age = r.age AND p.sex = r.sex
+GROUP BY 1, 2, 3;
 
 CREATE OR REPLACE TABLE accident_link AS
 SELECT DISTINCT r.summary_nr, r.rel_insp_nr AS activity_nr
@@ -53,7 +72,7 @@ SELECT summary_nr, count(DISTINCT rel_insp_nr) AS employers_on_site FROM stg_inj
 
 CREATE OR REPLACE TABLE accident_narrative AS
 SELECT try_cast(summary_nr AS BIGINT) AS summary_nr,
-       string_agg(trim(abstract_text), ' ' ORDER BY try_cast(line_nr AS INTEGER)) AS narrative
+       string_agg(trim(abstract_text), ' ' ORDER BY try_cast(line_nr AS INTEGER), abstract_text) AS narrative
 FROM raw_accident_abstract GROUP BY 1;
 
 -- injuries whose accident record is missing (about 15%) keep a stub accident row, flagged, so the
@@ -86,13 +105,13 @@ LEFT JOIN lookup pt ON pt.code_family = 'PTYP' AND pt.code_letter = a.project_ty
 LEFT JOIN lookup eu ON eu.code_family = 'ENDU' AND eu.code_letter = a.const_end_use;
 
 INSERT INTO quarantine
-SELECT 'accident_injury', summary_nr || '/' || line_nr, 'injury references an accident record that does not exist (kept with a stub accident row)'
+SELECT 'accident_injury', summary_nr || '/' || line_nr || '/' || person_n, 'injury references an accident record that does not exist (kept with a stub accident row)'
 FROM stg_injury WHERE summary_nr NOT IN (SELECT try_cast(summary_nr AS BIGINT) FROM raw_accident);
 
 CREATE OR REPLACE TABLE wh.osha.accident AS SELECT * FROM stg_accident;
 CREATE OR REPLACE TABLE wh.osha.accident_inspection AS SELECT * FROM accident_link;
 CREATE OR REPLACE TABLE wh.osha.injury AS
-SELECT j.summary_nr, j.line_nr, j.age, j.sex,
+SELECT j.summary_nr, j.line_nr, j.person_n, j.age, j.sex,
        CASE j.degree_code WHEN 1 THEN 'fatality' WHEN 2 THEN 'hospitalized' WHEN 3 THEN 'not hospitalized' END AS degree,
        nat.label AS nature, bd.label AS body_part, fc.label AS fatality_cause, op.label AS construction_operation,
        j.fall_distance_ft

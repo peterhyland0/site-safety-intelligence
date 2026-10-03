@@ -5,7 +5,9 @@
 -- scope_reason records why each inspection is in.
 --
 -- History window: only inspections opened in the last {{HISTORY_YEARS}} years before the newest inspection
--- in the data are kept (0 = every year back to 1972). Set with SSI_HISTORY_YEARS.
+-- in the data are kept (0 = every year back to 1972). Set with SSI_HISTORY_YEARS. Whether an establishment
+-- is a construction company is decided from ALL years first: codes drift, and a contractor coded as
+-- construction in 2012 but differently since must keep its recent inspections.
 CREATE OR REPLACE TABLE history_window AS
 SELECT CASE WHEN {{HISTORY_YEARS}} > 0 THEN (max_open - INTERVAL ({{HISTORY_YEARS}}) YEAR)::DATE
             ELSE DATE '1900-01-01' END AS since
@@ -16,11 +18,11 @@ SELECT * FROM raw_inspection
 WHERE try_cast(left(open_date, 10) AS DATE) >= (SELECT since FROM history_window);
 CREATE OR REPLACE TABLE name_clean AS
 SELECT estab_name, clean_name(estab_name) AS clean_name
-FROM (SELECT DISTINCT estab_name FROM raw_inspection_window);
+FROM (SELECT DISTINCT estab_name FROM raw_inspection);
 
 CREATE OR REPLACE TABLE addr_clean AS
 SELECT mail_street, addr_key(mail_street) AS addr_key, clean_addr(mail_street) AS addr_clean, addr_unit(mail_street) AS addr_unit
-FROM (SELECT DISTINCT mail_street FROM raw_inspection_window);
+FROM (SELECT DISTINCT mail_street FROM raw_inspection);
 
 CREATE OR REPLACE TABLE insp_key AS
 SELECT i.activity_nr,
@@ -32,21 +34,27 @@ SELECT i.activity_nr,
        coalesce(i.naics_code LIKE '23%', false) AS is_naics23,
        -- SIC codes are 4 digits; some loads drop the leading zero ('175' is 0175 orchards, not 17xx construction)
        coalesce(left(lpad(trim(i.sic_code), 4, '0'), 2) IN ('15', '16', '17'), false) AS is_sic_construction,
-       is_placeholder(n.clean_name) AS is_placeholder
-FROM raw_inspection_window i
+       is_placeholder(n.clean_name) AS is_placeholder,
+       coalesce(try_cast(left(i.open_date, 10) AS DATE) >= (SELECT since FROM history_window), false) AS in_window
+FROM raw_inspection i
 LEFT JOIN name_clean n ON n.estab_name IS NOT DISTINCT FROM i.estab_name
 LEFT JOIN addr_clean a ON a.mail_street IS NOT DISTINCT FROM i.mail_street;
 
 -- Placeholder employers ("UNKNOWN") never pull in other inspections: their key isn't a real company.
 CREATE OR REPLACE TABLE construction_keys AS
-SELECT DISTINCT establishment_key FROM insp_key
-WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder;
+SELECT establishment_key, bool_or(in_window) AS coded_in_window
+FROM insp_key
+WHERE (is_naics23 OR is_sic_construction) AND NOT is_placeholder
+GROUP BY 1;
 
+-- same_establishment: coded as construction on another in-window inspection;
+-- construction_history: coded as construction only before the window
 CREATE OR REPLACE TABLE scope AS
 SELECT k.activity_nr, k.establishment_key,
        CASE WHEN k.is_naics23 THEN 'naics23'
             WHEN k.is_sic_construction THEN 'sic15_17'
-            ELSE 'same_establishment' END AS scope_reason
+            WHEN c.coded_in_window THEN 'same_establishment'
+            ELSE 'construction_history' END AS scope_reason
 FROM insp_key k
-WHERE (k.is_naics23 OR k.is_sic_construction)
-   OR k.establishment_key IN (SELECT establishment_key FROM construction_keys);
+LEFT JOIN construction_keys c USING (establishment_key)
+WHERE k.in_window AND (k.is_naics23 OR k.is_sic_construction OR c.establishment_key IS NOT NULL);

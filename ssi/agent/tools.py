@@ -7,7 +7,7 @@ from ssi.matching import run as M
 from ssi.queries import core as Q
 
 RED_FLAG_KINDS = ["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited", "fatcat_not_cited",
-                  "willful", "repeat", "fta"]
+                  "fatcat_site_cited", "willful", "repeat", "fta"]
 
 
 def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
@@ -149,7 +149,7 @@ class Toolbox:
     def t_fatality_history(self, sub_id: str) -> dict:
         d = self.data(sub_id)
         fat = [f for f in d["flags"] if f.kind in ("fatality_cited", "fatality_inspected_not_cited", "fatality_pending",
-                                                  "fatcat_cited", "fatcat_not_cited")]
+                                                  "fatcat_cited", "fatcat_not_cited", "fatcat_site_cited")]
         out = []
         for f in fat[:10]:
             det = Q.inspection_detail(f.activity_nr)

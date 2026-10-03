@@ -21,4 +21,4 @@ SELECT DISTINCT ON (source, number) source, number, entity_id, name, dba, clean_
        CASE WHEN dba IS NOT NULL THEN clean_name(dba) END AS dba_clean,
        address, addr_key(address) AS addr_key, city, state, zip5, status, expires, specialty
 FROM licence_rows WHERE number IS NOT NULL
-ORDER BY source, number, expires DESC NULLS LAST;
+ORDER BY source, number, expires DESC NULLS LAST, status, name, entity_id, address;

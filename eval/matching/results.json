@@ -3,9 +3,9 @@
     "pairs": 300,
     "positives": 150,
     "negatives": 150,
-    "matched_precision": 0.846,
-    "matched_recall": 0.66,
-    "candidate_recall": 0.94,
+    "matched_precision": 0.847,
+    "matched_recall": 0.667,
+    "candidate_recall": 0.947,
     "positives_left_uncertain": 0.267,
     "false_exclusion_rate": 0.013,
     "negatives_kept_out": 0.88
@@ -13,14 +13,14 @@
   "by_kind": {
     "different_name": {
       "matched": 1,
-      "uncertain": 4,
+      "uncertain": 5,
       "excluded": 2,
-      "not_found": 9
+      "not_found": 8
     },
     "same_core_different_ein": {
       "matched": 12,
-      "uncertain": 40,
-      "excluded": 92,
+      "uncertain": 43,
+      "excluded": 89,
       "not_found": 0
     },
     "same_name_different_ein": {
@@ -30,11 +30,11 @@
       "not_found": 0
     },
     "same_name_other_address": {
-      "matched": 98,
-      "uncertain": 36,
+      "matched": 99,
+      "uncertain": 35,
       "excluded": 0,
       "not_found": 0
     }
   },
-  "seconds": 96
+  "seconds": 95
 }

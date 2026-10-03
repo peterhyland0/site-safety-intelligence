@@ -16,19 +16,25 @@ WITH base AS (
          any_value(addr_key) AS addr_key,
          any_value(mail_zip) AS zip5,
          any_value(mail_state) AS state,
-         mode(estab_name_raw) AS display_name,
-         mode(addr_clean) AS address,
-         mode(mail_city) AS city,
+         -- most common value; ties broken alphabetically (mode() picks arbitrarily between ties)
+         first(estab_name_raw ORDER BY name_n DESC, estab_name_raw) AS display_name,
+         first(addr_clean ORDER BY addr_n DESC NULLS LAST, addr_clean NULLS LAST) AS address,
+         first(mail_city ORDER BY city_n DESC NULLS LAST, mail_city NULLS LAST) AS city,
          list(DISTINCT estab_name_raw ORDER BY estab_name_raw)[1:25] AS name_variants,
          min(open_date) AS first_seen,
          max(open_date) AS last_seen,
          count(*) AS insp_n,
-         count(*) FILTER (WHERE scope_reason <> 'same_establishment') AS construction_insp_n,
+         count(*) FILTER (WHERE scope_reason IN ('naics23', 'sic15_17')) AS construction_insp_n,
          list(DISTINCT site_state ORDER BY site_state) FILTER (WHERE site_state IS NOT NULL) AS site_states
-  FROM wh.osha.inspection GROUP BY 1
+  FROM (SELECT *,
+               count(*) OVER (PARTITION BY establishment_key, estab_name_raw) AS name_n,
+               count(addr_clean) OVER (PARTITION BY establishment_key, addr_clean) AS addr_n,
+               count(mail_city) OVER (PARTITION BY establishment_key, mail_city) AS city_n
+        FROM wh.osha.inspection)
+  GROUP BY 1
 ),
-naics AS (SELECT establishment_key, arg_max(naics4, n) AS naics4 FROM est_naics GROUP BY 1),
-sic AS (SELECT establishment_key, arg_max(sic4, n) AS sic4 FROM est_sic GROUP BY 1)
+naics AS (SELECT establishment_key, first(naics4 ORDER BY n DESC, naics4) AS naics4 FROM est_naics GROUP BY 1),
+sic AS (SELECT establishment_key, first(sic4 ORDER BY n DESC, sic4) AS sic4 FROM est_sic GROUP BY 1)
 SELECT b.*,
        name_core(b.clean_name) AS name_core,
        legal_part(b.clean_name) AS legal_name,

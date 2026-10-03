@@ -23,7 +23,7 @@ SELECT try_cast(id AS BIGINT) AS ita_id,
        created_timestamp
 FROM ita_raw
 QUALIFY row_number() OVER (PARTITION BY establishment_id, try_cast(try_cast(year_filing_for AS DOUBLE) AS INTEGER)
-                           ORDER BY try_cast(id AS BIGINT) DESC) = 1;
+                           ORDER BY try_cast(id AS BIGINT) DESC, created_timestamp DESC, hash(ita_raw)) = 1;  -- ids repeat in 2021
 
 -- EINs shared by many unrelated company names are placeholders, not identities
 CREATE OR REPLACE TABLE ita_junk_ein AS

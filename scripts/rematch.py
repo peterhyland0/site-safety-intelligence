@@ -39,6 +39,13 @@ def plan(sub: dict, project_state: str | None) -> list[dict]:
             continue  # a new lookalike that stays out changes nothing the GC sees
         changes.append({"key": k, "name": x["row"]["display_name"], "place": f"{x['row']['city']}, {x['row']['state']}",
                         "old": f"{old['bucket']}/{old['rule_id']}" if old else "-", "new": f"{new_bucket}/{d.rule_id}"})
+    # rule decisions that would disappear: the record left the data (scope change) or the search
+    seen = {x["row"]["establishment_key"] for x in res["decisions"]}
+    for k, old in stored.items():
+        if old["method"] == "rule" and old["bucket"] != "excluded" and k not in seen:
+            ev = old["evidence"] or {}
+            changes.append({"key": k, "name": ev.get("name") or k[:8], "place": f"{ev.get('city')}, {ev.get('state')}",
+                            "old": f"{old['bucket']}/{old['rule_id']}", "new": "removed"})
     flags = C.red_flag_counts([ch["key"] for ch in changes])
     for ch in changes:
         ch["red_flags"] = flags.get(ch["key"], 0)

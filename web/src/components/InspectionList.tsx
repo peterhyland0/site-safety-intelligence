@@ -11,6 +11,7 @@ const FATALITY_LABEL: Record<FatalityStatus, string | null> = {
   fatality_pending: "Fatality/catastrophe investigation open, outcome not yet published",
   fatcat_cited: "Fatality/catastrophe investigation, citations issued",
   fatcat_not_cited: "Fatality/catastrophe investigation, no serious citations",
+  fatcat_site_cited: "Cited on a site where a fatality/catastrophe is under investigation",
   accident_outcome_unknown: "Accident inspection, outcome not in OSHA's accident data",
   none: null,
 };

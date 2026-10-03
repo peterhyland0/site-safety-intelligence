@@ -107,7 +107,7 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 |---|---|---|
 | No company ID | 266k distinct names across 377k construction inspections since 2015 | Establishments + matching (§3) |
 | Per-inspection IDs inside names | 17.6% of names, e.g. `WA317965935 - BARNHART CRANE`; mostly WA, NC and OR | Stripped by a cleaning rule; measured per rule each build |
-| Industry codes drift | 44% of firms with 5+ inspections carry several NAICS codes; SIC→NAICS changed in the 2000s | Scope = every inspection of any establishment with ≥1 construction-coded inspection (+175k inspections recovered) |
+| Industry codes drift | 44% of firms with 5+ inspections carry several NAICS codes; SIC→NAICS changed in the 2000s | Scope = every inspection of any establishment with ≥1 construction-coded inspection **in any year** (+175k inspections recovered) |
 | Accident detail is stale | Accident records end 2025-03-28. Coverage of accident-type inspections falls from 85% (2017–19) to 0% (2026) | Fatality status from the inspection type when there's no detail; the coverage note says so |
 | Shared-site duplication | 32% of construction inspections share a site and date with another employer | `accident_inspection` M:N; "cited vs not cited" |
 | Recent data is provisional | 65% of 2026 and 49% of 2025 citations are from open cases; settlements cut penalties 18–36% | Open cases flagged "provisional"; initial *and* current penalty shown |
@@ -304,6 +304,10 @@ A GC would most likely treat each as one company. Precision is lower on 10-year 
 | Fatality/catastrophe investigations after OSHA's accident detail ends (586) had no flag | Flagged as pending or not cited; a build check requires a flag on every one |
 | "Recent" by calendar year dropped late-2016 events from 10-year windows | Windows compare dates |
 | Farm SIC codes missing a leading zero ("175") counted as construction | Codes padded to 4 digits; a build check rejects short codes |
+| Rebuilding from the same files changed 2,771 companies' main trade and the benchmarks (ties broken at random) | Every tie has a fixed order; each build records fingerprints of its inputs, code and tables, and warns if the same inputs ever build different tables (two consecutive builds: identical) |
+| The 10-year cut was applied before deciding "construction company?", dropping 5,817 recent inspections of firms coded as construction only in earlier years | Scope is decided from every year, then the last 10 years are kept (`construction_history`); a build check recounts scope directly |
+| After OSHA's accident detail ends, other employers cited at a fatality site lost the link | Cited on the same site and day as an undetailed fatality/catastrophe inspection: Review (72 employers) |
+| The 2026 load restarts injury line numbers per employer, merging different victims (two deaths shown as one) | A person is split out when sex or age (by more than 2 years) differs; a build check fails on any mixed row |
 
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 

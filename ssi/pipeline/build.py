@@ -10,6 +10,7 @@ every 'error' check passes, so a failed build never replaces the live data.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -118,6 +119,58 @@ def table_counts(con) -> dict:
     return {name: con.execute(f"SELECT count(*) FROM wh.{name}").fetchone()[0] for name, _ in rows}
 
 
+# Tables compared build-to-build: same raw files + same code must give identical tables (M3 in the review).
+CHECKSUM_TABLES = ["osha.inspection", "osha.violation", "osha.accident", "osha.accident_inspection", "osha.injury",
+                   "entity.establishment", "entity.core_stats", "mart.establishment_year", "mart.red_flag",
+                   "mart.trade_benchmark", "ref_ext.ita_establishment_year", "ref_ext.licence", "entity.ref_link"]
+
+
+def inputs_fingerprint(raw_dir: Path) -> str:
+    """The raw files this build read (path, size, modification time)."""
+    h = hashlib.sha256()
+    for p in sorted(raw_dir.rglob("*.csv")):
+        st = p.stat()
+        h.update(f"{p.relative_to(raw_dir)}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()[:16]
+
+
+def code_fingerprint() -> str:
+    """The pipeline code and reference data, plus the settings that change outputs."""
+    h = hashlib.sha256()
+    files = [*config.SQL_DIR.glob("*.sql"), *config.REF_DIR.glob("*.csv"), *Path(__file__).parent.parent.joinpath("cleaning").glob("*"),
+             Path(__file__)]
+    for p in sorted(f for f in files if f.is_file()):
+        h.update(p.name.encode())
+        h.update(p.read_bytes())
+    h.update(f"{config.HISTORY_YEARS}|{config.DISTINCTIVE_MAX_VARIETY}|{config.GENERIC_MIN_VARIETY}|"
+             f"{config.SHARED_OFFICE_MIN_CORES}|{config.BENCHMARK_MIN_RATED_INSPECTIONS}".encode())
+    return h.hexdigest()[:16]
+
+
+def table_checksums(con) -> dict[str, str]:
+    """Row count and an order-independent hash of every row, per table."""
+    out = {}
+    for t in CHECKSUM_TABLES:
+        try:
+            n, s = con.execute(f"SELECT count(*), coalesce(sum(hash(x)), 0)::VARCHAR FROM wh.{t} x").fetchone()
+        except duckdb.Error:
+            continue
+        out[t] = f"{n}:{s}"
+    return out
+
+
+def previous_build_info(build_dir: Path) -> dict | None:
+    ptr = build_dir / "CURRENT"
+    if not ptr.exists() or not (build_dir / ptr.read_text().strip()).exists():
+        return None
+    try:
+        with duckdb.connect(str(build_dir / ptr.read_text().strip()), read_only=True) as c:
+            cols = [d[0] for d in c.execute("SELECT * FROM mart.build_info").description]
+            return dict(zip(cols, c.execute("SELECT * FROM mart.build_info").fetchone()))
+    except duckdb.Error:
+        return None
+
+
 def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_scratch: bool = False) -> dict:
     raw_dir = data_dir / "raw"
     build_dir = data_dir / "build"
@@ -171,11 +224,24 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     report["tables"] = table_counts(con)
     history_since = con.execute("SELECT since::VARCHAR FROM history_window").fetchone()[0]
     report["history_since"] = history_since
+    fingerprints = {"inputs_fingerprint": inputs_fingerprint(raw_dir), "code_fingerprint": code_fingerprint()}
+    checksums = table_checksums(con)
+    report.update(fingerprints)
+    # Same raw files and same code must build identical tables; a difference means a non-deterministic step.
+    prev = previous_build_info(build_dir)
+    if prev and prev.get("inputs_fingerprint") == fingerprints["inputs_fingerprint"] \
+            and prev.get("code_fingerprint") == fingerprints["code_fingerprint"]:
+        prev_sums = json.loads(prev.get("table_checksums") or "{}")
+        differ = sorted(t for t in checksums if t in prev_sums and prev_sums[t] != checksums[t])
+        report["checks"].append({"name": "rebuild_identical_to_previous", "severity": "warn", "expected": 0,
+                                 "actual": len(differ), "pass": not differ, "tables": differ})
     con.execute("""CREATE OR REPLACE TABLE wh.mart.build_info AS
                    SELECT ? AS build_id, ?::TIMESTAMP AS built_at, ?::DATE AS data_as_of,
-                          ?::DATE AS accident_detail_through, ?::DATE AS history_since""",
+                          ?::DATE AS accident_detail_through, ?::DATE AS history_since,
+                          ? AS inputs_fingerprint, ? AS code_fingerprint, ? AS table_checksums""",
                 [build_id, datetime.now(timezone.utc).replace(tzinfo=None), data_as_of,
-                 con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0], history_since])
+                 con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0], history_since,
+                 fingerprints["inputs_fingerprint"], fingerprints["code_fingerprint"], json.dumps(checksums)])
     con.execute("DETACH wh")
     con.close()
     # Persist the cleaning macros in the warehouse itself: GC input is then cleaned by exactly the

@@ -75,3 +75,10 @@ def test_closed_fatcat_investigation_without_serious_citations_is_review_while_r
     from datetime import date
     f = RedFlagFact("fatcat_not_cited", 2025, 4, False, when=date(2025, 6, 1))
     assert evaluate(facts(as_of=date(2026, 9, 23), red_flags=[f]))[0] == "review"
+
+
+def test_cited_at_a_site_under_fatality_investigation_is_review():
+    from datetime import date
+    f = RedFlagFact("fatcat_site_cited", 2026, 5, True, when=date(2026, 2, 3))
+    v, r = evaluate(facts(as_of=date(2026, 9, 23), red_flags=[f]))
+    assert v == "review" and r[0].code == "R_fatcat_site_cited"

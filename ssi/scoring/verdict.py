@@ -27,8 +27,10 @@ HIGH_KINDS = {
 
 # Fatality investigations this employer wasn't cited in (or not yet): they matter only while recent.
 SITE_KINDS = {
-    "fatality_inspected_not_cited": "On a site where a fatality was investigated, but not cited for serious violations",
-    "fatcat_not_cited": "Fatality/catastrophe investigation, not cited for serious violations (details not published)",
+    "fatality_inspected_not_cited": ("R_fatality_site", "On a site where a fatality was investigated, but not cited for serious violations"),
+    "fatcat_not_cited": ("R_fatcat_site", "Fatality/catastrophe investigation, not cited for serious violations (details not published)"),
+    "fatcat_site_cited": ("R_fatcat_site_cited", ("Cited for serious violations on a site where another employer's "
+                                                  "fatality/catastrophe investigation is open or unpublished")),
 }
 
 
@@ -143,11 +145,10 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
         add("R_fatality_pending", f"Fatality/catastrophe investigation still open; outcome not yet published ({_years(pending)})",
             "review", pending, count=len(pending))
     # Not this sub's offence, so it only matters while recent (cited fatalities keep the unlimited lookback)
-    for kind, text in SITE_KINDS.items():
+    for kind, (code, text) in SITE_KINDS.items():
         hits = [x for x in f.red_flags if x.kind == kind and recent(x)]
         if hits:
-            add("R_fatality_site" if kind == "fatality_inspected_not_cited" else "R_fatcat_site",
-                f"{text} ({_years(hits)})", "review", hits, count=len(hits))
+            add(code, f"{text} ({_years(hits)})", "review", hits, count=len(hits))
     if len(repeat_insp) == 1:
         add("R_repeat", f"Repeat violation in the last {f.window_years} years", "review", repeat_window)
     old_repeat = [x for x in f.red_flags if x.kind == "repeat" and not in_window(x)]

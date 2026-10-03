@@ -1,12 +1,12 @@
 # Matching evaluation (silver labels from ITA EINs)
 
-300 pairs (150 positive, 150 negative), 96 s.
+300 pairs (150 positive, 150 negative), 95 s.
 
 | Metric | Value |
 |---|---|
-| matched_precision | 0.846 |
-| matched_recall | 0.66 |
-| candidate_recall | 0.94 |
+| matched_precision | 0.847 |
+| matched_recall | 0.667 |
+| candidate_recall | 0.947 |
 | positives_left_uncertain | 0.267 |
 | false_exclusion_rate | 0.013 |
 | negatives_kept_out | 0.88 |
@@ -15,10 +15,10 @@
 
 | Pair type | matched | uncertain | excluded | not found |
 |---|---|---|---|---|
-| different_name | 1 | 4 | 2 | 9 |
-| same_core_different_ein | 12 | 40 | 92 | 0 |
+| different_name | 1 | 5 | 2 | 8 |
+| same_core_different_ein | 12 | 43 | 89 | 0 |
 | same_name_different_ein | 6 | 0 | 0 | 0 |
-| same_name_other_address | 98 | 36 | 0 | 0 |
+| same_name_other_address | 99 | 35 | 0 | 0 |
 
 ## Disagreements with the silver label (first 20)
 
@@ -45,4 +45,4 @@
 | different | HENKEL CONSTRUCTION (MASON CITY, IA) | HENKEL GENERAL CONSTRUCTION (MASON CITY, IA) | matched | M1b |
 | different | DR HORTON (CHARLOTTE, NC) | DR HORTON (RALEIGH, NC) | matched | M1 |
 
-LangSmith experiment: `rules-291f192d`
+LangSmith experiment: `rules-1d9694f3`
