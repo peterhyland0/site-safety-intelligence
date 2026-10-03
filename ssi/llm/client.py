@@ -16,7 +16,9 @@ def provider_name() -> str:
 
 def available() -> bool:
     if provider_name() == "openai_compat":
-        return bool(os.environ.get("SSI_LLM_BASE_URL"))
+        return bool(os.environ.get("SSI_LLM_BASE_URL")) and (
+            "modal" not in os.environ.get("SSI_LLM_BASE_URL", "")
+            or bool(os.environ.get("SSI_LLM_MODAL_KEY") and os.environ.get("SSI_LLM_MODAL_SECRET")))
     return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
 
@@ -25,7 +27,7 @@ def get() -> Provider:
     if _provider is None:
         if provider_name() == "openai_compat":
             from ssi.llm.openai_compat_provider import OpenAICompatProvider
-            _provider = OpenAICompatProvider(os.environ.get("SSI_LLM_MODEL", "glm-5.3"), os.environ["SSI_LLM_BASE_URL"])
+            _provider = OpenAICompatProvider(os.environ.get("SSI_LLM_MODEL") or None, os.environ["SSI_LLM_BASE_URL"])
         else:
             from ssi.llm.anthropic_provider import AnthropicProvider
             _provider = AnthropicProvider(config.MODEL, effort=os.environ.get("SSI_LLM_EFFORT", "low"))

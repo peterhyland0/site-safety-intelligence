@@ -14,13 +14,15 @@ from ssi.llm.base import Reply, ToolCall, ToolSpec, Usage
 class OpenAICompatProvider:
     name = "openai_compat"
 
-    def __init__(self, model: str, base_url: str):
-        self.model = model
+    def __init__(self, model: str | None, base_url: str):
         headers = {}
         if os.environ.get("SSI_LLM_MODAL_KEY") and os.environ.get("SSI_LLM_MODAL_SECRET"):
             headers = {"Modal-Key": os.environ["SSI_LLM_MODAL_KEY"], "Modal-Secret": os.environ["SSI_LLM_MODAL_SECRET"]}
         client = OpenAI(base_url=base_url, api_key=os.environ.get("SSI_LLM_API_KEY", "unused"),
                         default_headers=headers, timeout=90.0, max_retries=2)
+        if not model:  # ask the endpoint which model it serves (vLLM/SGLang-style servers list one)
+            model = client.models.list().data[0].id
+        self.model = model
         if os.environ.get("LANGSMITH_API_KEY"):
             from langsmith.wrappers import wrap_openai
             client = wrap_openai(client)
