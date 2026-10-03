@@ -1,4 +1,16 @@
-"""Pick the LLM provider from env vars and enforce a daily token budget."""
+"""Pick the LLM provider per role from env vars, and enforce a daily token budget.
+
+Two roles, each with its own model:
+  foreman      - plain-English Q&A with tool calls (multi-step; benefits from a strong agentic model)
+  adjudicator  - short same/different/unsure judgements on uncertain matches (many calls; a fast model)
+
+For an OpenAI-compatible endpoint (e.g. models served on Modal):
+  SSI_LLM_PROVIDER=openai_compat
+  SSI_LLM_FOREMAN_BASE_URL / SSI_LLM_FOREMAN_MODEL
+  SSI_LLM_ADJUDICATOR_BASE_URL / SSI_LLM_ADJUDICATOR_MODEL
+  (SSI_LLM_BASE_URL / SSI_LLM_MODEL are the fallback for either role; a blank model = the one the endpoint serves)
+  SSI_LLM_MODAL_KEY / SSI_LLM_MODAL_SECRET for Modal proxy auth (shared by both endpoints)
+For Claude: ANTHROPIC_API_KEY (+ SSI_MODEL)."""
 from __future__ import annotations
 
 import os
@@ -7,35 +19,42 @@ from datetime import date
 from ssi import config
 from ssi.llm.base import Provider
 
-_provider: Provider | None = None
+ROLES = ("foreman", "adjudicator")
+_providers: dict[str, Provider] = {}
 
 
 def provider_name() -> str:
     return os.environ.get("SSI_LLM_PROVIDER", "anthropic")
 
 
-def available() -> bool:
+def _role_env(role: str, name: str) -> str | None:
+    return os.environ.get(f"SSI_LLM_{role.upper()}_{name}") or os.environ.get(f"SSI_LLM_{name}") or None
+
+
+def available(role: str = "foreman") -> bool:
     if provider_name() == "openai_compat":
-        return bool(os.environ.get("SSI_LLM_BASE_URL")) and (
-            "modal" not in os.environ.get("SSI_LLM_BASE_URL", "")
-            or bool(os.environ.get("SSI_LLM_MODAL_KEY") and os.environ.get("SSI_LLM_MODAL_SECRET")))
+        url = _role_env(role, "BASE_URL")
+        if not url:
+            return False
+        if "modal" in url:
+            return bool(os.environ.get("SSI_LLM_MODAL_KEY") and os.environ.get("SSI_LLM_MODAL_SECRET"))
+        return True
     return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
 
-def get() -> Provider:
-    global _provider
-    if _provider is None:
+def get(role: str = "foreman") -> Provider:
+    if role not in _providers:
         if provider_name() == "openai_compat":
             from ssi.llm.openai_compat_provider import OpenAICompatProvider
-            _provider = OpenAICompatProvider(os.environ.get("SSI_LLM_MODEL") or None, os.environ["SSI_LLM_BASE_URL"])
+            _providers[role] = OpenAICompatProvider(_role_env(role, "MODEL"), _role_env(role, "BASE_URL"))
         else:
             from ssi.llm.anthropic_provider import AnthropicProvider
-            _provider = AnthropicProvider(config.MODEL, effort=os.environ.get("SSI_LLM_EFFORT", "low"))
-    return _provider
+            _providers[role] = AnthropicProvider(config.MODEL, effort=os.environ.get("SSI_LLM_EFFORT", "low"))
+    return _providers[role]
 
 
-def model_label() -> str:
-    return f"{provider_name()}:{get().model}" if available() else "none"
+def model_label(role: str = "foreman") -> str:
+    return f"{provider_name()}:{get(role).model}" if available(role) else "none"
 
 
 def budget_ok() -> bool:

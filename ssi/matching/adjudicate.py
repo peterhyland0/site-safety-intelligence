@@ -23,6 +23,11 @@ def _clusters(rows: list[dict]) -> dict[tuple, list[dict]]:
     return out
 
 
+def _ai_label() -> str:
+    from ssi.llm import client as llm
+    return "ai:" + llm.model_label("adjudicator")
+
+
 def question_text(sub: dict, ev_rows: list[dict]) -> str:
     ev = ev_rows[0]["evidence"] or {}
     first = min((r["evidence"]["years"][0] or "") for r in ev_rows)[:4]
@@ -77,7 +82,7 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
             c.execute("""UPDATE app.sub_match SET bucket = %s, method = %s, confidence = %s, rationale = %s,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
                          WHERE sub_id = %s AND establishment_key = ANY(%s)""",
-                      [bucket, method, conf, rationale, f"ai:{config.MODEL}" if method.startswith("llm") else "rules",
+                      [bucket, method, conf, rationale, _ai_label() if method.startswith("llm") else "rules",
                        sub_id, keys])
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])
     return stats

@@ -44,7 +44,7 @@ SCHEMA = {
 
 
 def available() -> bool:
-    return llm.available()
+    return llm.available("adjudicator")
 
 
 def packet_text(packet: dict) -> str:
@@ -93,7 +93,7 @@ def decide(packet: dict) -> dict | None:
     """Returns {decision, confidence, rationale, evidence_ids} or {rejected: True, ...}; cached."""
     if not llm.budget_ok():
         return None
-    provider = llm.get()
+    provider = llm.get("adjudicator")
     key = hashlib.sha256((provider.model + "|" + json.dumps(packet["lines"], sort_keys=True)).encode()).hexdigest()
     with pg.conn() as c:
         hit = c.execute("SELECT response FROM app.adjudication_cache WHERE packet_hash = %s", [key]).fetchone()

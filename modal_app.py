@@ -35,8 +35,8 @@ app = modal.App("site-safety-intelligence", image=image)
 # app that names a missing secret):
 #   SSI_WITH_DB=1         -> ssi-db (DATABASE_URL: Postgres for the app layer; required by `web`)
 #   SSI_WITH_AUTH=1       -> ssi-auth (BASIC_AUTH_USER / BASIC_AUTH_PASS)
-#   SSI_WITH_GLM=1        -> ssi-glm (SSI_LLM_PROVIDER=openai_compat, SSI_LLM_BASE_URL, SSI_LLM_MODEL,
-#                                     SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET)
+#   SSI_WITH_GLM=1        -> ssi-glm (SSI_LLM_PROVIDER=openai_compat, SSI_LLM_FOREMAN_BASE_URL,
+#                                     SSI_LLM_ADJUDICATOR_BASE_URL, SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET)
 #   SSI_WITH_ANTHROPIC=1  -> ssi-anthropic (ANTHROPIC_API_KEY)
 #   SSI_WITH_LANGSMITH=1  -> ssi-langsmith (LANGSMITH_API_KEY, LANGSMITH_PROJECT, LANGSMITH_TRACING)
 web_secrets = [modal.Secret.from_name(name) for name, flag in

@@ -149,7 +149,7 @@ def health():
         db_ok = False
     m = warehouse.meta()
     return S.Health(status="ok" if db_ok else "degraded", data_as_of=m["data_as_of"], build_id=m["build_id"],
-                    llm_enabled=llm_client.available(), db_ok=db_ok)
+                    llm_enabled=llm_client.available("foreman"), db_ok=db_ok)
 
 
 @app.get("/api/projects", response_model=list[S.Project])

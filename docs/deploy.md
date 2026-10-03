@@ -14,8 +14,10 @@ forwards `/api/*` to Modal, so the browser sees one site. The GC's decisions liv
    ```bash
    uv run modal secret create ssi-db DATABASE_URL='postgresql://...'
    uv run modal secret create ssi-auth BASIC_AUTH_USER=reviewer BASIC_AUTH_PASS='...'
-   uv run modal secret create ssi-glm SSI_LLM_PROVIDER=openai_compat SSI_LLM_BASE_URL='https://.../v1' \
-       SSI_LLM_MODEL='glm-5.3' SSI_LLM_MODAL_KEY='wk-...' SSI_LLM_MODAL_SECRET='ws-...'
+   uv run modal secret create ssi-glm SSI_LLM_PROVIDER=openai_compat \
+       SSI_LLM_FOREMAN_BASE_URL='https://<workspace>--ep-glm-5-3-server.us-west.modal.direct/v1' \
+       SSI_LLM_ADJUDICATOR_BASE_URL='https://<workspace>--ep-deepseek-v4-1-flash-server.us-west.modal.direct/v1' \
+       SSI_LLM_MODAL_KEY='wk-...' SSI_LLM_MODAL_SECRET='ws-...'
    uv run modal secret create ssi-langsmith LANGSMITH_API_KEY='...' LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
    ```
 

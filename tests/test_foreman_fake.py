@@ -48,11 +48,11 @@ def run(monkeypatch, project, script, question="How is Brasfield doing?"):
     from ssi.agent import foreman
     from ssi.llm import client as llm
     fake = Fake(script)
-    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "available", lambda role="foreman": True)
     monkeypatch.setattr(llm, "budget_ok", lambda: True)
-    monkeypatch.setattr(llm, "get", lambda: fake)
+    monkeypatch.setattr(llm, "get", lambda role="foreman": fake)
     monkeypatch.setattr(llm, "record_usage", lambda *a: None)
-    monkeypatch.setattr(llm, "model_label", lambda: "fake")
+    monkeypatch.setattr(llm, "model_label", lambda role="foreman": "fake")
     return foreman.answer(project[0], question, []), fake
 
 

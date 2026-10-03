@@ -191,7 +191,13 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 3. **Citations.** Inspection IDs become osha.gov links.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
-**Model.** `claude-sonnet-5-5` through the Anthropic SDK:
+**Models.** Each role has its own model, chosen in `.env`:
+- **Foreman:** GLM 5.3. It's a multi-step conversation with tool calls.
+- **Adjudicator:** DeepSeek V4.1 Flash. It makes many short same/different/unsure calls.
+
+Both are served from Modal as OpenAI-compatible APIs.
+
+**With Claude instead,** it's `claude-sonnet-5-5` through the Anthropic SDK:
 - low effort
 - strict tools with `tool_choice: auto` (Sonnet 5.5 rejects forced tool choice)
 - structured outputs for the adjudicator
@@ -308,9 +314,13 @@ Without them, enrichment is just empty.
 - `SSI_HISTORY_YEARS`: years of OSHA history to keep (default 10; `0` = all years).
 - **AI model** (optional; without one the app runs rules-only):
   - **Claude:** `ANTHROPIC_API_KEY`.
-  - **Any OpenAI-compatible endpoint**, e.g. GLM served on Modal: `SSI_LLM_PROVIDER=openai_compat`, `SSI_LLM_BASE_URL`, `SSI_LLM_MODEL`, plus `SSI_LLM_MODAL_KEY` / `SSI_LLM_MODAL_SECRET` for Modal proxy auth.
+  - **OpenAI-compatible endpoints, one per role.** This repo runs both on Modal: **GLM 5.3** for the foreman's Q&A (multi-step, tool calls) and **DeepSeek V4.1 Flash** for the match adjudicator (many short judgements).
+    - Provider: `SSI_LLM_PROVIDER=openai_compat`
+    - Foreman: `SSI_LLM_FOREMAN_BASE_URL` (+ optional `SSI_LLM_FOREMAN_MODEL`)
+    - Adjudicator: `SSI_LLM_ADJUDICATOR_BASE_URL` (+ optional `SSI_LLM_ADJUDICATOR_MODEL`)
+    - Modal proxy auth, shared by both: `SSI_LLM_MODAL_KEY` / `SSI_LLM_MODAL_SECRET`
 
-  Check an endpoint with `uv run python -m scripts.check_llm`: one plain call, one JSON call, one tool call.
+  Check both endpoints with `uv run python -m scripts.check_llm`: one plain call, one JSON call and one tool call per role.
 - `LANGSMITH_API_KEY` (optional): traces and eval experiments.
 
 **Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).

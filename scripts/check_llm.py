@@ -10,11 +10,16 @@ from ssi.llm.base import ToolSpec
 
 
 def main() -> None:
-    if not llm.available():
-        raise SystemExit("No LLM configured. For GLM on Modal set SSI_LLM_PROVIDER=openai_compat, SSI_LLM_BASE_URL, "
-                         "SSI_LLM_MODEL, SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET in .env")
-    p = llm.get()
-    print(f"provider={llm.provider_name()} model={p.model}")
+    for role in llm.ROLES:
+        check(role)
+
+
+def check(role: str) -> None:
+    if not llm.available(role):
+        raise SystemExit(f"No LLM configured for {role}. See .env.example (SSI_LLM_{role.upper()}_BASE_URL, "
+                         "SSI_LLM_MODAL_KEY, SSI_LLM_MODAL_SECRET).")
+    p = llm.get(role)
+    print(f"\n[{role}] provider={llm.provider_name()} model={p.model}")
     data, usage = p.structured("Answer in JSON.", "Is 7 a prime number?",
                                {"type": "object", "properties": {"prime": {"type": "boolean"}}, "required": ["prime"],
                                 "additionalProperties": False}, max_tokens=200)

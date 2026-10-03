@@ -92,13 +92,13 @@ def _log(project_id, question, status, answer, tool_log, ungrounded, usage, star
                                                     input_tokens, output_tokens, latency_ms)
                      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                   [project_id, question, status, answer, json.dumps(tool_log, default=str), json.dumps(ungrounded),
-                   llm.model_label(), usage[0], usage[1], int((time.time() - started) * 1000)])
+                   llm.model_label("foreman"), usage[0], usage[1], int((time.time() - started) * 1000)])
 
 
 @_traceable
 def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
     started = time.time()
-    if not llm.available():
+    if not llm.available("foreman"):
         return S.AskResponse(status="no_api_key", answer="The question assistant needs an AI key, which isn't set up "
                              "on this deployment. The scorecard and sub pages still show everything.")
     if not llm.budget_ok():
@@ -109,7 +109,7 @@ def answer(project: dict, question: str, history: list[dict]) -> S.AskResponse:
     if not subs:
         return S.AskResponse(status="answered", answer="There are no subs on this project yet. Add them on the scorecard first.")
 
-    provider = llm.get()
+    provider = llm.get("foreman")
     tb = Toolbox(project, subs)
     tools = specs([str(s["sub_id"]) for s in subs], _hazard_codes())
     system = SYSTEM + "\n\n" + _context(project, subs)
