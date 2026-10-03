@@ -5,10 +5,15 @@ from __future__ import annotations
 import json
 import os
 import re
+import warnings
 
 from openai import OpenAI
 
 from ssi.llm.base import Reply, ToolCall, ToolSpec, Usage
+
+# The OpenAI SDK's response models carry provider-specific extras (e.g. reasoning metadata from vLLM/SGLang
+# servers); Pydantic warns when they're serialised, including inside LangSmith tracing. Harmless noise.
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings", category=UserWarning)
 
 
 class OpenAICompatProvider:

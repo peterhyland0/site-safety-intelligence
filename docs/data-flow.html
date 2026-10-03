@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site Safety Data Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; a wide three-lane flow figure (messy | step | inputs & exits), then a worked example.
+   Palette follows the project's design tokens (web/src/index.css): concrete, forest, green accent, verdict colours. */
+:root {
+  --page: #f0f2ef;
+  --surface: #ffffff;
+  --ink: #111111;
+  --ink-2: #3f4550;
+  --muted: #5e6778;
+  --line: rgb(0 0 0 / 0.08);
+  --line-strong: rgb(0 0 0 / 0.18);
+  --accent: #2b7a22;
+  --chart: #2f9e27;
+  --arrow: #7d8592;
+  --tag-bg: #263122;
+  --tag-ink: #ffffff;
+  --wh-bg: #263122;
+  --wh-line: #263122;
+  --wh-ink: #ffffff;
+  --wh-ink-2: #c9d3c5;
+  --wh-accent: #bef8b0;
+  --mess-bg: #fff4e0;
+  --mess-fg: #7a4a00;
+  --mess-line: #f0cf91;
+  --high-bg: #fbedeb;
+  --high-fg: #9e3a2f;
+  --high-line: #efc2bb;
+  --review-bg: #fff4e0;
+  --review-fg: #7a4a00;
+  --review-line: #f0cf91;
+  --unknown-bg: #ffffff;
+  --unknown-fg: #3f4550;
+  --unknown-line: #9aa1ad;
+  --recent-bg: #eef1f5;
+  --recent-fg: #3f4a5c;
+  --recent-line: #c5ccd6;
+  --clear-bg: #e6f9e0;
+  --clear-fg: #1f5c18;
+  --clear-line: #a9e89a;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0e120d; --surface: #161c15; --ink: #f2f5f0; --ink-2: #c9d0c6; --muted: #98a296;
+    --line: rgb(255 255 255 / 0.09); --line-strong: rgb(255 255 255 / 0.2);
+    --accent: #bef8b0; --chart: #8ae07a; --arrow: #7f8a7c;
+    --tag-bg: #bef8b0; --tag-ink: #111111;
+    --wh-bg: #1f281d; --wh-line: #3a5e31; --wh-ink: #f2f5f0; --wh-ink-2: #b4bdb1; --wh-accent: #bef8b0;
+    --mess-bg: #2e210b; --mess-fg: #ffd08f; --mess-line: #6e4d17;
+    --high-bg: #3a1714; --high-fg: #ffb8ad; --high-line: #74302a;
+    --review-bg: #36260b; --review-fg: #ffd08f; --review-line: #6e4d17;
+    --unknown-bg: #161c15; --unknown-fg: #dde3da; --unknown-line: #7f8a7c;
+    --recent-bg: #1a2230; --recent-fg: #c3d3e8; --recent-line: #3c4b60;
+    --clear-bg: #1b2e17; --clear-fg: #bef8b0; --clear-line: #3a5e31;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0e120d; --surface: #161c15; --ink: #f2f5f0; --ink-2: #c9d0c6; --muted: #98a296;
+  --line: rgb(255 255 255 / 0.09); --line-strong: rgb(255 255 255 / 0.2);
+  --accent: #bef8b0; --chart: #8ae07a; --arrow: #7f8a7c;
+  --tag-bg: #bef8b0; --tag-ink: #111111;
+  --wh-bg: #1f281d; --wh-line: #3a5e31; --wh-ink: #f2f5f0; --wh-ink-2: #b4bdb1; --wh-accent: #bef8b0;
+  --mess-bg: #2e210b; --mess-fg: #ffd08f; --mess-line: #6e4d17;
+  --high-bg: #3a1714; --high-fg: #ffb8ad; --high-line: #74302a;
+  --review-bg: #36260b; --review-fg: #ffd08f; --review-line: #6e4d17;
+  --unknown-bg: #161c15; --unknown-fg: #dde3da; --unknown-line: #7f8a7c;
+  --recent-bg: #1a2230; --recent-fg: #c3d3e8; --recent-line: #3c4b60;
+  --clear-bg: #1b2e17; --clear-fg: #bef8b0; --clear-line: #3a5e31;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 32px); padding-block: 40px 64px; display: grid; gap: 40px; }
+
+header { display: grid; gap: 14px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1 { font-size: clamp(28px, 4.2vw, 42px); line-height: 1.12; letter-spacing: -0.022em; font-weight: 700; margin: 0; text-wrap: balance; max-width: 22ch; }
+.lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+
+.funnel { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line-strong); }
+.funnel li { padding: 14px 18px 4px 0; display: grid; gap: 2px; position: relative; min-width: 0; }
+.funnel li + li { padding-left: 22px; }
+.funnel li + li::before { content: "→"; position: absolute; left: 0; top: 16px; color: var(--muted); font-size: 18px; }
+.funnel b { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.funnel span { font-size: 13px; color: var(--muted); }
+@media (max-width: 720px) {
+  .funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .funnel li:nth-child(3) { padding-left: 0; }
+  .funnel li:nth-child(3)::before { content: none; }
+}
+
+section { display: grid; gap: 16px; }
+h2 { font-size: 21px; letter-spacing: -0.01em; margin: 0; font-weight: 600; text-wrap: balance; }
+.sub { margin: 0; color: var(--ink-2); max-width: 70ch; }
+
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: var(--ink-2); }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.sw { width: 22px; height: 14px; border-radius: 4px; border: 1px solid; flex: none; }
+.sw-mess { background: var(--mess-bg); border-color: var(--mess-line); }
+.sw-step { background: var(--surface); border-color: var(--line-strong); }
+.sw-in { background: var(--page); border: 1px dashed var(--muted); }
+.sw-fail { background: var(--high-bg); border-color: var(--high-line); }
+.sw-out { border: 0; width: auto; height: auto; font: 500 12px var(--mono); color: var(--accent); }
+
+figure { margin: 0; display: grid; gap: 12px; }
+.scroller { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; -webkit-overflow-scrolling: touch; }
+.flow { display: block; width: 100%; height: auto; min-width: 900px; color: var(--arrow); font-family: var(--sans); }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 78ch; }
+.hint { display: none; font-size: 12.5px; color: var(--muted); margin: 0; }
+@media (max-width: 960px) { .hint { display: block; } .scroller { padding: 16px; } }
+
+/* SVG parts */
+.flow text { font-family: var(--sans); }
+.hair { stroke: var(--line-strong); stroke-width: 1; }
+.ch { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; fill: var(--muted); }
+.ztag { fill: var(--tag-bg); }
+.ztt { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; fill: var(--tag-ink); }
+.zl { font-size: 12px; font-weight: 500; fill: var(--ink-2); }
+.bx { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+.mess { fill: var(--mess-bg); stroke: var(--mess-line); stroke-width: 1; }
+.tie { stroke: var(--mess-line); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.ar { stroke: currentColor; stroke-width: 1.4; }
+.num { font-family: var(--mono) !important; font-size: 11px; font-weight: 600; fill: var(--muted); }
+.ttl { font-size: 13.5px; font-weight: 600; fill: var(--ink); }
+.dsc { font-size: 11.5px; fill: var(--ink-2); }
+.out { font-family: var(--mono) !important; font-size: 11px; font-weight: 500; fill: var(--accent); }
+.nt { font-size: 11.5px; fill: var(--mess-fg); }
+.mono { font-family: var(--mono); font-size: 10.5px; font-weight: 500; }
+.sd-in { fill: var(--page); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.sd-aside, .sd-gc { fill: var(--mess-bg); stroke: var(--mess-line); stroke-width: 1; }
+.sd-fail { fill: var(--high-bg); stroke: var(--high-line); stroke-width: 1; }
+.sd-ai { fill: var(--recent-bg); stroke: var(--recent-line); stroke-width: 1; }
+.sd-q { fill: var(--surface); stroke: var(--accent); stroke-width: 1.2; }
+.eb { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; fill: var(--muted); }
+.eb-aside, .eb-gc { fill: var(--mess-fg); }
+.eb-fail { fill: var(--high-fg); }
+.eb-ai { fill: var(--recent-fg); }
+.eb-q { fill: var(--accent); }
+.st { font-size: 12.5px; font-weight: 600; fill: var(--ink); }
+.sl { font-size: 11px; fill: var(--ink-2); }
+.wh { fill: var(--wh-bg); stroke: var(--wh-line); stroke-width: 1; }
+.wht { font-family: var(--mono) !important; font-size: 12.5px; font-weight: 600; fill: var(--wh-ink); }
+.whd { font-size: 11.5px; fill: var(--wh-ink-2); }
+.who { font-family: var(--mono) !important; font-size: 11px; font-weight: 500; fill: var(--wh-accent); }
+.al { font-size: 11px; font-weight: 500; fill: var(--muted); }
+.ch-ok { fill: var(--clear-bg); stroke: var(--clear-line); }
+.ch-no { fill: var(--unknown-bg); stroke: var(--unknown-line); }
+.ch-maybe { fill: var(--review-bg); stroke: var(--review-line); }
+.chl { font-size: 12.5px; font-weight: 600; }
+.chs { font-family: var(--mono) !important; font-size: 9.5px; font-weight: 500; }
+.chl-ok { fill: var(--clear-fg); }
+.chl-no { fill: var(--unknown-fg); }
+.chl-maybe { fill: var(--review-fg); }
+.v-high { fill: var(--high-bg); stroke: var(--high-line); }
+.v-review { fill: var(--review-bg); stroke: var(--review-line); }
+.v-unknown { fill: var(--unknown-bg); stroke: var(--unknown-line); stroke-dasharray: 3 2; }
+.v-recent { fill: var(--recent-bg); stroke: var(--recent-line); }
+.v-clear { fill: var(--clear-bg); stroke: var(--clear-line); }
+.vt { font-size: 12px; font-weight: 600; }
+.vt-high { fill: var(--high-fg); }
+.vt-review { fill: var(--review-fg); }
+.vt-unknown { fill: var(--unknown-fg); }
+.vt-recent { fill: var(--recent-fg); }
+.vt-clear { fill: var(--clear-fg); }
+
+/* Figure 2 */
+.names { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .names { grid-template-columns: minmax(0, 1fr); } }
+.trace { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 10px; }
+.trace h3, .ladder-head { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.trace ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.trace li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line); }
+.trace li:first-child { border-top: 0; }
+.tcode { font: 600 11px var(--mono); color: var(--muted); }
+.trace code { font: 500 12.5px var(--mono); overflow-wrap: anywhere; color: var(--ink-2); }
+.trace li:first-child code { color: var(--mess-fg); background: var(--mess-bg); padding: 1px 4px; border-radius: 4px; }
+.trace li:last-child code { color: var(--accent); font-weight: 600; }
+.trace p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; }
+.rule { display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1.5fr) 190px; gap: 6px 14px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.rule:first-child { border-top: 1px solid var(--line-strong); }
+.rcode { font: 600 11.5px var(--mono); color: var(--muted); }
+.rwhat { font-size: 13.5px; font-weight: 500; }
+.rex { font: 400 11.5px var(--mono); color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; min-width: 0; }
+.rb { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.rarr { color: var(--muted); }
+.ra { color: var(--ink); font-weight: 500; }
+.rbar { display: grid; grid-template-columns: minmax(0, 1fr) 56px; gap: 8px; align-items: center; }
+.track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.fill { display: block; height: 100%; background: var(--chart); border-radius: 4px; }
+.rn { font: 500 12px var(--mono); text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.ladder-total { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line-strong); font-size: 13.5px; }
+.ladder-total b { font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .rule { grid-template-columns: 36px minmax(0, 1fr); }
+  .rex, .rbar { grid-column: 2; }
+}
+
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.notes div { display: grid; gap: 6px; align-content: start; border-top: 1px solid var(--line-strong); padding-top: 12px; }
+.notes h3 { margin: 0; font-size: 14.5px; font-weight: 600; }
+.notes p { margin: 0; font-size: 14px; color: var(--ink-2); }
+code.f { font: 500 12.5px var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Site Safety Intelligence · data flow</p>
+    <h1>How messy OSHA records become a sub’s verdict</h1>
+    <p class="lede">OSHA’s enforcement files have no company ID, so every fix happens in a named step: the build cleans, scopes and groups the records into a read-only warehouse, and matching later ties those records to each subcontractor a GC enters. Nothing is deleted along the way. Bad values are flagged and broken rows are set aside with a reason.</p>
+    <ol class="funnel" aria-label="Row counts through the flow">
+      <li><b>≈18M</b><span>raw rows, 2.5M inspections since 1972</span></li>
+      <li><b>322,060</b><span>construction inspections, last 10 years</span></li>
+      <li><b>207,388</b><span>establishments, merged only on exact keys</span></li>
+      <li><b>1 verdict</b><span>per sub, citing inspection IDs</span></li>
+    </ol>
+  </header>
+
+  <section aria-labelledby="f1">
+    <h2 id="f1">The whole flow, step by step</h2>
+    <ul class="legend">
+      <li><span class="sw sw-mess"></span>A problem in the data</li>
+      <li><span class="sw sw-step"></span>A pipeline step (SQL file number)</li>
+      <li><span class="sw sw-out">green mono</span>What the step produces</li>
+      <li><span class="sw sw-in"></span>Input from outside the flow</li>
+      <li><span class="sw sw-fail"></span>Failure path</li>
+    </ul>
+    <figure>
+      <p class="hint">Scroll sideways to see all three columns.</p>
+      <div class="scroller"><svg viewBox="0 0 1040 1948" class="flow" role="img" aria-label="Raw OSHA files pass through eleven build steps that fix a named problem each, into a read-only warehouse; a GC’s sub is then cleaned with the same rules, matched by ordered rules, sent to an AI adjudicator or the GC when uncertain, and turned into a verdict with inspection IDs."><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs><text x="0" y="16" class="ch">WHAT’S MESSY HERE</text><text x="340" y="16" class="ch">STEP · WHAT COMES OUT</text><text x="750" y="16" class="ch">JOINS OR LEAVES THE FLOW</text><line x1="0" y1="28" x2="1040" y2="28" class="hair"/><rect x="0" y="46" width="66" height="24" rx="12" class="ztag"/><text x="33.0" y="62" class="ztt" text-anchor="middle">BUILD</text><text x="78" y="62" class="zl">DuckDB · rebuilt from the raw files on every run · last build 59.8 s → 192 MB</text><rect x="340" y="96" width="360" height="70" rx="10" class="bx"/><text x="354" y="120" class="num">DOL</text><text x="398" y="120" class="ttl">OSHA enforcement files</text><text x="354" y="140" class="dsc">inspection · violation · accident · injury · abstract</text><text x="354" y="156" class="out">2.5M inspections, 1972 → Sep 2026</text><rect x="0" y="96" width="290" height="70" rx="10" class="mess"/><text x="14" y="119.0" class="nt">No company ID anywhere. The employer’s</text><text x="14" y="135.0" class="nt">name is typed by hand on every</text><text x="14" y="151.0" class="nt">inspection.</text><line x1="290" y1="131.0" x2="340" y2="131.0" class="tie"/><rect x="340" y="196" width="360" height="70" rx="10" class="bx"/><text x="354" y="220" class="num">10</text><text x="398" y="220" class="ttl">Load every column as text</text><text x="354" y="240" class="dsc">nothing coerced; quoting set explicitly</text><text x="354" y="256" class="out">≈18M raw rows, all VARCHAR</text><rect x="0" y="196" width="290" height="70" rx="10" class="mess"/><text x="14" y="219.0" class="nt">Codes stored as floats (<tspan class="mono">&#x27;12.0&#x27;</tspan>), state</text><text x="14" y="235.0" class="nt">codes with quoted commas inside, fields</text><text x="14" y="251.0" class="nt">that are always blank or nonsense.</text><line x1="290" y1="231.0" x2="340" y2="231.0" class="tie"/><rect x="340" y="296" width="360" height="70" rx="10" class="bx"/><text x="354" y="320" class="num">20</text><text x="398" y="320" class="ttl">Scope to construction, last 10 yrs</text><text x="354" y="340" class="dsc">keep every visit of a firm with one construction code</text><text x="354" y="356" class="out">322,060 inspections · 8,648 via their firm</text><rect x="0" y="296" width="290" height="70" rx="10" class="mess"/><text x="14" y="319.0" class="nt">Industry codes drift: 44% of firms with</text><text x="14" y="335.0" class="nt">5+ inspections carry several NAICS codes.</text><text x="14" y="351.0" class="nt">SIC <tspan class="mono">&#x27;175&#x27;</tspan> is 0175 orchards, not 17xx.</text><line x1="290" y1="331.0" x2="340" y2="331.0" class="tie"/><rect x="750" y="296" width="290" height="70" rx="10" class="sd-in"/><text x="764" y="313" class="eb eb-in">INPUT</text><text x="764" y="330" class="st">Cleaning rules · macros.sql</text><text x="764" y="346" class="sl">10 name rules + an address key,</text><text x="764" y="360" class="sl">shown step by step in figure 2</text><line x1="750" y1="331.0" x2="702" y2="331.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="396" width="360" height="70" rx="10" class="bx"/><text x="354" y="420" class="num">21–23</text><text x="398" y="420" class="ttl">Type, decode and flag every row</text><text x="354" y="440" class="dsc">bad values get dq_flags; nothing is deleted</text><text x="354" y="456" class="out">osha.inspection · violation · accident · injury</text><rect x="0" y="396" width="290" height="70" rx="10" class="mess"/><text x="14" y="419.0" class="nt">Blank penalty ≠ $0. A 2026 load put</text><text x="14" y="435.0" class="nt">construction ops in the wrong column.</text><text x="14" y="451.0" class="nt">Injury rows repeat for each employer.</text><line x1="290" y1="431.0" x2="340" y2="431.0" class="tie"/><rect x="750" y="396" width="290" height="70" rx="10" class="sd-aside"/><text x="764" y="413" class="eb eb-aside">LOGGED WITH A REASON</text><text x="764" y="430" class="st">osha.quarantine · 34,552 rows</text><text x="764" y="446" class="sl">34,178 injuries lacking an accident row</text><text x="764" y="460" class="sl">374 citations lacking an inspection</text><line x1="700" y1="431.0" x2="748" y2="431.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="496" width="360" height="70" rx="10" class="bx"/><text x="354" y="520" class="num">31–32</text><text x="398" y="520" class="ttl">Map every citation to a hazard</text><text x="354" y="540" class="dsc">parse the standard code, then 544 rules → 20 hazards</text><text x="354" y="556" class="out">583,988 citations · 0.5% left as ‘other’</text><rect x="0" y="496" width="290" height="70" rx="10" class="mess"/><text x="14" y="519.0" class="nt">23% of construction citations use state</text><text x="14" y="535.0" class="nt">codes: <tspan class="mono">WA 296-155</tspan>, <tspan class="mono">OR 437</tspan>, CA T8.</text><text x="14" y="551.0" class="nt">One hazard, many ways to cite it.</text><line x1="290" y1="531.0" x2="340" y2="531.0" class="tie"/><rect x="750" y="496" width="290" height="70" rx="10" class="sd-in"/><text x="764" y="513" class="eb eb-in">INPUT</text><text x="764" y="530" class="st">ref/standard_hazard_map.csv</text><text x="764" y="546" class="sl">544 hand-kept rules, state plans too,</text><text x="764" y="560" class="sl">plus inspection and violation codes</text><line x1="750" y1="531.0" x2="702" y2="531.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="596" width="360" height="70" rx="10" class="bx"/><text x="354" y="620" class="num">33</text><text x="398" y="620" class="ttl">Fatality status per employer</text><text x="354" y="640" class="dsc">was this employer cited, or only on the site?</text><text x="354" y="656" class="out">3,173 cited · 2,062 on site, not cited</text><rect x="0" y="596" width="290" height="70" rx="10" class="mess"/><text x="14" y="619.0" class="nt">OSHA opens an inspection for every</text><text x="14" y="635.0" class="nt">employer on a fatal site. Accident detail</text><text x="14" y="651.0" class="nt">stops at 2025-03-28.</text><line x1="290" y1="631.0" x2="340" y2="631.0" class="tie"/><rect x="340" y="696" width="360" height="70" rx="10" class="bx"/><text x="354" y="720" class="num">40</text><text x="398" y="720" class="ttl">Group into establishments</text><text x="354" y="740" class="dsc">only when name, address key, zip and state match</text><text x="354" y="756" class="out">322,060 inspections → 207,388 places</text><rect x="0" y="696" width="290" height="70" rx="10" class="mess"/><text x="14" y="719.0" class="nt">One firm, dozens of spellings:</text><text x="14" y="735.0" class="nt"><tspan class="mono">136200 - BRASFIELD - GORRIE, L.L.C.</tspan></text><text x="14" y="751.0" class="nt"><tspan class="mono">BRASFIELD &amp; GORIE GP</tspan></text><line x1="290" y1="731.0" x2="340" y2="731.0" class="tie"/><rect x="340" y="796" width="360" height="70" rx="10" class="bx"/><text x="354" y="820" class="num">42</text><text x="398" y="820" class="ttl">Measure how distinctive names are</text><text x="354" y="840" class="dsc">name variety per core, shared offices, token index</text><text x="354" y="856" class="out">86.4k distinctive · 7.4k generic · 20.9k person</text><rect x="0" y="796" width="290" height="70" rx="10" class="mess"/><text x="14" y="819.0" class="nt"><tspan class="mono">CLARK</tspan> has 112 name variants.</text><text x="14" y="835.0" class="nt"><tspan class="mono">JOSE HERNANDEZ</tspan> is 49 records in 17</text><text x="14" y="851.0" class="nt">states, usually different people.</text><line x1="290" y1="831.0" x2="340" y2="831.0" class="tie"/><rect x="750" y="796" width="290" height="70" rx="10" class="sd-in"/><text x="764" y="813" class="eb eb-in">INPUT</text><text x="764" y="830" class="st">ref/given_name.csv</text><text x="764" y="846" class="sl">374 first names, so a sole</text><text x="764" y="860" class="sl">proprietor’s name never rates distinctive</text><line x1="750" y1="831.0" x2="702" y2="831.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="896" width="360" height="70" rx="10" class="bx"/><text x="354" y="920" class="num">50–53</text><text x="398" y="920" class="ttl">Precompute additive marts</text><text x="354" y="940" class="dsc">establishment × year, hazards, red flags, peers</text><text x="354" y="956" class="out">42,743 red-flag events · 491 benchmarks</text><rect x="0" y="896" width="290" height="70" rx="10" class="mess"/><text x="14" y="919.0" class="nt">Follow-up visits inflate rates and one</text><text x="14" y="935.0" class="nt">mega-contractor skews a mean. So: rated</text><text x="14" y="951.0" class="nt">visits only, medians and p75 / p90.</text><line x1="290" y1="931.0" x2="340" y2="931.0" class="tie"/><rect x="340" y="996" width="360" height="70" rx="10" class="bx"/><text x="354" y="1020" class="num">60–62</text><text x="398" y="1020" class="ttl">Link injury rates and licences</text><text x="354" y="1040" class="dsc">exact cleaned name + zip or address, same state</text><text x="354" y="1056" class="out">78,115 links · an EIN is evidence, not a merge</text><rect x="0" y="996" width="290" height="70" rx="10" class="mess"/><text x="14" y="1027.0" class="nt">Junk EINs are shared by unrelated firms;</text><text x="14" y="1043.0" class="nt">one big firm files under 23 EINs.</text><line x1="290" y1="1031.0" x2="340" y2="1031.0" class="tie"/><rect x="750" y="996" width="290" height="70" rx="10" class="sd-in"/><text x="764" y="1013" class="eb eb-in">INPUT</text><text x="764" y="1030" class="st">ITA 300A · WA / OR / CA licences</text><text x="764" y="1046" class="sl">3.2M injury filings, 2016–2025</text><text x="764" y="1060" class="sl">252,547 contractor licences</text><line x1="750" y1="1031.0" x2="702" y2="1031.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="1096" width="360" height="70" rx="10" class="bx"/><text x="354" y="1120" class="num">80</text><text x="398" y="1120" class="ttl">Quality gate</text><text x="354" y="1140" class="dsc">10 error checks and 2 warnings</text><text x="354" y="1156" class="out">all pass → CURRENT pointer swapped atomically</text><rect x="0" y="1096" width="290" height="70" rx="10" class="mess"/><text x="14" y="1119.0" class="nt">Hazard totals must reconcile with</text><text x="14" y="1135.0" class="nt">citation totals; a person’s name may</text><text x="14" y="1151.0" class="nt">never rate as distinctive.</text><line x1="290" y1="1131.0" x2="340" y2="1131.0" class="tie"/><rect x="750" y="1096" width="290" height="70" rx="10" class="sd-fail"/><text x="764" y="1113" class="eb eb-fail">ON ANY ERROR</text><text x="764" y="1130" class="st">The build stops</text><text x="764" y="1146" class="sl">CURRENT keeps the previous warehouse,</text><text x="764" y="1160" class="sl">so live data is never half-built</text><line x1="700" y1="1131.0" x2="748" y2="1131.0" class="ar" marker-end="url(#ah)"/><rect x="340" y="1196" width="360" height="70" rx="10" class="wh"/><text x="354" y="1220" class="wht">warehouse-20261003T151633Z.duckdb</text><text x="354" y="1240" class="whd">ref · osha · entity · ref_ext · mart, plus the cleaning rules</text><text x="354" y="1256" class="who">192 MB · served read-only</text><line x1="520" y1="166" x2="520" y2="194" class="ar" marker-end="url(#ah)"/><line x1="520" y1="266" x2="520" y2="294" class="ar" marker-end="url(#ah)"/><line x1="520" y1="366" x2="520" y2="394" class="ar" marker-end="url(#ah)"/><line x1="520" y1="466" x2="520" y2="494" class="ar" marker-end="url(#ah)"/><line x1="520" y1="566" x2="520" y2="594" class="ar" marker-end="url(#ah)"/><line x1="520" y1="666" x2="520" y2="694" class="ar" marker-end="url(#ah)"/><line x1="520" y1="766" x2="520" y2="794" class="ar" marker-end="url(#ah)"/><line x1="520" y1="866" x2="520" y2="894" class="ar" marker-end="url(#ah)"/><line x1="520" y1="966" x2="520" y2="994" class="ar" marker-end="url(#ah)"/><line x1="520" y1="1066" x2="520" y2="1094" class="ar" marker-end="url(#ah)"/><line x1="520" y1="1166" x2="520" y2="1194" class="ar" marker-end="url(#ah)"/><rect x="0" y="1302" width="118" height="24" rx="12" class="ztag"/><text x="59.0" y="1318" class="ztt" text-anchor="middle">MATCH &amp; JUDGE</text><text x="130" y="1318" class="zl">per sub, when a GC adds it · decisions kept in Postgres</text><line x1="520" y1="1266" x2="520" y2="1352" class="ar" marker-end="url(#ah)"/><text x="530" y="1288" class="al">queried read-only</text><rect x="340" y="1354" width="360" height="70" rx="10" class="bx"/><text x="354" y="1378" class="ttl">Clean the GC’s input the same way</text><text x="354" y="1398" class="dsc">the rules come from the warehouse, so they can’t drift</text><text x="354" y="1414" class="out">adopts OSHA’s spelling at ≥10× the inspections</text><rect x="0" y="1354" width="290" height="70" rx="10" class="sd-gc"/><text x="14" y="1371" class="eb eb-gc">GC ADDS A SUB</text><text x="14" y="1388" class="st">“Brasfeild &amp; Gorrie Inc.”</text><text x="14" y="1404" class="sl">Nashville, TN · trade · licence # (optional)</text><line x1="290" y1="1389" x2="338" y2="1389" class="ar" marker-end="url(#ah)"/><rect x="340" y="1454" width="360" height="70" rx="10" class="bx"/><text x="354" y="1478" class="ttl">Find candidate records</text><text x="354" y="1498" class="dsc">exact alias · same core · rare words · same address</text><text x="354" y="1514" class="out">typo-tolerant: token index + Jaro-Winkler</text><rect x="0" y="1454" width="290" height="70" rx="10" class="mess"/><text x="14" y="1485.0" class="nt">One company is many establishments:</text><text x="14" y="1501.0" class="nt">Brasfield & Gorrie is 129 of them.</text><line x1="290" y1="1489.0" x2="340" y2="1489.0" class="tie"/><line x1="520" y1="1424" x2="520" y2="1452" class="ar" marker-end="url(#ah)"/><rect x="340" y="1554" width="360" height="56" rx="10" class="bx"/><text x="354" y="1578" class="ttl">Ordered rules decide each record</text><text x="354" y="1598" class="dsc">first rule that fires wins; rule ID and reason stored</text><rect x="0" y="1554" width="290" height="56" rx="10" class="mess"/><text x="14" y="1570.0" class="nt"><tspan class="mono">WAUSAU HOMES</tspan> vs <tspan class="mono">WAUSAU TILE</tspan>,</text><text x="14" y="1586.0" class="nt">a person’s name in another state,</text><text x="14" y="1602.0" class="nt"><tspan class="mono">… OF OREGON</tspan> sibling companies.</text><line x1="290" y1="1582.0" x2="340" y2="1582.0" class="tie"/><line x1="520" y1="1524" x2="520" y2="1552" class="ar" marker-end="url(#ah)"/><rect x="340" y="1638" width="110" height="46" rx="8" class="ch-ok"/><text x="395.0" y="1657" class="chl chl-ok" text-anchor="middle">Matched</text><text x="395.0" y="1674" class="chs chl-ok" text-anchor="middle">M1 M1b M2 M3 L1</text><line x1="395.0" y1="1610" x2="395.0" y2="1636" class="ar" marker-end="url(#ah)"/><rect x="465" y="1638" width="110" height="46" rx="8" class="ch-no"/><text x="520.0" y="1657" class="chl chl-no" text-anchor="middle">Excluded</text><text x="520.0" y="1674" class="chs chl-no" text-anchor="middle">X1 – X5</text><line x1="520.0" y1="1610" x2="520.0" y2="1636" class="ar" marker-end="url(#ah)"/><rect x="590" y="1638" width="110" height="46" rx="8" class="ch-maybe"/><text x="645.0" y="1657" class="chl chl-maybe" text-anchor="middle">Uncertain</text><text x="645.0" y="1674" class="chs chl-maybe" text-anchor="middle">S1 S2 U2 U3 P1</text><line x1="645.0" y1="1610" x2="645.0" y2="1636" class="ar" marker-end="url(#ah)"/><rect x="750" y="1620" width="290" height="86" rx="10" class="sd-ai"/><text x="764" y="1637" class="eb eb-ai">UNCERTAIN ONLY</text><text x="764" y="1654" class="st">AI adjudicator</text><text x="764" y="1670" class="sl">sees identity evidence, never safety history</text><text x="764" y="1684" class="sl">same ≥ 0.85 → matched · different ≥ 0.80</text><text x="764" y="1698" class="sl">→ excluded · otherwise ‘possible’</text><line x1="700" y1="1661" x2="748" y2="1661" class="ar" marker-end="url(#ah)"/><rect x="340" y="1740" width="360" height="70" rx="10" class="bx"/><text x="354" y="1764" class="ttl">app.sub_match · Postgres</text><text x="354" y="1784" class="dsc">bucket · method (rule / llm / gc) · confidence · reason</text><text x="354" y="1800" class="out">survives every warehouse rebuild</text><rect x="0" y="1740" width="290" height="70" rx="10" class="mess"/><text x="14" y="1763.0" class="nt">Rebuilds change nothing here: keys are</text><text x="14" y="1779.0" class="nt">deterministic hashes, remapped by</text><text x="14" y="1795.0" class="nt">inspection overlap.</text><line x1="290" y1="1775.0" x2="340" y2="1775.0" class="tie"/><line x1="395.0" y1="1684" x2="395.0" y2="1738" class="ar" marker-end="url(#ah)"/><line x1="520.0" y1="1684" x2="520.0" y2="1738" class="ar" marker-end="url(#ah)"/><rect x="750" y="1740" width="290" height="70" rx="10" class="sd-q"/><text x="764" y="1757" class="eb eb-q">RED FLAG ON AN UNCERTAIN RECORD</text><text x="764" y="1774" class="st">Yes / no question to the GC</text><text x="764" y="1790" class="sl">AI’s lean shown as a hint; the answer is</text><text x="764" y="1804" class="sl">stored as method = gc and always wins</text><line x1="895.0" y1="1706" x2="895.0" y2="1738" class="ar" marker-end="url(#ah)"/><text x="905.0" y="1726" class="al">carries a red flag</text><path d="M 750 1694 H 728 V 1760 H 702" class="ar" fill="none" marker-end="url(#ah)"/><line x1="750" y1="1790" x2="702" y2="1790" class="ar" marker-end="url(#ah)"/><rect x="340" y="1840" width="700" height="104" rx="10" class="bx"/><text x="354" y="1864" class="ttl">Verdict per sub, with the inspection IDs behind every reason</text><rect x="354" y="1878" width="114" height="28" rx="14" class="v-high"/><text x="411.0" y="1896.5" class="vt vt-high" text-anchor="middle">High concern</text><rect x="478" y="1878" width="70" height="28" rx="14" class="v-review"/><text x="513.0" y="1896.5" class="vt vt-review" text-anchor="middle">Review</text><rect x="558" y="1878" width="128" height="28" rx="14" class="v-unknown"/><text x="622.0" y="1896.5" class="vt vt-unknown" text-anchor="middle">No OSHA record</text><rect x="696" y="1878" width="143" height="28" rx="14" class="v-recent"/><text x="767.5" y="1896.5" class="vt vt-recent" text-anchor="middle">No recent record</text><rect x="849" y="1878" width="84" height="28" rx="14" class="v-clear"/><text x="891.0" y="1896.5" class="vt vt-clear" text-anchor="middle">No flags</text><text x="354" y="1928" class="dsc">peers by trade (NAICS 4 → 3 → all) · the foreman’s chat runs the same named queries</text><rect x="0" y="1840" width="290" height="104" rx="10" class="mess"/><text x="14" y="1880.0" class="nt">No record isn’t a clean record: it shows</text><text x="14" y="1896.0" class="nt">as unknown, and the GC is told to ask</text><text x="14" y="1912.0" class="nt">for EMR, TRIR and 300 logs.</text><line x1="290" y1="1892.0" x2="340" y2="1892.0" class="tie"/><line x1="520" y1="1810" x2="520" y2="1838" class="ar" marker-end="url(#ah)"/></svg></div>
+      <figcaption>Steps 10 to 80 run in order on every build; each one fixes the problem on its left. The quality gate decides whether the new warehouse goes live. Matching runs later, once per sub, against that read-only warehouse, and every decision is written to Postgres, where a rebuild can’t touch it. Counts are from build 20261003T151633Z.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="f2">
+    <h2 id="f2">One name through the ten cleaning rules</h2>
+    <p class="sub">The rules remove only noise that never tells two companies apart: case, punctuation, ID prefixes and legal forms. Trade words, initials, numbers and place words stay, so <code class="f">84 LUMBER</code> is untouched and <code class="f">BRASFIELD CONSTRUCTION</code> never becomes <code class="f">BRASFIELD &amp; GORRIE</code>.</p>
+    <div class="names">
+      <div class="trace">
+        <h3>Worked example</h3>
+        <ol><li><span class="tcode">raw</span><code>136200 - BRASFIELD - GORRIE, L.L.C.</code></li><li><span class="tcode">n2</span><code>BRASFIELD - GORRIE, L.L.C.</code></li><li><span class="tcode">n3</span><code>BRASFIELD - GORRIE, LLC</code></li><li><span class="tcode">n6</span><code>BRASFIELD GORRIE LLC</code></li><li><span class="tcode">n9</span><code>BRASFIELD GORRIE</code></li></ol>
+        <p>Only the rules that change this name are shown. The GC’s typed “Brasfield &amp; Gorrie, LLC” lands on the same key.</p>
+      </div>
+      <div>
+        <ol class="ladder" aria-label="Distinct construction employer names merged by each rule since 2015">
+<li class="rule"><span class="rcode">n1</span><span class="rwhat">Uppercase, normalise spaces</span><span class="rex"><span class="rb">Brasfield &amp; Gorrie, LLC</span><span class="rarr" aria-hidden="true">→</span><span class="ra">BRASFIELD &amp; GORRIE, LLC</span></span><span class="rbar"><span class="track"><span class="fill" style="width:0.6%"></span></span><span class="rn">174</span></span></li>
+<li class="rule"><span class="rcode">n2</span><span class="rwhat">Strip per-inspection ID prefix</span><span class="rex"><span class="rb">WA317965935 - BARNHART CRANE</span><span class="rarr" aria-hidden="true">→</span><span class="ra">BARNHART CRANE</span></span><span class="rbar"><span class="track"><span class="fill" style="width:100.0%"></span></span><span class="rn">33,421</span></span></li>
+<li class="rule"><span class="rcode">n3</span><span class="rwhat">Drop dots and apostrophes</span><span class="rex"><span class="rb">L.L.C. · O&#x27;BRIEN</span><span class="rarr" aria-hidden="true">→</span><span class="ra">LLC · OBRIEN</span></span><span class="rbar"><span class="track"><span class="fill" style="width:17.1%"></span></span><span class="rn">5,712</span></span></li>
+<li class="rule"><span class="rcode">n4</span><span class="rwhat">One DBA marker</span><span class="rex"><span class="rb">D/B/A · T/A · AKA</span><span class="rarr" aria-hidden="true">→</span><span class="ra">DBA</span></span><span class="rbar"><span class="track"><span class="fill" style="width:0.6%"></span></span><span class="rn">2</span></span></li>
+<li class="rule"><span class="rcode">n5</span><span class="rwhat">Trailing state note</span><span class="rex"><span class="rb">ACME INC (DELAWARE)</span><span class="rarr" aria-hidden="true">→</span><span class="ra">ACME INC</span></span><span class="rbar"><span class="track"><span class="fill" style="width:0.6%"></span></span><span class="rn">6</span></span></li>
+<li class="rule"><span class="rcode">n6</span><span class="rwhat">Separators and AND become spaces</span><span class="rex"><span class="rb">BRASFIELD &amp; GORRIE</span><span class="rarr" aria-hidden="true">→</span><span class="ra">BRASFIELD GORRIE</span></span><span class="rbar"><span class="track"><span class="fill" style="width:37.1%"></span></span><span class="rn">12,409</span></span></li>
+<li class="rule"><span class="rcode">n7</span><span class="rwhat">Leading THE</span><span class="rex"><span class="rb">THE WALSH GROUP</span><span class="rarr" aria-hidden="true">→</span><span class="ra">WALSH GROUP</span></span><span class="rbar"><span class="track"><span class="fill" style="width:0.6%"></span></span><span class="rn">141</span></span></li>
+<li class="rule"><span class="rcode">n8</span><span class="rwhat">Join spaced legal forms</span><span class="rex"><span class="rb">L L C · P L L C</span><span class="rarr" aria-hidden="true">→</span><span class="ra">LLC · PLLC</span></span><span class="rbar"><span class="track"><span class="fill" style="width:0.6%"></span></span><span class="rn">12</span></span></li>
+<li class="rule"><span class="rcode">n9</span><span class="rwhat">Legal form at the end</span><span class="rex"><span class="rb">BRASFIELD GORRIE LLC</span><span class="rarr" aria-hidden="true">→</span><span class="ra">BRASFIELD GORRIE</span></span><span class="rbar"><span class="track"><span class="fill" style="width:51.2%"></span></span><span class="rn">17,095</span></span></li>
+<li class="rule"><span class="rcode">n10</span><span class="rwhat">Join runs of initials</span><span class="rex"><span class="rb">J R JOHNSON</span><span class="rarr" aria-hidden="true">→</span><span class="ra">JR JOHNSON</span></span><span class="rbar"><span class="track"><span class="fill" style="width:5.5%"></span></span><span class="rn">1,840</span></span></li>
+        </ol>
+        <div class="ladder-total"><span>Distinct construction employer names since 2015</span><span><b>265,936</b> raw → <b>195,124</b> clean (−27%)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="f3">
+    <h2 id="f3">Three rules the flow never breaks</h2>
+    <div class="notes">
+      <div><h3>Flag, don’t delete</h3><p>Blank penalties stay blank instead of becoming $0, deleted citations are marked, and unmapped hazards go to “other”. Totals always reconcile, and the gate checks that they do.</p></div>
+      <div><h3>Split rather than merge</h3><p>A wrong split costs the GC a little review. A wrong merge can pin someone else’s fatality on a sub. So establishments merge only on identical keys, and companies are assembled per sub, where the GC’s evidence is.</p></div>
+      <div><h3>Facts and decisions live apart</h3><p>The warehouse is rebuilt from source every run. Match decisions sit in Postgres and point at deterministic establishment keys, so a rebuild never erases what a GC confirmed.</p></div>
+    </div>
+  </section>
+
+  <footer>Build 20261003T151633Z · history window 2016-09-23 to 2026-09-23 · steps in <code class="f">ssi/pipeline/sql/</code>, cleaning in <code class="f">ssi/cleaning/macros.sql</code>, matching in <code class="f">ssi/matching/</code>, verdicts in <code class="f">ssi/scoring/verdict.py</code></footer>
+</div>
+</body>
+</html>
