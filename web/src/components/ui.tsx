@@ -85,7 +85,7 @@ export function Section({
   );
 }
 
-/** Link to the inspection on osha.gov (opens in a new tab). */
+/** Link to OSHA's search, filtered to this inspection's employer, state and opening day (new tab). */
 export function OshaLink({ url, activityNr, compact = false }: { url: string; activityNr: number; compact?: boolean }) {
   return (
     <a
@@ -93,9 +93,9 @@ export function OshaLink({ url, activityNr, compact = false }: { url: string; ac
       target="_blank"
       rel="noopener noreferrer"
       className="link inline-flex items-center gap-1 whitespace-nowrap tabular-nums"
-      aria-label={`Inspection ${activityNr} on osha.gov (opens in a new tab)`}
+      aria-label={`Find inspection ${activityNr} on osha.gov (opens in a new tab)`}
     >
-      {compact ? `#${activityNr}` : `Inspection ${activityNr}`}
+      {compact ? `#${activityNr}` : "Find it on osha.gov"}
       <IconExternal size={13} />
     </a>
   );

@@ -8,7 +8,7 @@ A GC bidding a job pastes in its 10–15 subcontractors and gets a ranked scorec
   - Matching is automatic. The GC is only asked yes/no when an uncertain record carries a red flag.
   - "No OSHA record" is shown as *unknown*, never as clean.
 - **The foreman's view.** A phone chat that answers only from a fixed set of named queries.
-  - Every figure is checked against the query results, and every cited inspection opens its record (citations, penalties, accident narrative), with a link to osha.gov.
+  - Every figure is checked against the query results, and every cited inspection opens its record (citations, penalties, accident narrative), with a link to find it on osha.gov.
   - If "the mechanical sub" could mean two subs, it asks which one.
 - **Data:** the last 10 years of OSHA construction enforcement: 322,607 inspections and 584,919 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
@@ -114,6 +114,7 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 | State plans use their own codes | 23% of construction citations (WA `296-155`, OR `OAR 437`, MI, CA Title 8) | Hazard map covers them |
 | A 2026 load batch shifted a column | Construction operation landed in `const_op_cause` (394/394 cross-checks) | Fixed in the pipeline |
 | Blank ≠ zero | Penalties blank 37–71% of the time before 2010; $0 after | Nullable penalties; old history judged by citation *type*, not dollars |
+| The published IDs aren't osha.gov's IDs | Activity `348557646` in the data is inspection `1395197.015` on osha.gov; only the office code (`0454722`) is shared | Evidence opens the record in the app; the osha.gov link is a search by employer, state and opening day |
 | Fields that look useful but aren't | `why_no_insp` is filled on ~100% of rows; `state_flag` is always empty; `nr_in_estab` goes up to 1,000,000; `fta_penalty` is mostly `0.00` | Kept raw, with no logic built on them |
 
 **How far back.** The warehouse keeps the last **10 years** by default (`SSI_HISTORY_YEARS`). Within that, two tiers:
@@ -188,7 +189,7 @@ The `sub_id` parameter is an **enum of this project's subs**, so the model can't
 **Guards enforced in code, not in the prompt** ([ssi/agent/foreman.py](ssi/agent/foreman.py)):
 1. **Precondition.** A sub with unanswered match questions returns `needs_confirmation` from every tool.
 2. **Grounding.** Every number, date and inspection ID in the answer must appear in the tool results. Queries precompute every figure the model might quote (totals, counts with citations), and the prompt says "quote, never compute". The check accepts a date written out ("November 3, 2025" for `2025-11-03`) and the number of rows a tool returned. A failure gets one retry, then a deterministic fallback rendered from the tool results; an empty reply gets one nudge, then the same fallback.
-3. **Citations.** Inspection IDs become chips that open the inspection's record in the app. Each record links to OSHA's page (`establishment.inspection_detail?id=<activity_nr>.015`) as a secondary check: osha.gov puts a human-verification step in front of it, so the app doesn't rely on it.
+3. **Citations.** Inspection IDs become chips that open the inspection's record in the app. Each record also links to osha.gov, but **osha.gov numbers inspections differently from the published data** (activity `348557646` in the data is inspection `1395197.015` on the site, and nothing in the data links the two), so a direct link isn't possible. The link is an OSHA search filtered to the employer, site state and opening day, which lists that one inspection. osha.gov also puts a human-verification step in front of it, so the app never relies on it.
 4. **Coverage.** The "based on N inspections, data as of…, accident detail through…" note is appended by code, never written by the model.
 
 **Models.** Each role has its own model, chosen in `.env`:

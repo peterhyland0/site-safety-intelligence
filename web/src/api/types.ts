@@ -27,11 +27,32 @@ export type AskStatus =
 
 export type LookbackYears = 3 | 5 | 10;
 
-export const OSHA_INSPECTION_URL =
-  "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}.015";
+/**
+ * osha.gov numbers inspections differently from the published data (activity 348557646 is inspection
+ * 1395197.015 there), so the API links a search filtered to the employer, site state and opening day.
+ * Mirrors osha_search_url in ssi/queries/core.py; used by the mock API and as a fallback.
+ */
+export const OSHA_SEARCH_PAGE = "https://www.osha.gov/ords/imis/establishment.html";
 
-export function oshaInspectionUrl(activityNr: number): string {
-  return OSHA_INSPECTION_URL.replace("{activity_nr}", String(activityNr));
+export function oshaSearchUrl(name: string | null, state: string | null, openDate: string | null): string {
+  if (!name || !openDate) return OSHA_SEARCH_PAGE;
+  const [y, m, d] = openDate.slice(0, 10).split("-");
+  const q: [string, string][] = [
+    ["establishment", name],
+    ...(state ? ([["state", state]] as [string, string][]) : []),
+    ["officetype", "all"],
+    ["office", "all"],
+    ["sitezip", "100000"],
+    ["startmonth", m],
+    ["startday", d],
+    ["startyear", y],
+    ["endmonth", m],
+    ["endday", d],
+    ["endyear", y],
+    ["p_case", "all"],
+    ["p_violations_exist", "both"],
+  ];
+  return `https://www.osha.gov/ords/imis/establishment.search?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
 }
 
 // --- projects and subs ---------------------------------------------------------------------------

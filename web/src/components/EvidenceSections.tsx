@@ -1,7 +1,7 @@
 import type { HazardRow, ItaYear, Licence, MatchedEstablishment, MatchQuestion, RedFlag } from "../api/types";
 import { formatDate, formatInt, formatMoney, formatRate, plural, yearRange } from "../lib/format";
 import { IconFlag, IconOctagonAlert } from "./Icons";
-import { OshaLink } from "./ui";
+import { EvidenceChip } from "./InspectionSheet";
 
 // --- Match questions ---------------------------------------------------------------------------------
 const SUGGESTION: Record<NonNullable<MatchQuestion["ai_suggestion"]>, string> = {
@@ -116,7 +116,7 @@ export function RedFlagsTable({ flags }: { flags: RedFlag[] }) {
               {f.shared_site_n ? ` · ${plural(f.shared_site_n, "other employer")} on site` : ""}
             </p>
             <p className="mt-1">
-              <OshaLink url={f.url} activityNr={f.activity_nr} />
+              <EvidenceChip activityNr={f.activity_nr} />
             </p>
           </li>
         ))}
@@ -153,7 +153,7 @@ export function RedFlagsTable({ flags }: { flags: RedFlag[] }) {
                 <td className="py-2 pr-3 font-mono text-[13px] whitespace-nowrap text-ink-2">{f.standard ?? "—"}</td>
                 <td className="py-2 pr-3 text-ink-2 tabular-nums">{penalty(f)}</td>
                 <td className="py-2">
-                  <OshaLink url={f.url} activityNr={f.activity_nr} compact />
+                  <EvidenceChip activityNr={f.activity_nr} />
                 </td>
               </tr>
             ))}

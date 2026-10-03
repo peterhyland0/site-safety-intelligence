@@ -19,7 +19,7 @@ vi.mock("../api/client", async (importOriginal) => {
   return { ...actual, MOCK_MODE: false, api };
 });
 
-const OSHA_URL = "https://www.osha.gov/ords/imis/establishment.inspection_detail?id=1598712.015";
+const OSHA_URL = "https://www.osha.gov/ords/imis/establishment.search?establishment=SUMMIT%20RIDGE%20ROOFING%20LLC&state=TN&startmonth=03&startday=14&startyear=2022";
 
 const inspection: InspectionDetail = {
   activity_nr: 1598712,
@@ -121,7 +121,7 @@ describe("Foreman chat", () => {
     const sheet = await screen.findByRole("dialog", { name: "Inspection 1598712" });
     expect(await within(sheet).findByText(/Fall protection/)).toBeInTheDocument();
     expect(within(sheet).getByText("SUMMIT RIDGE ROOFING LLC")).toBeInTheDocument();
-    expect(within(sheet).getByRole("link", { name: /Inspection 1598712 on osha.gov/ })).toHaveAttribute("href", OSHA_URL);
+    expect(within(sheet).getByRole("link", { name: /Find inspection 1598712 on osha.gov/ })).toHaveAttribute("href", OSHA_URL);
 
     await user.click(within(sheet).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

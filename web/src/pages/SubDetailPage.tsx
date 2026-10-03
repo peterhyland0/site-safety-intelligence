@@ -10,7 +10,7 @@ import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
 import { TrendChart } from "../components/TrendChart";
 import { EvidenceChip } from "../components/InspectionSheet";
-import { BackLink, ErrorBanner, InlineError, Loading, OshaLink, Section } from "../components/ui";
+import { BackLink, ErrorBanner, InlineError, Loading, Section } from "../components/ui";
 import { VerdictChip } from "../components/VerdictChip";
 import { formatDate, formatMoney, formatRate, plural, yearRange } from "../lib/format";
 import { useAdjudication } from "../lib/useAdjudication";
@@ -263,7 +263,7 @@ export function SubDetailPage() {
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <InspectionBadges row={o} />
-                  <OshaLink url={o.url} activityNr={o.activity_nr} compact />
+                  <EvidenceChip activityNr={o.activity_nr} />
                 </div>
               </li>
             ))}

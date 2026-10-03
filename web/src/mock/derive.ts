@@ -3,7 +3,7 @@
  * backend's verdict rules (see /methodology). Only used when VITE_MOCK=1.
  */
 import {
-  oshaInspectionUrl,
+  oshaSearchUrl,
   type CitationRow,
   type Coverage,
   type HazardRow,
@@ -83,7 +83,7 @@ export function toInspectionRow(sub: FxSub, i: FxInspection): InspectionRow {
     fatality_status: i.fatality,
     shared_site_n: i.shared,
     dq_flags: i.dq ?? [],
-    url: oshaInspectionUrl(i.nr),
+    url: oshaSearchUrl(estOf(sub, i.est)?.display_name ?? null, i.state, i.open),
   };
 }
 
@@ -114,7 +114,7 @@ function redFlagsFor(sub: FxSub, inspections: FxInspection[], bucket: "matched" 
       shared_site_n: i.shared,
       establishment_name: estOf(sub, i.est)?.display_name ?? "",
       bucket,
-      url: oshaInspectionUrl(i.nr),
+      url: oshaSearchUrl(estOf(sub, i.est)?.display_name ?? null, i.state, i.open),
     };
     const cits = i.cits.filter(live);
     if (i.fatality === "fatality_cited" || i.fatality === "fatality_inspected_not_cited") {

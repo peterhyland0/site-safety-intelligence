@@ -189,7 +189,10 @@ export function InspectionDetailView({ detail }: { detail: InspectionDetail }) {
 
       <p>
         <OshaLink url={detail.url} activityNr={detail.activity_nr} />{" "}
-        <span className="text-muted">on osha.gov for the official record (it may ask you to confirm you're human first).</span>
+        <span className="text-muted">
+          for the official record. OSHA's site uses its own inspection numbers, so this opens its search for this
+          employer on {formatDate(detail.open_date)}; it may ask you to confirm you're human first.
+        </span>
       </p>
     </div>
   );

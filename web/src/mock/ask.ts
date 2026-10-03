@@ -5,7 +5,7 @@
  *
  * Test hooks: include "#nokey" in a question to see the no_api_key state, "#guard" for guard_failed.
  */
-import { oshaInspectionUrl, type AskRequest, type AskResponse, type Citation } from "../api/types";
+import { OSHA_SEARCH_PAGE, type AskRequest, type AskResponse, type Citation } from "../api/types";
 import { toCard, toDetail } from "./derive";
 import type { FxProject, FxSub } from "./model";
 
@@ -17,7 +17,7 @@ const money = (n: number | null) =>
   n == null ? "not recorded" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 function cites(nrs: number[]): Citation[] {
-  return [...new Set(nrs)].map((n) => ({ activity_nr: n, url: oshaInspectionUrl(n) }));
+  return [...new Set(nrs)].map((n) => ({ activity_nr: n, url: OSHA_SEARCH_PAGE }));
 }
 
 function reply(partial: Partial<AskResponse> & Pick<AskResponse, "status" | "answer">): AskResponse {

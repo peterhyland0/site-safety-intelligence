@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from datetime import date
+from urllib.parse import quote, urlencode
 
 from ssi import config
 from ssi.api import schemas as S
@@ -31,8 +32,21 @@ RED_FLAG_LABELS = {
 }
 
 
+def osha_search_url(name: str | None, state: str | None, open_date) -> str:
+    """osha.gov search for one inspection: employer name as OSHA recorded it, site state, opening day."""
+    if not name or not open_date:
+        return S.OSHA_SEARCH_PAGE
+    y, m, d = str(open_date)[:10].split("-")
+    q = {"establishment": name, **({"state": state} if state else {}), "officetype": "all", "office": "all",
+         "sitezip": "100000", "startmonth": m, "startday": d, "startyear": y, "endmonth": m, "endday": d,
+         "endyear": y, "p_case": "all", "p_violations_exist": "both"}
+    return f"{S.OSHA_SEARCH_URL}?{urlencode(q, quote_via=quote)}"
+
+
 def url(activity_nr: int) -> str:
-    return S.OSHA_INSPECTION_URL.format(activity_nr=activity_nr)
+    r = warehouse.one("SELECT estab_name_raw, site_state, open_date FROM osha.inspection WHERE activity_nr = ?",
+                      [activity_nr])
+    return osha_search_url(r["estab_name_raw"], r["site_state"], r["open_date"]) if r else S.OSHA_SEARCH_PAGE
 
 
 def _labels(table: str, key: str, value: str, fallback: dict) -> dict:
@@ -99,7 +113,7 @@ def red_flags(keys: list[str]) -> list[S.RedFlag]:
         return []
     hl = hazard_labels()
     rs = warehouse.rows(
-        f"""SELECT r.*, i.estab_name_raw AS establishment_name
+        f"""SELECT r.*, i.estab_name_raw AS establishment_name, i.site_state AS insp_state, i.open_date AS insp_open
             FROM mart.red_flag r JOIN osha.inspection i USING (activity_nr)
             WHERE r.establishment_key IN {_in(keys)} ORDER BY r.event_date DESC NULLS LAST""")
     return [S.RedFlag(kind=r["kind"], label=RED_FLAG_LABELS.get(r["kind"], r["kind"]),
@@ -109,7 +123,8 @@ def red_flags(keys: list[str]) -> list[S.RedFlag]:
                       penalty_initial=float(r["penalty_initial"]) if r["penalty_initial"] is not None else None,
                       penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
                       case_open=bool(r["case_open"]), shared_site_n=r["shared_site_n"] or 1,
-                      establishment_name=r["establishment_name"], url=url(r["activity_nr"])) for r in rs]
+                      establishment_name=r["establishment_name"],
+                      url=osha_search_url(r["establishment_name"], r["insp_state"], r["insp_open"])) for r in rs]
 
 
 def hazards(keys: list[str], window: int) -> list[S.HazardRow]:
@@ -177,7 +192,8 @@ def _inspection_row(r: dict, itl: dict) -> S.InspectionRow:
         penalty_current=float(r["penalty_current"]) if r["penalty_current"] is not None else None,
         fatality_status=r["fatality_status"] if r["fatality_status"] in
         ("fatality_cited", "fatality_inspected_not_cited", "fatcat_cited", "accident_outcome_unknown") else "none",
-        shared_site_n=r["site_group_n"] or 1, dq_flags=list(r["dq_flags"] or []), url=url(r["activity_nr"]))
+        shared_site_n=r["site_group_n"] or 1, dq_flags=list(r["dq_flags"] or []),
+        url=osha_search_url(r["estab_name_raw"], r["site_state"], r["open_date"]))
 
 
 def inspections(keys: list[str], offset: int = 0, limit: int = 25, open_only: bool = False,

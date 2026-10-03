@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "../api/client";
-import { oshaInspectionUrl, type InspectionDetail } from "../api/types";
+import { OSHA_SEARCH_PAGE, type InspectionDetail } from "../api/types";
 import { formatDate } from "../lib/format";
 import { IconSpinner } from "./Icons";
 import { InspectionBadges, InspectionDetailView } from "./InspectionList";
-import { InlineError, OshaLink } from "./ui";
+import { InlineError } from "./ui";
 
 /**
  * Tappable inspection number. Opens the inspection's record from our own data (citations, penalties,
@@ -111,8 +111,10 @@ export function InspectionSheet({ activityNr, onClose }: { activityNr: number; o
             <div className="space-y-2 text-sm">
               <InlineError message={error} />
               <p>
-                <OshaLink url={oshaInspectionUrl(activityNr)} activityNr={activityNr} />{" "}
-                <span className="text-muted">on osha.gov.</span>
+                <a href={OSHA_SEARCH_PAGE} target="_blank" rel="noopener noreferrer" className="link">
+                  Search OSHA's establishment records
+                </a>
+                <span className="text-muted"> instead.</span>
               </p>
             </div>
           ) : (

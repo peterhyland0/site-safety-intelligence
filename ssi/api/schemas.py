@@ -17,7 +17,11 @@ MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "accident_outcome_unknown", "none"]
 AskStatus = Literal["answered", "clarify", "unanswerable", "guard_failed", "needs_confirmation", "no_api_key"]
 
-OSHA_INSPECTION_URL = "https://www.osha.gov/ords/imis/establishment.inspection_detail?id={activity_nr}.015"
+# osha.gov numbers inspections differently from the published data (activity 348557646 is inspection
+# 1395197.015 on the site, with nothing linking the two), so links are a search filtered to the employer,
+# site state and opening day, which lists the one inspection with OSHA's own link to it.
+OSHA_SEARCH_URL = "https://www.osha.gov/ords/imis/establishment.search"
+OSHA_SEARCH_PAGE = "https://www.osha.gov/ords/imis/establishment.html"
 
 
 # --- projects and subs ---------------------------------------------------------------------------
