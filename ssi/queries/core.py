@@ -83,7 +83,16 @@ def scope(sub_id: str) -> dict:
     with pg.conn() as c:
         rows = c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()
         qs = c.execute("SELECT * FROM app.match_question WHERE sub_id = %s ORDER BY created_at", [sub_id]).fetchall()
-    out = {"matched": [], "possible": [], "excluded": [], "note": None, "rows": {}, "questions": qs}
+        # other subs on the project with a matched record in common (likely the same company entered twice)
+        same = c.execute("""SELECT o.sub_id::text AS sub_id, o.entered_name AS name
+                            FROM app.project_sub me
+                            JOIN app.project_sub o ON o.project_id = me.project_id AND o.sub_id <> me.sub_id
+                            WHERE me.sub_id = %s AND EXISTS (
+                              SELECT 1 FROM app.sub_match a
+                              JOIN app.sub_match b ON b.sub_id = o.sub_id AND b.establishment_key = a.establishment_key
+                              WHERE a.sub_id = me.sub_id AND a.bucket = 'matched' AND b.bucket = 'matched')
+                            ORDER BY o.position, o.created_at""", [sub_id]).fetchall()
+    out = {"matched": [], "possible": [], "excluded": [], "note": None, "rows": {}, "questions": qs, "same_records_as": same}
     for r in rows:
         if r["establishment_key"] == "__note__":
             out["note"] = r["rationale"]
@@ -365,6 +374,7 @@ def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
         last_year=max(d["years"]) if d["years"] else None,
         trir_latest=next((r.trir for r in reversed(d["rates"]) if r.trir is not None), None),
         licence_status=(f"{d['licences'][0].source}: {d['licences'][0].status}" if d["licences"] else None),
+        same_records_as=[S.SubRef(**r) for r in d["scope"]["same_records_as"]],
     )
 
 

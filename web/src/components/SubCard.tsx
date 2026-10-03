@@ -60,6 +60,14 @@ export function SubCard({
             {[where, card.trade_label ?? card.trade].filter(Boolean).join(" · ")}
           </p>
           {showOshaName ? <p className="text-xs text-muted">OSHA name: {card.display_name}</p> : null}
+          {card.same_records_as?.length ? (
+            <p className="mt-1 flex gap-1.5 text-sm font-medium text-review-fg">
+              <IconTriangleAlert size={16} className="mt-0.5 shrink-0" />
+              <span>
+                Same OSHA record as {card.same_records_as.map((s) => s.name).join(", ")}. Same company? Remove one.
+              </span>
+            </p>
+          ) : null}
         </div>
         <VerdictChip verdict={card.verdict} label={card.verdict_label} />
       </div>

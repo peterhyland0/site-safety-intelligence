@@ -140,6 +140,13 @@ export interface SubCard {
   /** from OSHA ITA 300A if linked */
   trir_latest: number | null;
   licence_status: string | null;
+  /** other subs on this project matched to the same OSHA record: probably the same company entered twice */
+  same_records_as?: SubRef[];
+}
+
+export interface SubRef {
+  sub_id: string;
+  name: string;
 }
 
 export interface ProjectDetail {

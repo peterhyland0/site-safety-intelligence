@@ -3,7 +3,15 @@ import { api, errorMessage } from "../api/client";
 import type { SubCard } from "../api/types";
 import { plural } from "../lib/format";
 import { US_STATES } from "../lib/parseSubs";
-import { checkRows, emptyRow, rowsFromPaste, TRADE_SUGGESTIONS, type RowCheck, type SubRow } from "../lib/subRows";
+import {
+  checkRows,
+  duplicatesFrom,
+  emptyRow,
+  rowsFromPaste,
+  TRADE_SUGGESTIONS,
+  type RowCheck,
+  type SubRow,
+} from "../lib/subRows";
 import { IconPlus, IconTrash } from "./Icons";
 import { InlineError } from "./ui";
 
@@ -38,17 +46,36 @@ export function AddSubsBox({
   const [focusId, setFocusId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // rows the server turned away as already on the project, by row id; cleared when the row is edited
+  const [taken, setTaken] = useState<Record<number, string>>({});
   const ids = { title: useId(), help: useId(), paste: useId(), trades: useId() };
 
-  const { checks, valid } = useMemo(() => checkRows(rows, defaultState), [rows, defaultState]);
+  const { checks, valid, validIds } = useMemo(() => {
+    const res = checkRows(rows, defaultState);
+    const checks = res.checks.map((c, i) => {
+      const msg = taken[rows[i].id];
+      return msg ? { ...c, errors: [...c.errors, msg] } : c;
+    });
+    return { ...res, checks };
+  }, [rows, defaultState, taken]);
   const needFixing = checks.filter((c) => c.errors.length).length;
 
   useEffect(() => {
     if (focusId != null) document.getElementById(`sub-${focusId}-name`)?.focus();
   }, [focusId]);
 
+  function clearTaken(id: number) {
+    setTaken((t) => {
+      if (!(id in t)) return t;
+      const rest = { ...t };
+      delete rest[id];
+      return rest;
+    });
+  }
+
   function update(id: number, patch: Partial<SubRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    clearTaken(id);
   }
 
   function addRow() {
@@ -59,6 +86,7 @@ export function AddSubsBox({
 
   function removeRow(id: number) {
     setRows((rs) => (rs.length > 1 ? rs.filter((r) => r.id !== id) : [emptyRow()]));
+    clearTaken(id);
   }
 
   function fillFromPaste() {
@@ -80,7 +108,13 @@ export function AddSubsBox({
       setNotice(null);
       onAdded(cards ?? []);
     } catch (err) {
-      setError(errorMessage(err));
+      const dups = duplicatesFrom(err);
+      if (dups.length) {
+        // nothing was added; the highlighted rows say which sub each one repeats
+        setTaken(Object.fromEntries(dups.filter((d) => validIds[d.row] != null).map((d) => [validIds[d.row], d.message])));
+      } else {
+        setError(errorMessage(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -341,6 +375,17 @@ function RowFields({
               {w}
             </p>
           ))}
+          {check.place ? (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm mt-1.5"
+              onClick={() =>
+                onChange({ name: check.place!.name, city: check.place!.city, state: check.place!.state, badState: null })
+              }
+            >
+              Move “{check.place.city}, {check.place.state}” to city and state
+            </button>
+          ) : null}
         </div>
       ) : null}
     </li>

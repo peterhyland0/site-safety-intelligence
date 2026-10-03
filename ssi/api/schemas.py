@@ -66,6 +66,11 @@ class Reason(BaseModel):
     figures: dict[str, float | int | str | None] = {}
 
 
+class SubRef(BaseModel):
+    sub_id: str
+    name: str
+
+
 class SubCard(BaseModel):
     sub_id: str
     entered_name: str
@@ -93,6 +98,8 @@ class SubCard(BaseModel):
     last_year: int | None
     trir_latest: float | None = None  # from OSHA ITA 300A if linked
     licence_status: str | None = None
+    # other subs on this project matched to the same OSHA record: probably the same company entered twice
+    same_records_as: list[SubRef] = []
 
 
 class ProjectDetail(BaseModel):

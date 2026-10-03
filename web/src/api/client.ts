@@ -45,11 +45,14 @@ export class ApiError extends Error {
   }
 }
 
-/** Pull a readable message out of a FastAPI error body ({detail: string | [{msg}]}). */
+/** Pull a readable message out of a FastAPI error body ({detail: string | {message} | [{msg}]}). */
 function detailMessage(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
   const detail = (body as { detail?: unknown }).detail;
   if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && typeof (detail as { message?: unknown }).message === "string") {
+    return (detail as { message: string }).message;
+  }
   if (Array.isArray(detail)) {
     const msgs = detail
       .map((d) => (d && typeof d === "object" ? (d as { msg?: unknown }).msg : null))

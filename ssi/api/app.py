@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from ssi import config
+from ssi.api import duplicates
 from ssi.api import schemas as S
 from ssi.llm import client as llm_client
 from ssi.matching import adjudicate as ADJ
@@ -192,17 +193,29 @@ def update_project(project_id: str, body: S.ProjectUpdate):
 @app.post("/api/projects/{project_id}/subs", response_model=list[S.SubCard])
 def add_subs(project_id: str, body: S.SubsCreate):
     p = _project(project_id)
+    rows = [r for r in body.rows if r.name.strip()]
+    states = [(r.state or p["state"] or "").strip().upper()[:2] or None for r in rows]
     created = []
     with pg.conn() as c:
+        existing = c.execute("SELECT sub_id, entered_name, entered_state FROM app.project_sub WHERE project_id = %s",
+                             [project_id]).fetchall()
+        keys = duplicates.name_keys([r.name for r in rows] + [e["entered_name"] for e in existing])
+        repeats = duplicates.find(
+            [{"name": r.name.strip(), "key": k, "state": st} for r, k, st in zip(rows, keys, states)],
+            [{"sub_id": e["sub_id"], "name": e["entered_name"], "key": k, "state": e["entered_state"]}
+             for e, k in zip(existing, keys[len(rows):])])
+        if repeats:  # nothing is added: the GC fixes or removes the repeated rows and sends the batch again
+            n = len(repeats)
+            raise HTTPException(409, {"message": f"{n} of these {'is' if n == 1 else 'are'} already on this project. "
+                                                 "Remove or change the highlighted rows, then add again.",
+                                      "duplicates": repeats})
         start = c.execute("SELECT coalesce(max(position), 0) AS m FROM app.project_sub WHERE project_id = %s",
                           [project_id]).fetchone()["m"]
-        for i, row in enumerate(body.rows):
-            if not row.name.strip():
-                continue
+        for i, (row, state) in enumerate(zip(rows, states)):
             s = c.execute("""INSERT INTO app.project_sub (project_id, entered_name, entered_city, entered_state, trade, licence, position)
                              VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
-                          [project_id, row.name.strip(), (row.city or "").strip() or None,
-                           (row.state or p["state"] or "").strip().upper()[:2] or None, row.trade, row.licence, start + i + 1]).fetchone()
+                          [project_id, row.name.strip(), (row.city or "").strip() or None, state, row.trade, row.licence,
+                           start + i + 1]).fetchone()
             created.append(s)
     for s in created:
         match_and_persist(s, p["state"])

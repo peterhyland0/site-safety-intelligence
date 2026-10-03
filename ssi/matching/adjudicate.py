@@ -115,7 +115,6 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
             red.append((crow, decision, rationale if decision else None, n_flags))
         updates.append((bucket, method, conf, rationale, keys))
     questions = questions_for(sub, red)
-    stats["questions"] = len(questions)
     with pg.conn() as c:
         for bucket, method, conf, rationale, keys in updates:
             c.execute("""UPDATE app.sub_match SET bucket = %s, method = %s, confidence = %s, rationale = %s,
@@ -130,6 +129,7 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
                 continue  # already waiting for the GC
             c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
                          VALUES (%s, %s, %s, %s, %s)""", [sub_id, keys, text, suggestion, rationale])
+            stats["questions"] += 1  # count only questions actually asked
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])
     return stats
 

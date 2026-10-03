@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api, errorMessage } from "../api/client";
 import type { Bucket, SubDetail } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AskForemanButton } from "../components/AskForemanButton";
 import { HazardBreakdown, InjuryRates, LicenceCard, QuestionCard, RedFlagsTable } from "../components/EvidenceSections";
-import { IconInfo, IconSpinner, IconTrash } from "../components/Icons";
+import { IconInfo, IconSpinner, IconTrash, IconTriangleAlert } from "../components/Icons";
 import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
@@ -112,6 +112,30 @@ export function SubDetailPage() {
         </div>
         <p className="mt-2 text-sm text-ink-2">{VERDICTS[c.verdict].meaning}</p>
         <p className="mt-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-2">{d.coverage.sentence}</p>
+        {c.same_records_as?.length ? (
+          <div className="mt-3 flex gap-2 rounded-xl border border-review-line bg-review-bg px-3.5 py-2.5 text-sm text-review-fg">
+            <IconTriangleAlert size={16} className="mt-0.5 shrink-0" />
+            <p>
+              Matched to the same OSHA record as{" "}
+              {c.same_records_as.map((s, i) => (
+                <Fragment key={s.sub_id}>
+                  {i ? ", " : ""}
+                  <Link
+                    to={`/projects/${encodeURIComponent(projectId)}/subs/${encodeURIComponent(s.sub_id)}`}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    {s.name}
+                  </Link>
+                </Fragment>
+              ))}
+              , also on this project. If it's the same company,{" "}
+              <a href="#remove" className="font-semibold underline underline-offset-2">
+                remove one
+              </a>
+              .
+            </p>
+          </div>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <AskForemanButton projectId={projectId} label="Ask about this sub" className="btn btn-secondary btn-sm" />
         </div>
@@ -349,7 +373,7 @@ function RemoveSub({ projectId, subId, name }: { projectId: string; subId: strin
     }
   }
   return (
-    <div className="pt-2">
+    <div id="remove" className="scroll-mt-20 pt-2">
       <InlineError message={error} />
       <button type="button" className="btn btn-ghost btn-sm text-high-fg" onClick={remove} disabled={busy}>
         <IconTrash size={16} />
