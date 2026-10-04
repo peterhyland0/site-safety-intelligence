@@ -425,15 +425,22 @@ def test_web_rows_survive_a_rematch_and_a_profile_leaves_them_and_their_question
 
 @local_db
 def test_web_questions_dont_hold_up_the_assistant(clark, no_budget_db):
+    from types import SimpleNamespace
+
     from ssi.agent.tools import Toolbox
-    p, s, _ = clark
+    from ssi.queries import core as Q
+    p, s, k = clark
     sid = str(s["sub_id"])
     tb = Toolbox(p, [s])
-    web = {"kind": "web", "text": "Web pages tie this OSHA record to another company"}
-    tb.cache[sid] = {"scope": {"pending_questions": [web]}}
-    assert tb._precondition(sid) is None
-    tb.cache[sid] = {"scope": {"pending_questions": [web, {"kind": "red_flag", "text": "Red flags: yours?"}]}}
-    assert tb._precondition(sid)["pending_questions"] == ["Red flags: yours?"]
+
+    def ask(*qs):
+        tb.cache[sid] = {"scope": {"pending_questions": list(qs)}, "facts": SimpleNamespace(**Q.question_facts(list(qs)))}
+        return tb._precondition(sid)
+
+    web = {"kind": "web", "text": "Web pages tie this OSHA record to another company", "establishment_keys": [k["kca"]]}
+    assert ask(web) is None
+    assert ask(web, {"kind": "red_flag", "text": "Red flags: yours?", "establishment_keys": [k["k800"]]})[
+        "pending_questions"] == ["Red flags: yours?"]
 
 
 # --- the searches of a press: cache, cap and daily limit ------------------------------------------------------------

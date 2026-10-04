@@ -1,7 +1,8 @@
 """Foreman Q&A: plain-English questions about the project's subs, answered only through named queries.
 
 Guards enforced in code, not in the prompt:
-  1. precondition - a sub with unanswered match questions returns needs_confirmation from every tool;
+  1. precondition - a sub with an unanswered match question that could add a red flag returns needs_confirmation
+                    from every tool (its other open questions don't: results note them instead);
   2. grounding    - every number/date/ID in the answer must appear in the tool results (one retry, then a
                     deterministic fallback);
   3. citations    - inspection IDs in the answer become osha.gov links;
@@ -42,7 +43,10 @@ Erectors"): ask whether they mean that sub or a company that isn't on the projec
 - For a company that is not on the project, you need its name, city and state before calling \
 lookup_company; ask for whatever is missing, and say its result is unconfirmed.
 - When you name a sub, use its name from the project list.
-- If a tool returns needs_confirmation, tell the foreman the GC has to confirm that sub's possible matches first.
+- If a tool returns needs_confirmation, tell the foreman the GC has to confirm that sub's possible matches \
+with red flags first.
+- If a result has open_match_questions, add one line saying those records wait for the GC's answer and \
+aren't counted.
 - If no tool can answer, call report_unanswerable and say what you can't answer."""
 
 HAZARD_FALLBACK = ["fall_protection", "scaffolds", "ladders", "electrical", "excavation_trenching", "cranes_rigging",

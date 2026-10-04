@@ -118,23 +118,26 @@ def scope(sub_id: str) -> dict:
     return out
 
 
-def question_facts(questions: list[dict]) -> dict[str, int]:
-    """Open match questions as verdict facts, by what an answer can change. A red-flag question (kind 'red_flag', or
-    NULL), or any other with a red-flagged record, can add a red flag. The rest hold records that are possible, counted
-    neither way: records at locations a company profile lists, and others (a data update regrouped records). The web
-    check's questions are suggestions about records that don't count yet: they don't make it Review."""
+def red_flag_questions(questions: list[dict]) -> list[dict]:
+    """The open match questions whose answer can add a red flag: a red-flag question (kind 'red_flag', or NULL), or any
+    other with a red-flagged record. Never the web check's: its questions are suggestions about records that don't
+    count yet."""
     questions = [q for q in questions if q.get("kind") != "web"]
     other = [q for q in questions if (q.get("kind") or "red_flag") != "red_flag"]
     flagged = C.red_flag_counts(sorted({k for q in other for k in q["establishment_keys"]}))
-    out = {"pending_questions": len(questions) - len(other), "pending_profile_records": 0, "pending_other_questions": 0}
-    for q in other:
-        if any(flagged.get(k) for k in q["establishment_keys"]):
-            out["pending_questions"] += 1
-        elif q["kind"] == "profile":
-            out["pending_profile_records"] += len(q["establishment_keys"])
-        else:
-            out["pending_other_questions"] += 1
-    return out
+    return [q for q in questions if (q.get("kind") or "red_flag") == "red_flag"
+            or any(flagged.get(k) for k in q["establishment_keys"])]
+
+
+def question_facts(questions: list[dict]) -> dict[str, int]:
+    """Open match questions as verdict facts, by what an answer can change: the ones that can add a red flag
+    (red_flag_questions) make it Review. The rest hold records that are possible, counted neither way: records at
+    locations a company profile lists, and others (a data update regrouped records). The web check's count for nothing."""
+    at_stake = red_flag_questions(questions)
+    rest = [q for q in questions if q.get("kind") != "web" and q not in at_stake]
+    return {"pending_questions": len(at_stake),
+            "pending_profile_records": sum(len(q["establishment_keys"]) for q in rest if q["kind"] == "profile"),
+            "pending_other_questions": sum(1 for q in rest if q["kind"] != "profile")}
 
 
 _KEY_RE = re.compile(r"^[0-9a-f]{32}$")

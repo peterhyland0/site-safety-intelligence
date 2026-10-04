@@ -234,6 +234,14 @@ function flagFacts(inspections: FxInspection[]): FlagFact[] {
   return out;
 }
 
+/** As ssi/queries/core.py red_flag_questions: the open questions whose answer can add a red flag (a red-flag
+ *  question, or any other with a red-flagged record). Never the web check's. These make the verdict Review and hold up
+ *  the assistant's answers about the sub. */
+export function redFlagQuestions(sub: FxSub): FxSub["questions"] {
+  return sub.questions.filter((q) => q.kind !== "web" && ((q.kind ?? "red_flag") === "red_flag" ||
+    flagFacts(sub.inspections.filter((i) => q.establishment_keys.includes(i.est))).length > 0));
+}
+
 function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: Reason[] } {
   const matched = inBucket(sub, "matched");
   const reasons: Reason[] = [];
@@ -296,12 +304,10 @@ function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: 
   }
   // as ssi/queries/core.py question_facts: only a question with a red flag at stake makes the verdict Review, and the
   // web check's questions are suggestions about records that don't count yet
-  const asked = sub.questions.filter((q) => q.kind !== "web");
-  const atStake = (q: FxSub["questions"][number]) =>
-    (q.kind ?? "red_flag") === "red_flag" || flagFacts(sub.inspections.filter((i) => q.establishment_keys.includes(i.est))).length > 0;
-  const redQs = asked.filter(atStake);
-  const profileRecords = asked.filter((q) => !atStake(q) && q.kind === "profile").reduce((a, q) => a + q.establishment_keys.length, 0);
-  const otherQs = asked.filter((q) => !atStake(q) && q.kind !== "profile").length;
+  const redQs = redFlagQuestions(sub);
+  const rest = sub.questions.filter((q) => q.kind !== "web" && !redQs.includes(q));
+  const profileRecords = rest.filter((q) => q.kind === "profile").reduce((a, q) => a + q.establishment_keys.length, 0);
+  const otherQs = rest.filter((q) => q.kind !== "profile").length;
   if (redQs.length) {
     add("R_questions", `${redQs.length} possible match(es) with red flags need your confirmation`, "review", [], { count: redQs.length });
   }

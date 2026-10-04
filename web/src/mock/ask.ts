@@ -5,8 +5,8 @@
  *
  * Test hooks: include "#nokey" in a question to see the no_api_key state, "#guard" for guard_failed.
  */
-import { OSHA_SEARCH_PAGE, type AskResponse, type Citation } from "../api/types";
-import { toCard, toDetail } from "./derive";
+import { OSHA_SEARCH_PAGE, type AskResponse, type Citation, type SubDetail } from "../api/types";
+import { redFlagQuestions, toCard, toDetail } from "./derive";
 import type { FxProject, FxSub } from "./model";
 
 const fmtDay = (iso: string) =>
@@ -64,10 +64,13 @@ function findSubsByTrade(p: FxProject, q: string): FxSub[] {
 }
 
 function pendingGuard(s: FxSub): AskResponse | null {
-  if (s.needs_adjudication || s.questions.length) {
+  // as the backend's precondition (ssi/agent/tools.py): only a question whose answer can add a red flag holds up an
+  // answer; the others' records are possible, not counted, and the answer notes them (openQuestionsNote)
+  const held = redFlagQuestions(s).length;
+  if (s.needs_adjudication || held) {
     return reply({
       status: "needs_confirmation",
-      answer: `**${s.entered_name}** has ${s.questions.length || "some"} unconfirmed record${s.questions.length === 1 ? "" : "s"} that could change the answer. Confirm ${s.questions.length === 1 ? "it" : "them"} on the sub's page first, then ask again.`,
+      answer: `**${s.entered_name}** has ${held || "some"} unconfirmed record${held === 1 ? "" : "s"} that could change the answer. Confirm ${held === 1 ? "it" : "them"} on the sub's page first, then ask again.`,
       clarify_options: [{ sub_id: s.sub_id, name: s.entered_name }],
       tools_used: ["match_status"],
     });
@@ -75,15 +78,23 @@ function pendingGuard(s: FxSub): AskResponse | null {
   return null;
 }
 
+/** The open questions that don't hold up an answer, worded as the verdict's info reasons (the backend's
+ *  open_match_questions). */
+function openQuestionsNote(d: SubDetail): string {
+  const labels = d.reasons.filter((r) => r.code === "I_profile_questions" || r.code === "I_questions").map((r) => r.label);
+  return labels.length ? `Waiting for your answer, so not counted yet: ${labels.join("; ")}.` : "";
+}
+
 function subSummary(p: FxProject, s: FxSub): AskResponse {
   const guard = pendingGuard(s);
   if (guard) return guard;
   const d = toDetail(s, p.lookback_years);
   const c = d.card;
+  const note = openQuestionsNote(d);
   if (c.verdict === "no_record") {
     return reply({
       status: "answered",
-      answer: `OSHA has **no inspection record** for ${s.entered_name}. That means unknown, not clean: ask them for their TRIR, EMR and safety program.`,
+      answer: `OSHA has **no inspection record** for ${s.entered_name}. That means unknown, not clean: ask them for their TRIR, EMR and safety program.` + (note ? `\n\n${note}` : ""),
       coverage: d.coverage.sentence,
       tools_used: ["sub_summary"],
     });
@@ -95,6 +106,7 @@ function subSummary(p: FxProject, s: FxSub): AskResponse {
       (c.serious_plus_rate != null ? `; serious+ rate ${c.serious_plus_rate.toFixed(2)} per inspection (trade median ${c.trade_p50?.toFixed(2) ?? "n/a"})` : ""),
   );
   if (d.open_cases.length) lines.push(`- ${d.open_cases.length} open case${d.open_cases.length > 1 ? "s" : ""}; those citations may change`);
+  if (note) lines.push(`- ${note}`);
   return reply({
     status: "answered",
     answer: lines.join("\n"),
@@ -114,8 +126,9 @@ function hazardAnswer(p: FxProject, subs: FxSub[], hazardCode: string, hazardNam
     const d = toDetail(s, p.lookback_years);
     coverage.push(d.coverage.sentence);
     const h = d.hazards.find((x) => x.hazard_code === hazardCode);
+    const note = openQuestionsNote(d);
     if (!h) {
-      parts.push(`**${s.entered_name}**: no ${hazardName.toLowerCase()} citations in the OSHA record.`);
+      parts.push(`**${s.entered_name}**: no ${hazardName.toLowerCase()} citations in the OSHA record.${note && ` ${note}`}`);
       continue;
     }
     const insp = s.inspections.filter((i) => s.establishments.find((e) => e.key === i.est)?.bucket === "matched" && i.cits.some((c) => c.hazard === hazardCode));
@@ -124,7 +137,7 @@ function hazardAnswer(p: FxProject, subs: FxSub[], hazardCode: string, hazardNam
     parts.push(
       `**${s.entered_name}**: yes. ${h.citations} ${hazardName.toLowerCase()} citation${h.citations > 1 ? "s" : ""} (${h.serious_plus} serious or worse) across ${h.inspections} inspection${h.inspections > 1 ? "s" : ""}, ${h.first_year}–${h.last_year}.` +
         (repeats.length ? ` ${repeats.length} ${repeats.length > 1 ? "were" : "was"} cited as **repeat**.` : "") +
-        ` Most cited: ${h.top_standards.join(", ")}.`,
+        ` Most cited: ${h.top_standards.join(", ")}.${note && ` ${note}`}`,
     );
   }
   return reply({

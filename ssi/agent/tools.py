@@ -76,12 +76,21 @@ class Toolbox:
 
     def _precondition(self, sub_id: str) -> dict | None:
         d = self.data(sub_id)
-        # the web check's questions are suggestions about records that don't count yet; they don't hold up an answer
-        pending = [q for q in d["scope"]["pending_questions"] if q.get("kind") != "web"]
-        if pending:
+        # as the verdict: only a question whose answer can add a red flag holds up an answer. The records the others
+        # hold are possible, counted neither way, like any possible record the GC isn't asked about (_open_questions)
+        if d["facts"].pending_questions:
             return {"status": "needs_confirmation", "sub": self.subs[sub_id]["entered_name"],
-                    "pending_questions": [q["text"] for q in pending],
-                    "note": "The GC must confirm possible matches before this sub's history can be answered."}
+                    "pending_questions": [q["text"] for q in Q.red_flag_questions(d["scope"]["pending_questions"])],
+                    "note": "The GC must confirm possible matches with red flags before this sub's history can be "
+                            "answered."}
+        return None
+
+    def _open_questions(self, sub_id: str) -> dict | None:
+        """The open match questions that don't hold up an answer, worded as the verdict's info reasons."""
+        labels = [r.label for r in self.data(sub_id)["reasons"] if r.code in ("I_profile_questions", "I_questions")]
+        if labels:
+            return {"questions": labels, "note": "These records wait for the GC's answer. Until then they're possible "
+                                                 "matches: not counted in this result or the verdict."}
         return None
 
     def run(self, name: str, args: dict) -> dict:
@@ -97,6 +106,8 @@ class Toolbox:
             out = fn(**args)
             if isinstance(out, dict) and "sub" not in out:  # name the sub in every per-sub result
                 out = {"sub": self.subs[args["sub_id"]]["entered_name"], **out}
+            if isinstance(out, dict) and (open_qs := self._open_questions(args["sub_id"])):
+                out["open_match_questions"] = open_qs
             return out
         return fn(**args)
 
@@ -114,7 +125,9 @@ class Toolbox:
                                                                  if f.kind in FATALITY_KINDS)),
                          "open_cases": len(Q.inspections(self.data(sid)["keys"], limit=500, provisional_only=True)),
                          "possible_records_not_counted": c.possible_inspections,
-                         "pending_match_questions": c.pending_questions})
+                         "pending_match_questions": c.pending_questions,
+                         # these hold up the per-sub tools (needs_confirmation); the rest don't
+                         "match_questions_with_red_flags": self.data(sid)["facts"].pending_questions})
         return {"subs": rows}
 
     def t_sub_summary(self, sub_id: str) -> dict:
@@ -131,8 +144,8 @@ class Toolbox:
                 "possible_inspections_not_counted": c.possible_inspections,
                 "pending_match_questions": c.pending_questions,
                 "possible_note": ("Possible records might be this sub but weren't confirmed, so they don't count toward "
-                                  "the verdict. The GC is only asked about possible records that carry red flags; "
-                                  "pending_match_questions says whether any are waiting."),
+                                  "the verdict. Some wait for the GC's answer to a match question "
+                                  "(pending_match_questions); until it's answered, they're possible too."),
                 "coverage": Q.coverage(d).sentence}
 
     def t_red_flags(self, sub_id: str, kinds: list[str]) -> dict:
