@@ -60,9 +60,19 @@ rebuild daily at 13:00 UTC (after DOL's ~11:00 UTC update; about 3 minutes on 8 
 the daily rebuild off again.
 
 ## Deploy the website on Vercel
+Live at [site-safety-intelligence.vercel.app](https://site-safety-intelligence.vercel.app): project
+`site-safety-intelligence` in the `agent-mvp` team, linked to `peterhyland0/site-safety-intelligence`, so every push to
+`main` deploys it. To set it up again:
 1. `web/vercel.json` forwards `/api/*` to `peterhyland101210--site-safety-intelligence-web.modal.run`; another
    workspace puts its own Modal URL there.
 2. In the Vercel dashboard: **Add New → Project → import `peterhyland0/site-safety-intelligence`**, set
-   **Root Directory = `web`** (framework: Vite). Deploy.
-3. Settings → Deployment Protection: turn off Vercel Authentication if reviewers should only see the app's own
-   sign-in page.
+   **Root Directory = `web`** (framework: Vite). Deploy. Or from a terminal signed in with `npx vercel login`:
+   ```bash
+   npx vercel api /v11/projects -X POST --scope agent-mvp --input - <<'JSON'
+   {"name": "site-safety-intelligence", "framework": "vite", "rootDirectory": "web",
+    "gitRepository": {"type": "github", "repo": "peterhyland0/site-safety-intelligence"}}
+   JSON
+   ```
+   then push to `main` (or trigger a deployment) for the first build.
+3. Deployment Protection: the default (Standard) keeps the production address public and puts Vercel's sign-in in
+   front of preview URLs. Turn it off only if reviewers should open previews too.
