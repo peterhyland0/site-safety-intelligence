@@ -22,18 +22,6 @@ import modal
 APP_DIR = Path(__file__).parent
 VOL_PATH = "/vol"
 
-volume = modal.Volume.from_name("ssi-data", create_if_missing=True)
-image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .uv_pip_install("duckdb==1.4.5", "fastapi>=0.115", "uvicorn>=0.30", "psycopg[binary,pool]>=3.2", "pydantic>=2.8",
-                    "anthropic>=1.0", "langsmith>=0.3", "httpx>=0.27", "python-dotenv>=1.0", "jellyfish>=1.0", "openai>=1.0")
-    .env({"SSI_DATA_DIR": VOL_PATH, "PYTHONPATH": "/root"})
-    .add_local_dir(APP_DIR / "ssi", "/root/ssi", ignore=["**/__pycache__"])
-    .add_local_dir(APP_DIR / "scripts", "/root/scripts", ignore=["**/__pycache__"])
-    .add_local_dir(APP_DIR / "web" / "dist", "/root/web/dist")
-)
-app = modal.App("site-safety-intelligence", image=image)
-
 # Secrets are opt-in at deploy time, so the data job can run before they exist (Modal refuses to start an
 # app that names a missing secret):
 #   SSI_WITH_DB=1         -> ssi-db (DATABASE_URL: Postgres for the app layer; required by `web`)
@@ -44,13 +32,29 @@ app = modal.App("site-safety-intelligence", image=image)
 #   SSI_WITH_JEV=1        -> ssi-jev (JEV_API_KEY: Jev for clusters without red flags; see docs/adjudicator.md)
 #   SSI_WITH_TAVILY=1     -> ssi-tavily (TAVILY_API_KEY, SSI_PROFILE_BACKEND=tavily: the web check and company
 #                                        profiles; both also need the adjudicator LLM)
-web_secrets = [modal.Secret.from_name(name) for name, flag in
-               (("ssi-db", "SSI_WITH_DB"), ("ssi-glm", "SSI_WITH_GLM"), ("ssi-anthropic", "SSI_WITH_ANTHROPIC"),
+# The container imports this file again and must find the same secrets, or it crash-loops ("Function has 2
+# dependencies but container got 7 object ids"), so the flags set at deploy time go into the image's env.
+SECRET_FLAGS = (("ssi-db", "SSI_WITH_DB"), ("ssi-glm", "SSI_WITH_GLM"), ("ssi-anthropic", "SSI_WITH_ANTHROPIC"),
                 ("ssi-langsmith", "SSI_WITH_LANGSMITH"), ("ssi-jev", "SSI_WITH_JEV"), ("ssi-tavily", "SSI_WITH_TAVILY"))
-               if os.environ.get(flag) == "1"]
+with_flags = {flag: "1" for _, flag in SECRET_FLAGS if os.environ.get(flag) == "1"}
+
+volume = modal.Volume.from_name("ssi-data", create_if_missing=True)
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .uv_pip_install("duckdb==1.4.5", "fastapi>=0.115", "uvicorn>=0.30", "psycopg[binary,pool]>=3.2", "pydantic>=2.8",
+                    "anthropic>=1.0", "langsmith>=0.3", "httpx>=0.27", "python-dotenv>=1.0", "jellyfish>=1.0", "openai>=1.0")
+    .env({"SSI_DATA_DIR": VOL_PATH, "PYTHONPATH": "/root", **with_flags})
+    .add_local_dir(APP_DIR / "ssi", "/root/ssi", ignore=["**/__pycache__"])
+    .add_local_dir(APP_DIR / "scripts", "/root/scripts", ignore=["**/__pycache__"])
+    .add_local_dir(APP_DIR / "web" / "dist", "/root/web/dist")
+)
+app = modal.App("site-safety-intelligence", image=image)
+
+web_secrets = [modal.Secret.from_name(name) for name, flag in SECRET_FLAGS if flag in with_flags]
 
 
-@app.function(volumes={VOL_PATH: volume}, cpu=8, memory=32768, ephemeral_disk=60 * 1024, timeout=2 * 3600,
+# No ephemeral_disk: the default 512 GiB is the smallest Modal accepts, and the build needs about 15 GB
+@app.function(volumes={VOL_PATH: volume}, cpu=8, memory=32768, timeout=2 * 3600,
               schedule=modal.Cron("0 13 * * *"))  # daily, after DOL's ~11:00 UTC refresh
 def refresh(download: bool = True) -> dict:
     """Download the latest OSHA files and rebuild the warehouse on the container's local disk, then copy only
