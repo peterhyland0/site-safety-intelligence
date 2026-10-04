@@ -36,6 +36,7 @@ def _candidate(r: dict, at_address: bool = False) -> Candidate:
         addr_key=r["addr_key"], primary_naics4=r["primary_naics4"], sibling_suffix=r["sibling_suffix"],
         initials_only=bool(r["initials_only"]), at_matched_address=at_address,
         related_only=bool(r.get("related_only")), is_jv=bool(r.get("is_jv")),
+        incorporated=bool(r.get("incorporated")),
     )
 
 
@@ -160,6 +161,16 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     descriptors = C.descriptor_tokens()
     rows = C.search(q.clean, q.core, q.state, sorted(q.aliases))
     q, note = correct_spelling(q, rows)
+    if q.tier == "person":
+        # a person's name with a legal form, typed and on the record, is a registered company's (ROBERT J DEVEREAUX
+        # CORP), not a sole proprietor's: rule P3 doesn't throw away its other offices. Only the records that carry
+        # the person's name are checked
+        q.incorporated = bool(C.with_legal_form([name]))
+        if q.incorporated:
+            same = [r for r in rows if r["name_core"] == q.core or r["clean_name"] in q.aliases | {q.clean}]
+            legal = C.with_legal_form([n for r in same for n in (r["display_name"], *(r["name_variants"] or []))])
+            for r in same:
+                r["incorporated"] = any(n in legal for n in (r["display_name"], *(r["name_variants"] or [])))
     decided: dict[str, tuple[dict, object]] = {}
     for r in rows:
         decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic, descriptors))

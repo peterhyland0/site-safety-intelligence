@@ -28,6 +28,22 @@ def describe_query(name: str) -> dict:
     )
 
 
+def with_legal_form(names: list[str]) -> set[str]:
+    """The raw names that end in a legal form (INC, CORP, LLC, COMPANY…), found by the cleaning's own n9 step: a
+    registered company's name, not a sole proprietor's. A THE or a dangling DBA, which n9 also drops, doesn't count.
+    Bare person names that carry one on every record and recur in another city are firms (OSCAR W LARSON, DAVID
+    ALLEN, JAMES N GRAY); the common names that carry one only sometimes are many people (JOSE MARTINEZ: 2 of 37)."""
+    names = sorted({n for n in names if n})
+    if not names:
+        return set()
+    rows = warehouse.rows(
+        """SELECT n, pre, ssi_n9_legal(pre) AS post FROM (
+             SELECT n, ssi_n8_join_legal(ssi_n7_the(ssi_n6_separators(ssi_n5_state_note(ssi_n4_dba(ssi_n3_dots(
+                      ssi_n2_strip_id(ssi_n1_upper(n)))))))) AS pre
+             FROM unnest(?::VARCHAR[]) AS t(n))""", [names])
+    return {r["n"] for r in rows if set(r["pre"].split()) - set(r["post"].split()) - {"THE", "DBA"}}
+
+
 def describe_clean(clean: str) -> dict:
     """describe_query for a name that is already clean (one of the sub's aliases)."""
     return warehouse.one("SELECT name_core(?) AS core, initials_only(?) AS initials_only, sibling_suffix(?) AS sibling",

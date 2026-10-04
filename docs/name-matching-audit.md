@@ -108,10 +108,12 @@ licences moved because those samples are drawn from the rebuilt tables.
 - **`typo_equal` treats different family names as slips** (HERNANDEZ/FERNANDEZ 0.97, JOHNSON/JOHNSTON,
   MEJIA/MEDINA). It never matches anything on its own: X1 skips it, S1 makes it uncertain, and spelling correction
   needs a distinctive, ≥10× dominant spelling. Tests pin that down for people's names and real words.
-- **Companies named after a person** (DAN RYAN, JOHN MORIARTY, MARC JONES) are rated "person": their records under
-  another city's mailing address are excluded (X5), not asked about. This was already the case; the new given names
-  add more such companies. ALLAN and BEN were held back for that reason. A first name that is also a surname or
-  company word (MARTIN GARCIA: 5 states) is still rated by rarity.
+- **Companies named after a person** (DAN RYAN, JOHN MORIARTY, MARC JONES) are rated "person". Their records in
+  another city used to be excluded (X5); since the per-rule eval (eval/rules) measured that, rule P3 asks about them
+  instead when both names carry a trade or company word (JOHN MORIARTY ASSOCIATES) or both carry a legal form. A
+  company named after a person but written bare on one side (typed "Dan Ryan", or a record with no legal form) is
+  still excluded in another city. ALLAN and BEN were held back from the given names for this reason. A first name that
+  is also a surname or company word (MARTIN GARCIA: 5 states) is still rated by rarity.
 - **Nicknames are different people to P2** (DAVE/DAVID ALLEN at one address): the record goes to review, not matched.
 - **Addresses**: `3021 SEVENTH AVENUE` and `3021 7TH AVE` are different address keys, so M2 can't see they're one
   building.

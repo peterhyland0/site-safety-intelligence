@@ -39,6 +39,7 @@ class Query:
     initials_only: bool
     sibling: str | None
     aliases: set[str] = field(default_factory=set)
+    incorporated: bool = False  # a person's name typed with a legal form (ROBERT J DEVEREAUX CORP); set by run.match
     # the sub's other names (legal name, DBA, licence names), each described on its own: a record that matches
     # only one of them is judged by that name's distinctiveness
     alias_queries: dict[str, Query] = field(default_factory=dict)
@@ -61,6 +62,7 @@ class Candidate:
     at_matched_address: bool = False  # filled by the address-expansion pass
     related_only: bool = False  # a facility in scope only by company name (not coded as construction)
     is_jv: bool = False  # a joint venture (entity.establishment.is_jv)
+    incorporated: bool = False  # one of its raw names has a legal form; set by run.match for a person's name
 
 
 @dataclass
@@ -155,6 +157,19 @@ def different_people(a: str, b: str, given: frozenset[str]) -> bool:
     ga, gb = {t for t in ta if t in given}, {t for t in tb if t in given}
     return bool(ga) and bool(gb) and not any(x == y or near_spelling(x, y) or x.startswith(y) or y.startswith(x)
                                              for x in ga for y in gb)
+
+
+# Generic words that are part of a person's own name or join two names, so they don't make it a company's
+NAME_JOINS = frozenset({"DE", "DBA", "OF", "AT"})
+
+
+def named_company(clean: str, core: str, generic: frozenset[str]) -> bool:
+    """A person's name plus a trade or company word: a company named after a person (DAVID E HARVEY BUILDERS, FRED
+    CHRISTEN SONS), not a sole proprietor's bare name (JOSE A HERNANDEZ, JOSE DE JESUS JUAREZ). In the warehouse 8%
+    of bare person names recur in another city, up to 36 cities for JOSE GARCIA; 3% of these do, mostly real
+    companies with offices (DAVID WEEKLEY HOMES, STANLEY MARTIN HOMES)."""
+    own = set(tokens(core))
+    return any(len(t) > 1 and t in generic and t not in NAME_JOINS and t not in own for t in tokens(clean))
 
 
 def only_generic_difference(a: str, b: str, generic: frozenset[str]) -> bool:
@@ -256,6 +271,17 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
         return matched("M2", "Same address as a matched record; name differs only by spelling")
     # P1 / X5: a person's name (a sole proprietor) is usually many different people; only a place ties it
     if q.tier == "person" and (same_full or core_equal):
+        other_state = bool(q.state and c.state and not same_state)
+        if ((other_state or (q.city and c.city and not same_city)) and (same_full or descriptor_diff)
+                and ((named_company(q.clean, q.core, generic) and named_company(c.clean_name, c.name_core, generic))
+                     or (q.incorporated and c.incorporated))):
+            # P3: the same company name built on a person's, with a trade or company word (DAVID E HARVEY BUILDERS in
+            # Bethesda and in Houston) or a legal form on both sides (ROBERT J DEVEREAUX CORP in Boston and Malden),
+            # is usually the company's other office: X5 excluded the sub's own records in all 24 labelled cases in the
+            # rules eval. Unsure, not matched: a few such names are several people's (JOSE GARCIA CONSTRUCTION)
+            where = f"another state ({c.state})" if other_state else f"another city ({c.city.title()})"
+            return Decision(UNCERTAIN, "P3", f"A company named after a person, in {where}: "
+                                             "maybe its other office, maybe another person's business")
         if q.state and c.state and not same_state:
             return Decision(EXCLUDED, "X5", f"A person's name in another state ({c.state}): usually a different person")
         if q.city and c.city and not same_city:

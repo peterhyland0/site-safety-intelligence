@@ -161,6 +161,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
 | P1 / X5 | A person's name (sole proprietors: "JOSE HERNANDEZ" is 49 records in 17 states): matches only on the same city or a matched address; another city or state is excluded; no city is uncertain. A person's name is a given name first (JUAN GARCIA), surname first (HERNANDEZ JOSE, MORALES JAVIER M) or an initial and a common surname (J LOPEZ); a place name (SAN ANTONIO, ST GEORGE) isn't one | Matched / Excluded / Uncertain |
 | P2 | At a matched address, another person's name: no given name in common (MARIO / MAURICIO CONTRERAS) or another generation (… SR) | Uncertain |
+| P3 | A company named after a person, in another city or state: the same name with a trade or company word on both sides (DAVID E HARVEY BUILDERS in Bethesda and Houston), or a legal form typed by the GC and on the record (ROBERT J DEVEREAUX CORP in Malden and Boston). X5 had excluded such a company's other offices in all 24 cases the per-rule eval could check. A bare name (JOSE HERNANDEZ) is still X5 | Uncertain |
 | J1 | A joint venture at an address of one of its members (or the reverse): a JV is its own company | Uncertain |
 | U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE), also at a matched address | Uncertain |
 | X1–X4 | Different real name word; different common name; common name in another state | Excluded |

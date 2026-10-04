@@ -62,6 +62,14 @@ RECS = [
     Rec("SERGIO CAZARES SR", "71 Telephone Rd", "Houston", "TX", "77023"),
     Rec("ISMAEL FLORES", "8 Granby St", "Norfolk", "VA", "23510", n=2),
     Rec("ISHMAEL FLORES", "8 Granby St", "Norfolk", "VA", "23510"),
+    # a company named after a person: its other office isn't another person, but a bare name still is
+    Rec("THE FRED CHRISTEN & SONS COMPANY", "714 George St", "Toledo", "OH", "43604", n=2),
+    Rec("FRED CHRISTEN & SONS CO", "15847 Glendale St", "Detroit", "MI", "48227"),
+    Rec("FRED CHRISTEN", "3 Capitol Ave", "Lansing", "MI", "48933"),
+    # ... or with only a legal form to say so, which cleaning drops
+    Rec("ROBERT J. DEVEREAUX CORP.", "17 Pleasant St", "Malden", "MA", "02148", n=2),
+    Rec("ROBERT J DEVEREAUX CORP", "10 Emerson Pl", "Boston", "MA", "02114"),
+    Rec("ROBERT J DEVEREAUX", "5 Main St", "Worcester", "MA", "01608"),
     # place names that end in a given name are companies, not people
     Rec("SAN ANTONIO ROOFING", "300 Alamo Plz", "San Antonio", "TX", "78205"),
     Rec("SAN ANTONIO ROOFING", "14 River Rd", "Boerne", "TX", "78006"),
@@ -226,6 +234,33 @@ def test_other_ways_of_writing_a_persons_name(typed, city, state, home):
     assert q.tier == "person"
     assert buckets(got, "matched") == {home}
     assert all(r == "X5" for k, (b, r) in got.items() if k != home)
+
+
+def test_a_company_named_after_a_person_keeps_its_other_offices():
+    # the rules eval: X5 excluded such a company's own records in another city all 24 times it was checked
+    got, q, _ = outcome("The Fred Christen & Sons Company", "Toledo", "OH")
+    assert q.tier == "person" and q.clean == "FRED CHRISTEN SONS"
+    assert got[("FRED CHRISTEN SONS", "TOLEDO", "OH")] == ("matched", "M1")
+    assert got[("FRED CHRISTEN SONS", "DETROIT", "MI")] == ("uncertain", "P3")
+    assert got[("FRED CHRISTEN", "LANSING", "MI")] == ("excluded", "X5")
+
+
+def test_a_legal_form_typed_and_on_the_record_makes_a_persons_name_a_company():
+    got, q, _ = outcome("Robert J. Devereaux Corp.", "Malden", "MA")
+    assert q.tier == "person" and q.incorporated
+    assert got[("ROBERT J DEVEREAUX", "MALDEN", "MA")] == ("matched", "M1")
+    assert got[("ROBERT J DEVEREAUX", "BOSTON", "MA")] == ("uncertain", "P3")
+    assert got[("ROBERT J DEVEREAUX", "WORCESTER", "MA")] == ("excluded", "X5")  # no legal form on that record
+    # typed without one, nothing says it's a company: as before
+    got, q, _ = outcome("Robert J Devereaux", "Malden", "MA")
+    assert not q.incorporated and got[("ROBERT J DEVEREAUX", "BOSTON", "MA")] == ("excluded", "X5")
+
+
+def test_with_legal_form_uses_the_cleaning_steps():
+    from ssi.matching.candidates import with_legal_form
+    assert with_legal_form(["ROBERT J. DEVEREAUX CORP.", "Jose Hernandez LLC", "CRAIG HANES, INC, DBA",
+                            "ANDREWS GROUP THE LLC", "SMITH THE", "JOSE HERNANDEZ", "J L P CONSTRUCTION", ""]) == {
+        "ROBERT J. DEVEREAUX CORP.", "Jose Hernandez LLC", "CRAIG HANES, INC, DBA", "ANDREWS GROUP THE LLC"}
 
 
 def test_jose_hernandez_in_three_places():

@@ -168,6 +168,66 @@ def test_person_name_needs_a_place_to_match():
     assert decide(houston, c("JUAN GARCIA ROOFING", "JUAN GARCIA", state="TX", city="DALLAS"), GENERIC).rule_id == "X5"
 
 
+PERSON_GENERIC = GENERIC | {"BUILDERS", "SONS", "DE", "DBA"}
+
+
+def test_a_company_named_after_a_person_keeps_its_other_offices():
+    # DAVID E HARVEY BUILDERS (Bethesda and Houston), FRED CHRISTEN SONS (Detroit and Toledo): X5 excluded the
+    # company's own records; they're unsure now, for the adjudicator or the GC
+    harvey = q("DAVID E HARVEY BUILDERS", "DAVID E HARVEY", state="MD", tier="person", city="Bethesda")
+    d = decide(harvey, c("DAVID E HARVEY BUILDERS", "DAVID E HARVEY", state="TX", city="HOUSTON"), PERSON_GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "P3") and "another state (TX)" in d.reason
+    molnar = q("WILLIAM MOLNAR ROOFING", "WILLIAM MOLNAR", state="MI", tier="person", city="Brownstown Township")
+    d = decide(molnar, c("WILLIAM MOLNAR ROOFING", "WILLIAM MOLNAR", state="MI", city="RIVERVIEW"), PERSON_GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "P3") and "another city (Riverview)" in d.reason
+    # a descriptor word more or less is the same name
+    christen = q("FRED CHRISTEN SONS", "FRED CHRISTEN", state="OH", tier="person", city="Toledo")
+    assert decide(christen, c("FRED CHRISTEN SONS COMPANY", "FRED CHRISTEN", state="MI", city="DETROIT"),
+                  PERSON_GENERIC).rule_id == "P3"
+    # in its own city it's matched, as before
+    assert decide(christen, c("FRED CHRISTEN SONS", "FRED CHRISTEN", state="OH", city="TOLEDO"), PERSON_GENERIC).bucket == MATCHED
+
+
+def test_a_bare_persons_name_elsewhere_is_still_another_person():
+    houston = q("JUAN GARCIA", "JUAN GARCIA", state="TX", tier="person", city="Houston")
+    # both names must be a company's: a sole proprietor's bare name, either side, is usually another person
+    assert decide(houston, c("JUAN GARCIA ROOFING", "JUAN GARCIA", state="TX", city="DALLAS"), PERSON_GENERIC).rule_id == "X5"
+    roofing = q("JUAN GARCIA ROOFING", "JUAN GARCIA", state="TX", tier="person", city="Houston")
+    assert decide(roofing, c("JUAN GARCIA", "JUAN GARCIA", state="TX", city="DALLAS"), PERSON_GENERIC).rule_id == "X5"
+    # another trade is another business
+    assert decide(roofing, c("JUAN GARCIA MASONRY", "JUAN GARCIA", state="TX", city="DALLAS"), PERSON_GENERIC).rule_id == "X5"
+    # a name's own particle or a DBA's joint isn't a company word
+    jesus = q("JOSE DE JESUS JUAREZ", "JOSE JESUS JUAREZ", state="TX", tier="person", city="Houston")
+    assert decide(jesus, c("JOSE DE JESUS JUAREZ", "JOSE JESUS JUAREZ", state="TX", city="DALLAS"), PERSON_GENERIC).rule_id == "X5"
+    gonzalez = q("ANTONIO GONZALEZ DBA ANTONIO GONZALEZ", "ANTONIO GONZALEZ", state="TX", tier="person", city="Houston")
+    assert decide(gonzalez, c("ANTONIO GONZALEZ DBA ANTONIO GONZALEZ", "ANTONIO GONZALEZ", state="GA", city="ATLANTA"),
+                  PERSON_GENERIC).rule_id == "X5"
+
+
+def test_a_legal_form_on_both_sides_makes_a_persons_name_a_company():
+    # ROBERT J DEVEREAUX CORP (Malden and Boston): cleaning drops the CORP, so only the legal form tells it's a company
+    from dataclasses import replace
+    typed = q("ROBERT J DEVEREAUX", "ROBERT J DEVEREAUX", state="MA", tier="person", city="Malden")
+    boston = c("ROBERT J DEVEREAUX", "ROBERT J DEVEREAUX", state="MA", city="BOSTON")
+    assert decide(replace(typed, incorporated=True), replace(boston, incorporated=True), PERSON_GENERIC).rule_id == "P3"
+    # one side without a legal form: as before, usually another person (JOSE MARTINEZ carries one on 2 of 37 records)
+    assert decide(typed, replace(boston, incorporated=True), PERSON_GENERIC).rule_id == "X5"
+    assert decide(replace(typed, incorporated=True), boston, PERSON_GENERIC).rule_id == "X5"
+
+
+@pytest.mark.parametrize("clean,core,company", [
+    ("DAVID E HARVEY BUILDERS", "DAVID E HARVEY", True),
+    ("FRED CHRISTEN SONS", "FRED CHRISTEN", True),
+    ("GREG MAGDA DBA GJ MASONRY", "GREG MAGDA", True),
+    ("JOSE A HERNANDEZ", "JOSE A HERNANDEZ", False),
+    ("JOSE DE JESUS JUAREZ", "JOSE JESUS JUAREZ", False),
+    ("ANTONIO GONZALEZ DBA ANTONIO GONZALEZ", "ANTONIO GONZALEZ", False),
+    ("SERGIO CAZARES SR", "SERGIO CAZARES", False),
+])
+def test_named_company(clean, core, company):
+    assert rules.named_company(clean, core, PERSON_GENERIC | {"MASONRY"}) is company
+
+
 def test_person_name_at_a_matched_address_still_matches():
     d = decide(JUAN, c("JUAN GARCIA", "JUAN GARCIA", state="TX", at_addr=True), GENERIC)
     assert d.bucket == MATCHED and d.rule_id == "M2"
