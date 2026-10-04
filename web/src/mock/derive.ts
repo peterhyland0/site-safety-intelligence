@@ -20,7 +20,7 @@ import {
   type YearRow,
 } from "../api/types";
 import { ACCIDENT_DETAIL_THROUGH, DATA_AS_OF } from "./fixtures";
-import { HAZARD_LABELS, VIOL_LABELS, type FxCitation, type FxInspection, type FxProject, type FxSub, type HazardKey } from "./model";
+import { HAZARD_LABELS, VIOL_LABELS, type FxCitation, type FxEstablishment, type FxInspection, type FxProject, type FxSub, type HazardKey } from "./model";
 
 const AS_OF_YEAR = Number(DATA_AS_OF.slice(0, 4));
 
@@ -294,8 +294,10 @@ function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: 
   if (openSerious.length) {
     add("R_open", `${openSerious.length} open case(s) with serious citations not yet final (still provisional)`, "review", openSerious.map((i) => i.nr), { count: openSerious.length });
   }
-  if (sub.questions.length) {
-    add("R_questions", `${sub.questions.length} possible match(es) with red flags need your confirmation`, "review", [], { count: sub.questions.length });
+  // the web check's questions are suggestions about records that don't count yet: they don't make it Review
+  const blocking = sub.questions.filter((q) => q.kind !== "web").length;
+  if (blocking) {
+    add("R_questions", `${blocking} possible match(es) with red flags need your confirmation`, "review", [], { count: blocking });
   }
 
   let verdict: Verdict;
@@ -436,7 +438,21 @@ export function toDetail(sub: FxSub, lookback: number): SubDetail {
     licences: sub.licences,
     dq_warnings: sub.dq_warnings,
     profile: sub.profile ?? null,
+    web_check: {
+      available: true,
+      unchecked: webCandidates(sub).length,
+      checked: sub.establishments.filter((e) => e.web_checked || e.method === "web").length,
+    },
   };
+}
+
+/** The records the web check button would check (mock of ssi/matching/verify.candidates): possible or excluded,
+ * decided by the rules or the AI, not in an open question, not checked yet. */
+export function webCandidates(sub: FxSub): FxEstablishment[] {
+  const asked = new Set(sub.questions.flatMap((q) => q.establishment_keys));
+  return sub.establishments.filter(
+    (e) => ["rule", "llm", "llm_rejected"].includes(e.method) && e.bucket !== "matched" && !e.web_checked && !asked.has(e.key),
+  );
 }
 
 export function matchedInspectionRows(sub: FxSub): InspectionRow[] {

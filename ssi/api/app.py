@@ -16,6 +16,7 @@ from ssi.api import auth, chats, duplicates
 from ssi.api import schemas as S
 from ssi.llm import client as llm_client
 from ssi.matching import adjudicate as ADJ
+from ssi.matching import verify as V
 from ssi.matching.run import match_and_persist
 from ssi.queries import core as Q
 from ssi.store import pg, warehouse
@@ -136,16 +137,20 @@ def _detail(sub: dict, project: dict) -> S.SubDetail:
     if any(f.kind.startswith("fatality") for f in d["flags"]) or keys:
         dq.append(f"OSHA's published accident details run through {meta['accident_detail_through']}; "
                   "later fatality investigations show without narratives.")
+    buckets = {b: _bucket_rows(d, b) for b in ("matched", "possible", "excluded")}
+    # the web check counts the records the page shows: a row whose record has left the data can't be looked up
+    shown = {e.establishment_key for rows in buckets.values() for e in rows}
     return S.SubDetail(
         card=Q.card(sub, project, d), reasons=d["reasons"], coverage=Q.coverage(d),
         questions=[S.MatchQuestion(question_id=str(q["question_id"]), text=q["text"], establishment_keys=q["establishment_keys"],
                                    ai_suggestion=q["ai_suggestion"], ai_rationale=q["ai_rationale"],
                                    kind=q.get("kind") or "red_flag", sources=q.get("sources") or [])
                    for q in sc["pending_questions"]],
-        matched=_bucket_rows(d, "matched"), possible=_bucket_rows(d, "possible"), excluded=_bucket_rows(d, "excluded"),
+        matched=buckets["matched"], possible=buckets["possible"], excluded=buckets["excluded"],
         red_flags=d["flags"][:100], trend=Q.trend(keys), hazards=d["hazards"],
         open_cases=Q.inspections(keys, limit=50, provisional_only=True), inspections=Q.inspections(keys, limit=25),
-        injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq, profile=_profile(sub))
+        injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq, profile=_profile(sub),
+        web_check=S.WebCheckInfo(**V.info([r for k, r in sc["rows"].items() if k in shown], sc["pending_questions"])))
 
 
 def _profile(sub: dict) -> S.CompanyProfile | None:
@@ -292,6 +297,23 @@ def lookup_profile(project_id: str, sub_id: str):
                 ADJ.check_m3(s, prof, P.build)
             ADJ.apply_profile(s, prof)
     return Q.card(_sub(project_id, sub_id), p)
+
+
+@app.post("/api/projects/{project_id}/subs/{sub_id}/web-check", response_model=S.WebCheckResult)
+def web_check(project_id: str, sub_id: str):
+    """The "Check records on the web" button: who the web says the sub's undecided records belong to, as questions
+    to the GC (ssi/matching/verify.py). Looks the company up first if it has no profile. Up to 25 new searches a
+    press; the rest wait for the next press."""
+    p, _ = _project(project_id), _sub(project_id, sub_id)
+    from ssi.llm import web_check as W
+    if not W.available():
+        raise HTTPException(503, "The web check isn't set up on this server.")
+    with ADJ.claim(sub_id) as s:
+        if s is None:
+            raise HTTPException(409, "This sub's records are being resolved right now. Try again in a minute.")
+        stats = V.check_records(s, p, profile=V.profile_first(s, p))
+    return S.WebCheckResult(card=Q.card(_sub(project_id, sub_id), p),
+                            **{k: v for k, v in stats.items() if k in S.WebCheckResult.model_fields})
 
 
 @app.post("/api/projects/{project_id}/subs/{sub_id}/matches/{establishment_key}", response_model=S.SubCard)

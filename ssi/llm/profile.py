@@ -301,9 +301,10 @@ def name_words(name: str) -> list[str]:
     return list(dict.fromkeys(w for w in words if w not in LEGAL_WORDS and (len(w) > 1 or w.isdigit())))
 
 
-def tavily_search(query: str, http: httpx.Client | None = None) -> dict:
+def tavily_search(query: str, http: httpx.Client | None = None, exclude: tuple[str, ...] = ("osha.gov",)) -> dict:
+    """One basic search (1 credit), up to 5 results with their pages' text; never pages from `exclude`."""
     body = {"query": query, "search_depth": "basic", "max_results": 5, "include_raw_content": "text",
-            "include_answer": False, "exclude_domains": ["osha.gov"], "country": "united states", "include_usage": True}
+            "include_answer": False, "exclude_domains": list(exclude), "country": "united states", "include_usage": True}
     own = http is None
     http = http or httpx.Client(base_url=TAVILY_URL, timeout=30.0, headers={"Authorization": f"Bearer {_tavily_key()}"})
     try:

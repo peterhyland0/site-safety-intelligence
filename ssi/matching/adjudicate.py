@@ -328,19 +328,19 @@ def _write_holds(c, sub: dict, profile: dict, held: dict[str, dict], query: dict
         else:
             c.execute("""UPDATE app.sub_match SET bucket = 'possible', method = 'profile', rationale = %s, confidence = NULL,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
-                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap')""",
+                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap', 'web')""",
                       [reason, by, sub_id, k])
 
 
-def _ask(c, sub_id: str, questions: list[dict], open_keys: set[str]) -> int:
+def _ask(c, sub_id: str, questions: list[dict], open_keys: set[str], kind: str = "profile") -> int:
     asked = 0
     for q in questions:
         keys = [k for k in q["keys"] if k not in open_keys]
         if not keys:
             continue  # already waiting for the GC
         c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale, kind, sources)
-                     VALUES (%s, %s, %s, %s, %s, 'profile', %s)""",
-                  [sub_id, keys, q["text"], q["suggestion"], q["rationale"], json.dumps(q["sources"])])
+                     VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                  [sub_id, keys, q["text"], q["suggestion"], q["rationale"], kind, json.dumps(q["sources"])])
         asked += 1
     return asked
 
@@ -352,13 +352,14 @@ def _open_questions(c, sub_id: str) -> list[dict]:
 def apply_profile(sub: dict, profile: dict) -> dict:
     """For a sub adjudicated before it had a profile (the "Look up this company" button): its possible and excluded
     records the GC hasn't decided, at listed locations, go to the GC with the profile. An open question about exactly
-    those records gets the profile as its suggestion instead of a second question."""
+    those records gets the profile as its suggestion instead of a second question. Records the web check is asking
+    about (method 'web') keep their question."""
     sub_id = str(sub["sub_id"])
     stats = {"held": 0, "questions": 0}
     if not profile or not profile.get("locations"):
         return stats
     with pg.conn() as c:
-        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND method NOT IN ('gc', 'remap')
+        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND method NOT IN ('gc', 'remap', 'web')
                             AND bucket IN ('possible', 'excluded') AND establishment_key <> '__note__'""", [sub_id]).fetchall()
     held = _holds(sub_id, profile, rows)
     if not held:
@@ -369,7 +370,7 @@ def apply_profile(sub: dict, profile: dict) -> dict:
         open_qs = _open_questions(c, sub_id)
         for q in open_qs:  # an open question entirely about held records: give it the profile's evidence
             sub_held = {k: held[k] for k in q["establishment_keys"] if k in held}
-            if q["establishment_keys"] and len(sub_held) == len(q["establishment_keys"]):
+            if q["establishment_keys"] and len(sub_held) == len(q["establishment_keys"]) and q.get("kind") != "web":
                 pq = profile_questions(sub, profile, sub_held, flags)
                 if len(pq) == 1:
                     c.execute("""UPDATE app.match_question SET ai_suggestion = %s, ai_rationale = %s, sources = %s

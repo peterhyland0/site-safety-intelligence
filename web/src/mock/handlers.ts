@@ -14,11 +14,12 @@ import type {
   ProjectUpdate,
   SubInput,
   User,
+  WebCheckResult,
 } from "../api/types";
 import { answerQuestion as askAnswer } from "./ask";
-import { matchedInspectionRows, toCard, toDetail, toInspectionDetail, toProject, toProjectDetail } from "./derive";
+import { matchedInspectionRows, toCard, toDetail, toInspectionDetail, toProject, toProjectDetail, webCandidates } from "./derive";
 import { DATA_AS_OF, seedProjects } from "./fixtures";
-import type { FxProject, FxSub } from "./model";
+import type { FxEstablishment, FxProject, FxSub, FxWebResult } from "./model";
 
 const projects: FxProject[] = seedProjects();
 /** Catalogue of known companies: pasting one of these names into any project finds its record. */
@@ -147,6 +148,49 @@ function applyProfile(s: FxSub): Set<string> {
     s.questions.push({ ...lookup.question, establishment_keys: keys, question_id: newId("q") });
   }
   return held;
+}
+
+/** One press of the web check (mock of ssi/matching/verify.check_records): what the web says about each undecided
+ * record, asked as at most two questions; nothing is matched or excluded. */
+function webCheck(s: FxSub, lookback: number): WebCheckResult {
+  const todo = webCandidates(s);
+  const counts = { same: 0, different: 0, unsure: 0 };
+  const asked: Record<"same" | "different", [FxEstablishment, FxWebResult][]> = { same: [], different: [] };
+  for (const e of todo) {
+    const r = s.web_lookup?.find((x) => x.key === e.key);
+    e.web_checked = true;
+    if (!r || r.verdict === "unsure") {
+      counts.unsure += 1;
+      continue;
+    }
+    counts[r.verdict] += 1;
+    if (r.verdict === "same" || e.bucket === "possible") { // a "different" excluded record stays excluded
+      Object.assign(e, { bucket: "possible", method: "web", confidence: null, rationale: r.rationale });
+      asked[r.verdict].push([e, r]);
+    }
+  }
+  let questions = 0;
+  for (const verdict of ["same", "different"] as const) {
+    const its = asked[verdict];
+    if (!its.length) continue;
+    questions += 1;
+    const several = its.length > 1;
+    const named = its.map(([e, r]) => `'${e.display_name}' at ${e.address ?? "no address"}, ${e.city ?? ""} ${e.state ?? ""}: ${r.owner}`);
+    const lead = `Web pages tie ${several ? "these OSHA records" : "this OSHA record"} to ${verdict === "same" ? "your sub's company" : "another company"}: `;
+    s.questions.push({
+      question_id: newId("q"),
+      text: lead + named.join("; ") + "." + (several
+        ? ` Are these the same company as your sub '${s.entered_name}'? If only some are, answer each record below.`
+        : ` Is this the same company as your sub '${s.entered_name}'?`),
+      establishment_keys: its.map(([e]) => e.key),
+      ai_suggestion: verdict,
+      ai_rationale: `From a web search: “${its[0][1].quote}”`,
+      kind: "web",
+      sources: its.map(([e, r]) => ({ url: r.url, title: r.title, quote: r.quote, owner: r.owner, keys: [e.key] })),
+    });
+  }
+  return { card: toCard(s, lookback), searched: todo.length, checked_groups: todo.length, ...counts, left: 0,
+    limit_reached: false, questions };
 }
 
 function csvFor(p: FxProject): string {
@@ -310,6 +354,17 @@ const routes: Route[] = [
       await sleep(1800); // the "Look up this company" button: one web search
       applyProfile(s);
       return toCard(s, p.lookback_years);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/projects\/([^/]+)\/subs\/([^/]+)\/web-check$/,
+    run: async (m) => {
+      const p = findProject(decodeURIComponent(m[1]));
+      const s = findSub(p, decodeURIComponent(m[2]));
+      await sleep(2600); // a web search per record group
+      if (s.profile_status !== "done") applyProfile(s); // the company is looked up first
+      return webCheck(s, p.lookback_years);
     },
   },
   {

@@ -94,6 +94,19 @@ export interface FxEstablishment {
   rule_id: string | null;
   confidence: number | null;
   rationale: string | null;
+  /** the web check has looked this record up (mock of sub_match.evidence.web_check) */
+  web_checked?: boolean;
+}
+
+/** What the web check finds for a record when /web-check (the button) runs: who a web page says it belongs to. */
+export interface FxWebResult {
+  key: string;
+  verdict: "same" | "different" | "unsure";
+  owner: string;
+  url: string;
+  title: string | null;
+  quote: string;
+  rationale: string;
 }
 
 /** What the adjudicator decides for an establishment when /adjudicate runs. */
@@ -136,6 +149,8 @@ export interface FxSub {
   profile_status?: ProfileStatus | null;
   profile?: CompanyProfile | null;
   profile_lookup?: FxProfileLookup;
+  /** the web check's findings, by record; a record without one comes back unsure */
+  web_lookup?: FxWebResult[];
 }
 
 export interface FxProject {

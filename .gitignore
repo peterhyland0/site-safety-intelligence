@@ -26,3 +26,5 @@ web/dist/
 .DS_Store
 .claude/*
 !.claude/launch.json
+# the web-check eval's raw Tavily responses (28 MB of page text): a local cache, so re-runs cost no searches
+eval/web_check/searches.jsonl

@@ -360,7 +360,9 @@ def compute(sub: dict, project: dict) -> dict:
         red_flags=[RedFlagFact(f.kind, int(f.event_date[:4]) if f.event_date else None, f.activity_nr, f.case_open,
                                date.fromisoformat(f.event_date[:10]) if f.event_date else None,
                                visit.get(f.activity_nr)) for f in flags],
-        hazards=hfacts, open_serious_cases=open_serious, pending_questions=len(sc["pending_questions"]),
+        hazards=hfacts, open_serious_cases=open_serious,
+        # the web check's questions are suggestions about records that don't count yet: they don't make it Review
+        pending_questions=sum(1 for q in sc["pending_questions"] if q.get("kind") != "web"),
         benchmark_p75=bm["serious_plus_rate_p75"] if bm else None, benchmark_p90=bm["serious_plus_rate_p90"] if bm else None,
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,
         ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),

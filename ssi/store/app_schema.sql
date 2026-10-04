@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS app.sub_match (
   sub_id             uuid NOT NULL REFERENCES app.project_sub ON DELETE CASCADE,
   establishment_key  text NOT NULL,
   bucket             text NOT NULL CHECK (bucket IN ('matched', 'possible', 'excluded')),
-  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap')),
+  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap', 'web')),
   rule_id            text,
   confidence         real,
   rationale          text,
@@ -161,14 +161,33 @@ ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS sources jsonb;
 -- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows.
 -- method 'remap': a record whose GC decisions disagree since a rebuild grouped them as one (ssi/matching/remap.py);
 -- possible until the GC answers its question, and kept on re-match too.
+-- method 'web': a record the web check (ssi/matching/verify.py) found evidence for, waiting for the GC's answer to
+-- its question; kept on re-match too.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sub_match_method_check'
-                 AND pg_get_constraintdef(oid) LIKE '%remap%') THEN
+                 AND pg_get_constraintdef(oid) LIKE '%''web''%') THEN
     ALTER TABLE app.sub_match DROP CONSTRAINT IF EXISTS sub_match_method_check;
     ALTER TABLE app.sub_match ADD CONSTRAINT sub_match_method_check
-      CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap'));
+      CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap', 'web'));
   END IF;
 END $$;
 -- The record's inspections (OSHA activity numbers, which never change) when the row was written: when a cleaning-rule
 -- change gives the record a new key, the decision follows its inspections there (ssi/matching/remap.py)
 ALTER TABLE app.sub_match ADD COLUMN IF NOT EXISTS activity_nrs bigint[];
+
+-- Web checks (ssi/llm/web_check.py): one web search per OSHA record (its name and address), and who the pages say
+-- the record belongs to. Nothing about a sub is in the key, so one search serves every sub with that record.
+-- A finished row isn't changed: a newer one replaces it after 90 days. 'building' marks a search in flight; every row
+-- created today counts toward the daily limit, errors included.
+CREATE TABLE IF NOT EXISTS app.web_lookup (
+  lookup_id   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lookup_key  text NOT NULL,   -- hash of the record's query, the check's version and the model
+  query       jsonb NOT NULL,
+  status      text NOT NULL CHECK (status IN ('building', 'done', 'error')),
+  result      jsonb,           -- the pages read and the model's raw answer; the checks run again on every read
+  model       text NOT NULL,
+  credits     integer NOT NULL DEFAULT 0,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS web_lookup_key ON app.web_lookup (lookup_key, created_at DESC);
+CREATE INDEX IF NOT EXISTS web_lookup_created ON app.web_lookup (created_at);

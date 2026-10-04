@@ -18,6 +18,18 @@ function profileSuggestion(s: NonNullable<MatchQuestion["ai_suggestion"]>, sever
   return `The company lists the city, but not ${these}`;
 }
 
+// a question from the web check: the suggestion is what a web page says about whose record it is
+function webSuggestion(s: NonNullable<MatchQuestion["ai_suggestion"]>, several: boolean): string {
+  const lead = several ? "Web pages tie these records" : "A web page ties this record";
+  if (s === "same") return `${lead} to your sub`;
+  if (s === "different") return `${lead} to another company`;
+  return "The web search didn't settle it";
+}
+
+function host(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+}
+
 export function QuestionCard({
   question,
   establishments,
@@ -35,7 +47,10 @@ export function QuestionCard({
   const ests = establishments.filter((e) => question.establishment_keys.includes(e.establishment_key));
   const grouped = ests.length > 1;
   const fromProfile = question.kind === "profile";
+  const fromWeb = question.kind === "web";
   const sources = question.sources ?? [];
+  // the web check keys each page to its records: the quote is shown under the record it's about
+  const sourceFor = (key: string) => (fromWeb ? sources.find((s) => s.keys?.includes(key)) : undefined);
   return (
     <li className="rounded-xl border-2 border-accent/40 bg-accent-soft p-4">
       <p className="text-[17px] leading-snug font-semibold text-ink">{question.text}</p>
@@ -55,6 +70,7 @@ export function QuestionCard({
                     <IconFlag size={13} /> carries red flags
                   </span>
                 ) : null}
+                {sourceFor(e.establishment_key) ? <WebQuote source={sourceFor(e.establishment_key)!} /> : null}
               </span>
               {grouped && onRecord ? (
                 <span className="flex gap-1.5" role="group" aria-label={`Is the record in ${e.city ?? "this place"} your sub?`}>
@@ -84,16 +100,18 @@ export function QuestionCard({
         <p className="mt-2 text-sm text-ink-2">
           {question.ai_suggestion ? (
             <span className="font-medium">
-              {fromProfile || sources.length
-                ? profileSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
-                : SUGGESTION[question.ai_suggestion]}
+              {fromWeb
+                ? webSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
+                : fromProfile || sources.length
+                  ? profileSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
+                  : SUGGESTION[question.ai_suggestion]}
               .{" "}
             </span>
           ) : null}
-          {question.ai_rationale}
+          {fromWeb ? null : question.ai_rationale /* a web question's quotes are under their records */}
         </p>
       ) : null}
-      {sources.length ? (
+      {sources.length && !fromWeb ? (
         <ul className="mt-2 space-y-1 text-sm" aria-label="Sources">
           {sources.map((s) => (
             <li key={s.url} className="min-w-0 text-ink-2">
@@ -105,7 +123,9 @@ export function QuestionCard({
         </ul>
       ) : null}
       <p className="mt-2 text-xs text-muted">
-        {fromProfile
+        {fromWeb
+          ? "From a web search: nothing is counted or dropped until you answer. Each quote is copied from the page linked."
+          : fromProfile
           ? "These records aren't counted until you answer. The locations come from the company's own pages, quoted above."
           : "Records with red flags are never counted or dropped without your answer. The AI only sees names, addresses, trades and years, not safety history."}
       </p>
@@ -128,6 +148,18 @@ export function QuestionCard({
         </button>
       </div>
     </li>
+  );
+}
+
+// what a web page says about one record: whose it is, the quote, and the page
+function WebQuote({ source }: { source: NonNullable<MatchQuestion["sources"]>[number] }) {
+  return (
+    <span className="mt-0.5 block text-[13px] text-muted">
+      {source.owner ? <span className="font-medium text-ink-2">{source.owner}: </span> : null}“{source.quote}” ·{" "}
+      <a href={source.url} target="_blank" rel="noreferrer" className="break-all underline underline-offset-2">
+        {host(source.url)}
+      </a>
+    </span>
   );
 }
 

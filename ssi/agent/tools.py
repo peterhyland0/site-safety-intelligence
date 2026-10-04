@@ -76,7 +76,8 @@ class Toolbox:
 
     def _precondition(self, sub_id: str) -> dict | None:
         d = self.data(sub_id)
-        pending = d["scope"]["pending_questions"]
+        # the web check's questions are suggestions about records that don't count yet; they don't hold up an answer
+        pending = [q for q in d["scope"]["pending_questions"] if q.get("kind") != "web"]
         if pending:
             return {"status": "needs_confirmation", "sub": self.subs[sub_id]["entered_name"],
                     "pending_questions": [q["text"] for q in pending],

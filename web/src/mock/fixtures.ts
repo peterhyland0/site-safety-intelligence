@@ -305,6 +305,13 @@ const trinity: FxSub = {
   injury_rates: [],
   licences: [],
   dq_warnings: [],
+  // the web check (the Matches section's button): the excluded pumping record is the sub's own division
+  web_lookup: [
+    { key: "e-trinity-x", verdict: "same", owner: "Trinity Concrete Pumping, a division of Trinity Concrete LLC",
+      url: "https://trinityconcrete.example/pumping", title: "Pumping | Trinity Concrete",
+      quote: "Trinity Concrete Pumping, our pump division at 77 Industrial Pkwy, Ennis, TX",
+      rationale: "Web search: Trinity Concrete Pumping (“our pump division at 77 Industrial Pkwy, Ennis, TX”, trinityconcrete.example); part of Trinity Concrete LLC at trinityconcrete.example. Waiting for your answer" },
+  ],
 };
 
 // --- 6. Generic name: needs adjudication, then possible matches (not counted) ------------------------------
@@ -388,6 +395,17 @@ const abcDrywall: FxSub = {
       sources: [{ url: "https://abcdrywall.example/contact", title: "Contact", quote: "Yard: 10450 Hammerly Blvd, Houston, TX 77043" }],
     },
   },
+  // the web check: the Louisiana and Florida records belong to other companies (Florida's stays excluded)
+  web_lookup: [
+    { key: "e-abc-la", verdict: "different", owner: "ABC Drywall Inc. of Baton Rouge",
+      url: "https://abcdrywallbr.example/about", title: "About | ABC Drywall Inc.",
+      quote: "ABC Drywall Inc., 4100 Florida Blvd, Baton Rouge, LA, family owned since 1988",
+      rationale: "Web search: ABC Drywall Inc. of Baton Rouge (“ABC Drywall Inc., 4100 Florida Blvd, Baton Rouge, LA”, abcdrywallbr.example); it has its own website (abcdrywallbr.example), not your sub's (abcdrywall.example). Waiting for your answer" },
+    { key: "e-abc-fl", verdict: "different", owner: "A B C Drywall & Acoustical, Inc.",
+      url: "https://abcacoustical.example", title: "A B C Drywall & Acoustical",
+      quote: "A B C Drywall & Acoustical, 2250 NW 7th Ave, Miami, FL",
+      rationale: "Web search: A B C Drywall & Acoustical (“2250 NW 7th Ave, Miami, FL”, abcacoustical.example); it has its own website (abcacoustical.example), not your sub's (abcdrywall.example)" },
+  ],
 };
 
 // --- 7. WA state-plan sub with licence -------------------------------------------------------------------

@@ -13,8 +13,9 @@ all left the data, stays as it is.
 Where records land on one new record, with any row the sub already has for it:
 - the GC's decisions win. GC decisions that disagree become a question to the GC instead of one being picked; the
   record waits as possible (method 'remap'), and a re-match keeps it, as it keeps every non-rule row;
-- the AI's decisions and company-profile holds carry over when every record landing there was decided the same way.
-  If not, they're dropped and the rules (then the AI) decide the merged record again;
+- the AI's decisions and the holds from a company profile or the web check (methods 'profile' and 'web') carry over
+  when every record landing there was decided the same way. If not, they're dropped and the rules (then the AI)
+  decide the merged record again;
 - rule decisions aren't carried: the re-match that follows (scripts/rematch.py) runs the rules on the new keys."""
 from __future__ import annotations
 

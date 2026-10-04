@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field, StringConstraints
 Verdict = Literal["high", "review", "no_record", "no_recent", "no_flags"]
 Bucket = Literal["matched", "possible", "excluded"]
 # profile: held for the GC by a company profile; remap: held for the GC, whose answers on records a rebuild grouped
-# as one disagree (ssi/matching/remap.py)
-Method = Literal["rule", "llm", "gc", "llm_rejected", "profile", "remap"]
+# as one disagree (ssi/matching/remap.py); web: held for the GC with what a web search found (ssi/matching/verify.py)
+Method = Literal["rule", "llm", "gc", "llm_rejected", "profile", "remap", "web"]
 Severity = Literal["high", "review", "info"]
 MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
@@ -144,6 +144,9 @@ class ProfileSource(BaseModel):
     url: str
     title: str | None = None
     quote: str
+    # web questions: the records this page is about, and the company it ties them to
+    keys: list[str] = []
+    owner: str | None = None
 
 
 class MatchQuestion(BaseModel):
@@ -153,8 +156,8 @@ class MatchQuestion(BaseModel):
     ai_suggestion: Literal["same", "different", "unsure"] | None
     ai_rationale: str | None
     # profile: from the locations a company profile lists; remap: about records a rebuild grouped as one that the GC
-    # answered differently
-    kind: Literal["red_flag", "profile", "remap"] = "red_flag"
+    # answered differently; web: from the web check, a suggestion that doesn't hold up the verdict or the assistant
+    kind: Literal["red_flag", "profile", "remap", "web"] = "red_flag"
     sources: list[ProfileSource] = []
 
 
@@ -178,6 +181,25 @@ class CompanyProfile(BaseModel):
     note: str | None
     locations: list[ProfileLocation]
     built_at: str | None
+
+
+class WebCheckInfo(BaseModel):
+    """The web check on the sub page (ssi/matching/verify.py): whether it can run, and how many records it would check."""
+    available: bool
+    unchecked: int  # undecided possible and excluded records not checked in the last 90 days
+    checked: int  # records with a web check result
+
+
+class WebCheckResult(BaseModel):
+    card: SubCard
+    searched: int  # new web searches this press
+    checked_groups: int  # record groups (a name at a place) given a result
+    same: int  # records the web ties to the sub
+    different: int  # records it ties to another company
+    unsure: int  # records it couldn't settle
+    left: int  # records still to check: press again
+    limit_reached: bool  # the daily web-check limit stopped it
+    questions: int = 0  # questions asked about them
 
 
 class MatchOverride(BaseModel):
@@ -333,6 +355,7 @@ class SubDetail(BaseModel):
     licences: list[Licence]
     dq_warnings: list[str]
     profile: CompanyProfile | None = None
+    web_check: WebCheckInfo | None = None
 
 
 # --- accounts ------------------------------------------------------------------------------------

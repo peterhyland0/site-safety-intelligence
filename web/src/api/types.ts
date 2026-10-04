@@ -10,8 +10,9 @@
 export type Verdict = "high" | "review" | "no_record" | "no_recent" | "no_flags";
 export type Bucket = "matched" | "possible" | "excluded";
 /** profile: held for the GC because the company's own website lists the record's location;
- *  remap: held for the GC because its earlier answers on records a data update grouped as one disagree */
-export type Method = "rule" | "llm" | "gc" | "llm_rejected" | "profile" | "remap";
+ *  remap: held for the GC because its earlier answers on records a data update grouped as one disagree;
+ *  web: held for the GC with what a web search found about the record */
+export type Method = "rule" | "llm" | "gc" | "llm_rejected" | "profile" | "remap" | "web";
 export type Severity = "high" | "review" | "info";
 export type MatchStatus = "resolved" | "needs_adjudication" | "questions_pending";
 export type FatalityStatus =
@@ -198,8 +199,9 @@ export interface MatchQuestion {
   ai_suggestion: "same" | "different" | "unsure" | null;
   ai_rationale: string | null;
   /** profile: asked from the locations a company profile lists (sources are its pages);
-   *  remap: the GC answered differently about records a data update grouped as one */
-  kind?: "red_flag" | "profile" | "remap";
+   *  remap: the GC answered differently about records a data update grouped as one;
+   *  web: from the web check, a suggestion that doesn't hold up the verdict (sources are keyed to their records) */
+  kind?: "red_flag" | "profile" | "remap" | "web";
   sources?: ProfileSource[];
 }
 
@@ -207,6 +209,9 @@ export interface ProfileSource {
   url: string;
   title: string | null;
   quote: string;
+  /** web questions: the records this page is about, and the company it ties them to */
+  keys?: string[];
+  owner?: string | null;
 }
 
 export interface ProfileLocation {
@@ -398,6 +403,36 @@ export interface SubDetail {
   licences: Licence[];
   dq_warnings: string[];
   profile?: CompanyProfile | null;
+  web_check?: WebCheckInfo | null;
+}
+
+/** The web check on the sub page: whether it can run, and how many records it would check. */
+export interface WebCheckInfo {
+  available: boolean;
+  /** undecided possible and excluded records not checked in the last 90 days */
+  unchecked: number;
+  /** records with a web check result */
+  checked: number;
+}
+
+export interface WebCheckResult {
+  card: SubCard;
+  /** new web searches this press */
+  searched: number;
+  /** record groups (a name at a place) given a result */
+  checked_groups: number;
+  /** records the web ties to the sub */
+  same: number;
+  /** records it ties to another company */
+  different: number;
+  /** records it couldn't settle */
+  unsure: number;
+  /** records still to check: press again */
+  left: number;
+  /** the daily web-check limit stopped it */
+  limit_reached: boolean;
+  /** questions asked about them */
+  questions: number;
 }
 
 // --- accounts ------------------------------------------------------------------------------------

@@ -78,4 +78,41 @@ describe("Match question", () => {
     expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "https://tindallcorp.com/contact/");
     expect(screen.getByText(/aren't counted until you answer/)).toBeInTheDocument();
   });
+
+  it("shows a web question's quotes under the records they're about", () => {
+    render(
+      <QuestionCard
+        question={{
+          ...question(["a", "b"]),
+          kind: "web",
+          ai_suggestion: "different",
+          ai_rationale: "From a web search: “Tindall Concrete, Conley, GA”",
+          sources: [
+            { url: "https://tindallconcrete.example/about", title: "About", quote: "Tindall Concrete, Conley, GA",
+              owner: "Tindall Concrete", keys: ["a"] },
+            { url: "https://other.example/x", title: null, quote: "Tindall Pipe, Petersburg", owner: "Tindall Pipe",
+              keys: ["gone"] },
+          ],
+        }}
+        establishments={[est("a", "CONLEY"), est("b", "PETERSBURG")]}
+        onAnswer={vi.fn()}
+        onRecord={vi.fn()}
+        busy={false}
+      />,
+    );
+    expect(screen.getByText(/Web pages tie these records to another company/)).toBeInTheDocument();
+    expect(screen.queryByText(/AI read/)).not.toBeInTheDocument();
+    // under the first record only (the second has no page)
+    const [first, second] = screen.getAllByRole("listitem").filter((li) => li.textContent?.startsWith("TINDALL CORPORATION"));
+    expect(first).toHaveTextContent("Tindall Concrete: “Tindall Concrete, Conley, GA”");
+    expect(second).not.toHaveTextContent("“");
+    expect(screen.getByRole("link", { name: "tindallconcrete.example" })).toHaveAttribute(
+      "href",
+      "https://tindallconcrete.example/about",
+    );
+    // a page about a record no longer in the question isn't shown, and there's no separate source list
+    expect(screen.queryByText(/Tindall Pipe/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Sources" })).not.toBeInTheDocument();
+    expect(screen.getByText(/From a web search: nothing is counted or dropped until you answer/)).toBeInTheDocument();
+  });
 });

@@ -10,6 +10,17 @@ from conftest import local_db
 from ssi.llm import profile as P
 from ssi.matching import adjudicate as ADJ
 
+# the settings these tests set themselves: a local .env (loaded by ssi.config) must not choose the backend for them
+PROFILE_ENV = ("SSI_PROFILE", "SSI_PROFILE_BACKEND", "SSI_PROFILE_MODEL", "SSI_DAILY_PROFILE_LIMIT", "SSI_M3_WEB_CHECK",
+               "TAVILY_API_KEY")
+
+
+@pytest.fixture(autouse=True)
+def _no_profile_env(monkeypatch):
+    for name in PROFILE_ENV:
+        monkeypatch.delenv(name, raising=False)
+
+
 PAGE = ("Headquarters 2273 Hayne Street Spartanburg, SC 29301 | Virginia Division 5400 Olgers Road "
         "Petersburg, VA 23803 | Texas Division San Antonio, TX")
 URL = "https://tindallcorp.com/contact/"

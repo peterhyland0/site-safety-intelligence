@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { api, errorMessage } from "../api/client";
-import type { Bucket, SubDetail } from "../api/types";
+import type { Bucket, SubDetail, WebCheckResult } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AskForemanButton } from "../components/AskForemanButton";
 import { CompanyProfileSection } from "../components/CompanyProfile";
@@ -11,6 +11,7 @@ import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
 import { TrendChart } from "../components/TrendChart";
+import { WebCheck } from "../components/WebCheck";
 import { EvidenceChip } from "../components/InspectionSheet";
 import { BackLink, ErrorBanner, InlineError, Loading, Section } from "../components/ui";
 import { VerdictChip } from "../components/VerdictChip";
@@ -25,6 +26,8 @@ export function SubDetailPage() {
   const [busyQuestion, setBusyQuestion] = useState<string | null>(null);
   const [busyEst, setBusyEst] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+  const [checkingWeb, setCheckingWeb] = useState(false);
+  const [webResult, setWebResult] = useState<WebCheckResult | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const location = useLocation();
   useTitle(detail.data?.card.entered_name ?? "Sub");
@@ -85,6 +88,19 @@ export function SubDetailPage() {
     }
   }
 
+  async function checkWeb() {
+    setCheckingWeb(true);
+    setActionError(null);
+    try {
+      setWebResult(await api.webCheck(projectId, subId));
+      await detail.reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setCheckingWeb(false);
+    }
+  }
+
   async function move(key: string, bucket: Bucket) {
     setBusyEst(key);
     setActionError(null);
@@ -108,7 +124,10 @@ export function SubDetailPage() {
     c.match_status !== "needs_adjudication" &&
     d.possible.length + d.excluded.length > 0;
   const showProfile = !!d.profile || canLookUp;
-  const fromProfile = d.questions.some((q) => q.kind === "profile");
+  // questions from the company's pages or the web check aren't only about red flags
+  const fromTheWeb = d.questions.some((q) => q.kind === "profile" || q.kind === "web");
+  const web = d.web_check;
+  const showWebCheck = !!web?.available && c.match_status !== "needs_adjudication" && (web.unchecked > 0 || !!webResult);
   const nav = [
     d.questions.length ? ["questions", "Questions"] : null,
     ["reasons", "Why"],
@@ -198,7 +217,7 @@ export function SubDetailPage() {
       {d.questions.length ? (
         <Section id="questions" title={`${plural(d.questions.length, "question")} about matching`} className="scroll-mt-20">
           <p className="mb-3 text-sm text-ink-2">
-            {fromProfile
+            {fromTheWeb
               ? "These records might belong to this sub. Your answer decides whether they count."
               : "These records might belong to this sub and carry red flags. Your answer decides whether they count."}
           </p>
@@ -349,6 +368,9 @@ export function SubDetailPage() {
       ) : null}
 
       <Section id="matches" title="How we found this company in OSHA's records" className="scroll-mt-20">
+        {showWebCheck && web ? (
+          <WebCheck info={web} busy={checkingWeb} result={webResult} onCheck={() => void checkWeb()} />
+        ) : null}
         <MatchBuckets
           matched={d.matched}
           possible={d.possible}

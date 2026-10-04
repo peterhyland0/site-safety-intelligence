@@ -22,6 +22,7 @@ import type {
   SubDetail,
   SubInput,
   User,
+  WebCheckResult,
 } from "./types";
 
 export const MOCK_MODE = import.meta.env.VITE_MOCK === "1";
@@ -201,6 +202,9 @@ export const api = {
   /** "Look up this company": builds the sub's company profile and asks about records at its locations. */
   lookupProfile: (projectId: string, subId: string) =>
     request<SubCard>("POST", `/api/projects/${enc(projectId)}/subs/${enc(subId)}/profile`),
+  /** "Check records on the web": who the web says the sub's undecided records belong to, asked as questions. */
+  webCheck: (projectId: string, subId: string) =>
+    request<WebCheckResult>("POST", `/api/projects/${enc(projectId)}/subs/${enc(subId)}/web-check`),
   /** GC moves an establishment between buckets; returns the re-scored SubCard. */
   overrideMatch: (projectId: string, subId: string, establishmentKey: string, bucket: Bucket) =>
     request<SubCard>(

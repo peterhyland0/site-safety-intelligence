@@ -10,6 +10,7 @@ const METHOD_LABEL: Record<Method, string> = {
   llm_rejected: "Undecided",
   profile: "Company's website",
   remap: "Your answers differ",
+  web: "Web check",
 };
 
 // The GC's own decision is shown in plain words; the AI's old confidence and rule codes don't apply to it.
@@ -26,6 +27,7 @@ const METHOD_HINT: Record<Method, string> = {
   llm_rejected: "The AI's answer failed its checks, so the record stays possible until someone decides",
   profile: "Held for your answer: the company's own website lists this location (see the question above)",
   remap: "Held for your answer: a data update grouped records you answered differently into this one (see the question above)",
+  web: "Held for your answer: a web search found whose record this is (see the question above)",
 };
 
 const BUCKET_LABEL: Record<Bucket, string> = {
