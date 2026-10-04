@@ -235,9 +235,19 @@ def listed_records(profile: dict, rows: list[dict]) -> dict[str, dict]:
     return out
 
 
+def rekeyed(profile: dict) -> dict:
+    """The profile with each location's address key as the current cleaning rules make it, so a profile saved before
+    a rule change still finds its records (Clark's 7900 WESTPARK DR was keyed 7900 WESTPARK, and is 7900 PARK now)."""
+    locs = profile.get("locations") or []
+    keys = C.address_keys(sorted({loc["address"] for loc in locs if loc.get("address") and loc.get("addr_key")}))
+    return {**profile, "locations": [{**loc, "addr_key": keys.get(loc.get("address") or "", loc.get("addr_key"))}
+                                     if loc.get("addr_key") else loc for loc in locs]}
+
+
 def _holds(sub_id: str, profile: dict, rows: list[dict]) -> dict[str, dict]:
     """The records a profile sends to the GC: `rows` (app.sub_match) at listed locations, plus records at listed
     addresses on the company's own site under any name the sub has no row for (capped). {key: {loc, est, new}}."""
+    profile = rekeyed(profile)
     est = {e["establishment_key"]: e for e in C.establishments([r["establishment_key"] for r in rows])}
     held = {k: {"loc": loc, "est": est[k], "new": False} for k, loc in listed_records(profile, list(est.values())).items()}
     with pg.conn() as c:
@@ -300,9 +310,9 @@ def profile_questions(sub: dict, profile: dict, held: dict[str, dict], flags: di
     return out
 
 
-def _evidence_for(e: dict, query: dict | None, reason: str) -> dict:
+def _evidence_for(e: dict, query: dict | None, reason: str, rule: str = "PROFILE") -> dict:
     """A found record's evidence, in the shape run._evidence stores for rule decisions."""
-    return {"rule": "PROFILE", "reason": reason, "similarity": None, "name": e["clean_name"], "state": e["state"],
+    return {"rule": rule, "reason": reason, "similarity": None, "name": e["clean_name"], "state": e["state"],
             "city": e["city"], "zip": e["zip5"], "address": e["address"], "years": [e["first_seen"], e["last_seen"]],
             "inspections": e["insp_n"], "naics4": e["primary_naics4"], "related_only": bool(e.get("related_only")),
             "query": query or {}}
@@ -326,18 +336,286 @@ def _write_holds(c, sub: dict, profile: dict, held: dict[str, dict], query: dict
                       [sub_id, k, reason, json.dumps(_evidence_for(h["est"], query, reason), default=str), by, build_id,
                        nrs.get(k)])
         else:
+            # a record a question covers by company name (C1) keeps saying so
             c.execute("""UPDATE app.sub_match SET bucket = 'possible', method = 'profile', rationale = %s, confidence = NULL,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
-                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap', 'web')""",
+                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap', 'web')
+                           AND rule_id IS DISTINCT FROM 'C1'""",
                       [reason, by, sub_id, k])
 
 
-def _ask(c, sub_id: str, questions: list[dict], open_keys: set[str], kind: str = "profile") -> int:
+def own_names(sub: dict) -> set[str]:
+    """The sub's names as the warehouse cleans them: as entered, and the legal name and DBA in it."""
+    d = C.describe_query(sub["entered_name"]) or {}
+    return {n for n in (d.get("clean"), d.get("legal"), d.get("dba")) if n}
+
+
+def own_name_matches(sub: dict, held: dict[str, dict], flags: dict[str, int]) -> dict[str, dict]:
+    """M4: held records under the sub's own name at an address on the company's own website, with no red flags. The
+    name and the company's own page agree, so they're matched, not asked (Clark's McLean, El Paso and Houston
+    offices). A red-flagged one is still asked: no machine settles a red flag."""
+    if not held:
+        return {}
+    own = own_names(sub)
+    return {k: h for k, h in held.items()
+            if h["loc"]["level"] == "address" and h["loc"].get("own_site") and h["est"].get("clean_name") in own
+            and not flags.get(k) and not h["est"].get("related_only")}
+
+
+def _write_matches(c, sub: dict, profile: dict, found: dict[str, dict], query: dict | None) -> None:
+    """M4 records: matched, method 'profile', which a re-match keeps."""
+    sub_id = str(sub["sub_id"])
+    by = f"profile:{profile.get('model') or 'unknown'}"
+    build_id = warehouse.meta()["build_id"]
+    nrs = C.members([k for k, h in found.items() if h["new"]])
+    for k, h in found.items():
+        reason = f"Your sub's name at an address {profile['name']} lists on {_site(profile)} ({_place(h['loc'])})"
+        if h["new"]:
+            c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
+                                                    needs_adjudication, decided_by, build_id, activity_nrs)
+                         VALUES (%s, %s, 'matched', 'profile', 'M4', %s, %s, false, %s, %s, %s)
+                         ON CONFLICT (sub_id, establishment_key) DO NOTHING""",
+                      [sub_id, k, reason, json.dumps(_evidence_for(h["est"], query, reason, "M4"), default=str), by,
+                       build_id, nrs.get(k)])
+        else:
+            c.execute("""UPDATE app.sub_match SET bucket = 'matched', method = 'profile', rule_id = 'M4', rationale = %s,
+                                confidence = NULL, needs_adjudication = false, decided_by = %s, decided_at = now(),
+                                evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('rule', 'M4', 'reason', %s::text)
+                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap', 'web')""",
+                      [reason, by, reason, sub_id, k])
+
+
+# --- one company name, one answer --------------------------------------------------------------------------------
+CARRY_LIMIT = 20  # records under one company name that a question or an answer brings in
+
+
+def company_names(sub: dict, ests: list[dict]) -> set[str]:
+    """The names among these records that are another company's distinctive name (GUY F ATKINSON CONSTRUCTION,
+    SHIRLEY CONTRACTING): a question or an answer about one record under such a name is about that company, so it
+    covers the name's other records. Not the sub's own names (an answer about one of those records is about a place),
+    nor a common name (CLARK CONCRETE CONTRACTORS may be several companies), nor a person's."""
+    names = {e["clean_name"] for e in ests if e.get("clean_name")}
+    if not names:
+        return set()
+    out = set()
+    for n in names - own_names(sub):
+        d = C.describe_clean(n)
+        if C.core_tier(d["core"] or "", bool(d["initials_only"])) == "distinctive":
+            out.add(n)
+    return out
+
+
+def _listing(ests: list[dict], flags: dict[str, int]) -> str:
+    named = []
+    for e in ests[:PROFILE_LIST_LIMIT]:
+        n = e.get("insp_n") or 0
+        extra = [f"{n} inspection{'s' if n != 1 else ''}"] + (["red flags"] if flags.get(e["establishment_key"]) else [])
+        named.append(f"'{e['clean_name']}' at {e.get('address') or 'no address'}, {e.get('city') or ''} "
+                     f"{e.get('state') or ''} ({', '.join(extra)})")
+    more = f"; and {len(ests) - PROFILE_LIST_LIMIT} more" if len(ests) > PROFILE_LIST_LIMIT else ""
+    return "; ".join(named) + more
+
+
+def _name_note(ests: list[dict], flags: dict[str, int]) -> str:
+    """The sentence a question gets for the records it covers by company name (rule C1)."""
+    n = len(ests)
+    return (f" The same company name has {n} more record{'s' if n != 1 else ''} elsewhere, covered by your answer too: "
+            + _listing(ests, flags) + ".")
+
+
+def cover_company_names(c, sub: dict) -> int:
+    """An open question about a record under another company's distinctive name covers that name's other records, so
+    one answer settles the company and none of its red flags is left out. Clark's question about Guy F. Atkinson's
+    Costa Mesa office left out Atkinson's 23 inspections at Clark's own head office and its 2018 cited fatality in
+    Irvine. The records join the question as possible (rule C1), unless the GC has decided them, they're matched, or
+    another open question has them. Returns the records added."""
+    sub_id = str(sub["sub_id"])
+    qs = [q for q in _open_questions(c, sub_id) if q.get("kind") != "remap"]
+    asked = {k for q in _open_questions(c, sub_id) for k in q["establishment_keys"]}
+    if not qs:
+        return 0
+    ests = {e["establishment_key"]: e for e in C.establishments(sorted({k for q in qs for k in q["establishment_keys"]}))}
+    names = company_names(sub, list(ests.values()))
+    if not names:
+        return 0
+    rows = {r["establishment_key"]: r for r in c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()}
+    by_name: dict[str, list[dict]] = defaultdict(list)
+    for e in C.named(sorted(names), CARRY_LIMIT):
+        r = rows.get(e["establishment_key"])
+        if e["establishment_key"] not in asked and not (r and (r["method"] in ("gc", "remap") or r["bucket"] == "matched")):
+            by_name[e["clean_name"]].append(e)
+    if not by_name:
+        return 0
+    query = next(((r["evidence"] or {}).get("query") for r in rows.values() if (r["evidence"] or {}).get("query")), None)
+    build_id = warehouse.meta()["build_id"]
+    added = 0
+    for q in qs:
+        mine = [e for n in dict.fromkeys(ests[k]["clean_name"] for k in q["establishment_keys"] if k in ests)
+                for e in by_name.pop(n, [])]
+        if not mine:
+            continue
+        keys = [e["establishment_key"] for e in mine]
+        flags, nrs = C.red_flag_counts(keys), C.members(keys)
+        method = {"profile": "profile", "web": "web"}.get(q.get("kind") or "red_flag", "rule")
+        for e in mine:
+            k, at = e["establishment_key"], ests[next(x for x in q["establishment_keys"] if ests.get(x, {}).get("clean_name") == e["clean_name"])]
+            reason = (f"The same company name as '{at['clean_name']}' ({(at.get('city') or '').title()}, {at.get('state')}), "
+                      "which a question asks about: one answer covers both; waiting for your answer")
+            if k in rows:
+                c.execute("""UPDATE app.sub_match SET bucket = 'possible', method = %s, rule_id = 'C1', rationale = %s,
+                                    confidence = NULL, needs_adjudication = false, decided_by = 'rules', decided_at = now(),
+                                    evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('rule', 'C1', 'reason', %s::text)
+                             WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap')""",
+                          [method, reason, reason, sub_id, k])
+            else:
+                c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
+                                                        needs_adjudication, decided_by, build_id, activity_nrs)
+                             VALUES (%s, %s, 'possible', %s, 'C1', %s, %s, false, 'rules', %s, %s)
+                             ON CONFLICT (sub_id, establishment_key) DO NOTHING""",
+                          [sub_id, k, method, reason, json.dumps(_evidence_for(e, query, reason, "C1"), default=str),
+                           build_id, nrs.get(k)])
+        c.execute("""UPDATE app.match_question SET establishment_keys = establishment_keys || %s::text[], text = text || %s
+                     WHERE question_id = %s""", [keys, _name_note(mine, flags), q["question_id"]])
+        added += len(mine)
+    return added
+
+
+def carry(c, sub_id: str, keys: list[str], bucket: str) -> list[str]:
+    """The GC's answer about a record under another company's distinctive name is an answer about that company: the
+    name's other records the GC hasn't decided take the same bucket (method 'gc', rule C1), whether the sub has a row
+    for them or not, and their open questions are settled. "Possible" says nothing about the company and isn't
+    carried. Returns the records carried to."""
+    if bucket not in ("matched", "excluded"):
+        return []
+    sub = c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone()
+    src = {e["clean_name"]: e for e in C.establishments(keys)}
+    names = company_names(sub, list(src.values()))
+    if not names:
+        return []
+    rows = {r["establishment_key"]: r for r in c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()}
+    targets = [e for e in C.named(sorted(names), CARRY_LIMIT)
+               if e["establishment_key"] not in keys and not (
+                   (r := rows.get(e["establishment_key"])) and r["method"] in ("gc", "remap"))]
+    query = next(((r["evidence"] or {}).get("query") for r in rows.values() if (r["evidence"] or {}).get("query")), None)
+    nrs = C.members([e["establishment_key"] for e in targets if e["establishment_key"] not in rows])
+    build_id = warehouse.meta()["build_id"] if targets else None
+    for e in targets:
+        k, at = e["establishment_key"], src[e["clean_name"]]
+        reason = (f"Carried from your answer about '{at['clean_name']}' ({(at.get('city') or '').title()}, "
+                  f"{at.get('state')}): the same company name")
+        if k in rows:
+            c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', rule_id = 'C1', rationale = %s, confidence = NULL,
+                                needs_adjudication = false, decided_by = 'gc', decided_at = now()
+                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap')""",
+                      [bucket, reason, sub_id, k])
+        else:
+            c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
+                                                    needs_adjudication, decided_by, build_id, activity_nrs)
+                         VALUES (%s, %s, %s, 'gc', 'C1', %s, %s, false, 'gc', %s, %s)
+                         ON CONFLICT (sub_id, establishment_key) DO NOTHING""",
+                      [sub_id, k, bucket, reason, json.dumps(_evidence_for(e, query, reason, "C1"), default=str),
+                       build_id, nrs.get(k)])
+        settle(c, sub_id, k, bucket)
+    return [e["establishment_key"] for e in targets]
+
+
+# --- records that leave an open question without the GC -----------------------------------------------------------
+def reword(c, sub: dict, q: dict, keys: list[str], profile: dict | None = None) -> dict | None:
+    """A question's text (and suggestion, rationale, sources) for the records it still asks about, built the way it
+    was first: from the company profile, the web check's findings, or the records' evidence, plus the note for the
+    records it covers by company name (rule C1). None when it can't be rebuilt; the old text then stays."""
+    rows = {r["establishment_key"]: r for r in c.execute(
+        "SELECT * FROM app.sub_match WHERE sub_id = %s AND establishment_key = ANY(%s)", [str(sub["sub_id"]), keys]).fetchall()}
+    if set(rows) != set(keys):
+        return None
+    ests = {e["establishment_key"]: e for e in C.establishments(keys)}
+    flags = C.red_flag_counts(keys)
+    by_name = [k for k in keys if rows[k]["rule_id"] == "C1"]
+    base = [k for k in keys if k not in by_name]
+    note = _name_note([ests[k] for k in by_name if k in ests], flags) if by_name else ""
+    kind = q.get("kind") or "red_flag"
+    if not base:
+        return None
+    if kind == "profile":
+        if profile is None:
+            from ssi.llm import profile as P  # imported here: the matching package doesn't otherwise need it
+            profile = P.load(sub.get("profile_id"))
+        if not profile:
+            return None
+        listed = listed_records(rekeyed(profile), [ests[k] for k in base if k in ests])
+        if set(listed) != set(base):
+            return None
+        # "another name": a record the profile found at the address, not one the name search had (_write_holds)
+        pq = profile_questions(sub, profile, {k: {"loc": loc, "est": ests[k], "new": rows[k]["rule_id"] == "PROFILE"}
+                                              for k, loc in listed.items()}, flags)
+    elif kind == "web":
+        from ssi.matching.verify import web_questions  # verify imports this module
+        checks = {k: (rows[k]["evidence"] or {}).get("web_check") for k in base}
+        if not all(ck and ck.get("verdict") in ("same", "different") and k in ests for k, ck in checks.items()):
+            return None
+        pq = web_questions(sub, [(k, ests[k], checks[k]) for k in base], flags)
+    else:
+        if not all((rows[k]["evidence"] or {}).get("years") for k in base):
+            return None
+        pq = [{"text": question_text(sub, [rows[k] for k in base]), "suggestion": q["ai_suggestion"],
+               "rationale": q["ai_rationale"], "sources": q.get("sources")}]
+    if len(pq) != 1:
+        return None
+    return {**pq[0], "text": pq[0]["text"] + note}
+
+
+def unask(c, sub: dict, keys: set[str], profile: dict | None = None) -> int:
+    """Records settled without the GC (matched by a rule, or by M4) leave the open questions that held them. A question
+    left with nothing to ask is withdrawn; the rest are reworded for what they still ask. Returns questions changed."""
+    changed = 0
+    for q in _open_questions(c, str(sub["sub_id"])):
+        if not keys & set(q["establishment_keys"]):
+            continue
+        rest = [k for k in q["establishment_keys"] if k not in keys]
+        changed += 1
+        if not rest:
+            c.execute("DELETE FROM app.match_question WHERE question_id = %s", [q["question_id"]])
+            continue
+        c.execute("UPDATE app.match_question SET establishment_keys = %s WHERE question_id = %s", [rest, q["question_id"]])
+        new = reword(c, sub, q, rest, profile)
+        if new:
+            c.execute("""UPDATE app.match_question SET text = %s, ai_suggestion = %s, ai_rationale = %s, sources = %s
+                         WHERE question_id = %s""",
+                      [new["text"], new.get("suggestion"), new.get("rationale"),
+                       json.dumps(new["sources"]) if new.get("sources") is not None else None, q["question_id"]])
+    return changed
+
+
+def _merge(c, sub: dict, q: dict, keys: list[str], profile: dict | None = None) -> bool:
+    """Adds records to an open question, reworded for everything it asks. False, and nothing changed, when it can't be
+    reworded (records at a listed address and only in a listed city are two questions)."""
+    every = q["establishment_keys"] + [k for k in keys if k not in q["establishment_keys"]]
+    new = reword(c, sub, q, every, profile)
+    if not new:
+        return False
+    c.execute("""UPDATE app.match_question SET establishment_keys = %s, text = %s, ai_suggestion = %s, ai_rationale = %s,
+                        sources = %s WHERE question_id = %s""",
+              [every, new["text"], new.get("suggestion"), new.get("rationale"),
+               json.dumps(new["sources"]) if new.get("sources") is not None else None, q["question_id"]])
+    return True
+
+
+def _ask(c, sub: dict, questions: list[dict], open_keys: set[str], kind: str = "profile",
+         profile: dict | None = None) -> int:
+    """New questions from a company profile or the web check. An open question of the same kind and suggestion takes
+    the records instead, so the GC has one question per kind of evidence and suggestion, not one per lookup or press.
+    Returns the questions newly asked."""
+    sub_id = str(sub["sub_id"])
     asked = 0
     for q in questions:
         keys = [k for k in q["keys"] if k not in open_keys]
         if not keys:
             continue  # already waiting for the GC
+        same = next((o for o in _open_questions(c, sub_id)
+                     if o.get("kind") == kind and o["ai_suggestion"] == q["suggestion"]), None)
+        if same and _merge(c, sub, same, keys, profile):
+            open_keys |= set(keys)
+            continue
         c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale, kind, sources)
                      VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                   [sub_id, keys, q["text"], q["suggestion"], q["rationale"], kind, json.dumps(q["sources"])])
@@ -345,8 +623,28 @@ def _ask(c, sub_id: str, questions: list[dict], open_keys: set[str], kind: str =
     return asked
 
 
+def merge_open_questions(c, sub: dict, profile: dict | None = None) -> int:
+    """Open profile or web questions with the same suggestion become one, the oldest: what _ask does now, for a sub
+    asked before it did (one question per lookup or press). Returns the questions merged away."""
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for q in _open_questions(c, str(sub["sub_id"])):
+        if q.get("kind") in ("profile", "web"):
+            groups[(q["kind"], q["ai_suggestion"])].append(q)
+    merged = 0
+    for qs in groups.values():
+        target, *rest = qs
+        for q in rest:
+            if _merge(c, sub, target, q["establishment_keys"], profile):
+                c.execute("DELETE FROM app.match_question WHERE question_id = %s", [q["question_id"]])
+                target = c.execute("SELECT * FROM app.match_question WHERE question_id = %s",
+                                   [target["question_id"]]).fetchone()
+                merged += 1
+    return merged
+
+
 def _open_questions(c, sub_id: str) -> list[dict]:
-    return c.execute("SELECT * FROM app.match_question WHERE sub_id = %s AND answer IS NULL", [sub_id]).fetchall()
+    return c.execute("SELECT * FROM app.match_question WHERE sub_id = %s AND answer IS NULL ORDER BY created_at",
+                     [sub_id]).fetchall()
 
 
 def apply_profile(sub: dict, profile: dict) -> dict:
@@ -355,7 +653,7 @@ def apply_profile(sub: dict, profile: dict) -> dict:
     those records gets the profile as its suggestion instead of a second question. Records the web check is asking
     about (method 'web') keep their question."""
     sub_id = str(sub["sub_id"])
-    stats = {"held": 0, "questions": 0}
+    stats = {"held": 0, "matched": 0, "questions": 0}
     if not profile or not profile.get("locations"):
         return stats
     with pg.conn() as c:
@@ -363,10 +661,18 @@ def apply_profile(sub: dict, profile: dict) -> dict:
                             AND bucket IN ('possible', 'excluded') AND establishment_key <> '__note__'""", [sub_id]).fetchall()
     held = _holds(sub_id, profile, rows)
     if not held:
+        with pg.conn() as c:
+            cover_company_names(c, sub)
         return stats
     flags = C.red_flag_counts(list(held))
+    auto = own_name_matches(sub, held, flags)
+    held = {k: h for k, h in held.items() if k not in auto}
     query = next(((r["evidence"] or {}).get("query") for r in rows if (r["evidence"] or {}).get("query")), None)
     with pg.conn() as c:
+        if auto:  # matched (M4), and out of any question that held them
+            _write_matches(c, sub, profile, auto, query)
+            unask(c, sub, set(auto), profile)
+            stats["matched"] = len(auto)
         open_qs = _open_questions(c, sub_id)
         for q in open_qs:  # an open question entirely about held records: give it the profile's evidence
             sub_held = {k: held[k] for k in q["establishment_keys"] if k in held}
@@ -380,7 +686,9 @@ def apply_profile(sub: dict, profile: dict) -> dict:
         _write_holds(c, sub, profile, held, query)
         stats["held"] = len(held)
         fresh = {k: h for k, h in held.items() if k not in open_keys}  # the question text names only what it asks
-        stats["questions"] = _ask(c, sub_id, profile_questions(sub, profile, fresh, flags), open_keys)
+        stats["questions"] = _ask(c, sub, profile_questions(sub, profile, fresh, flags), open_keys, profile=profile)
+        merge_open_questions(c, sub, profile)
+        cover_company_names(c, sub)
     return stats
 
 
@@ -395,10 +703,12 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
         return {"clusters": 0, "questions": 0, "llm_calls": 0}
     held = _holds(sub_id, profile, rows) if profile and profile.get("locations") else {}
     flags = C.red_flag_counts([r["establishment_key"] for r in rows] + [k for k, h in held.items() if h["new"]])
+    auto = own_name_matches(sub, held, flags)  # M4: matched, not asked
+    held = {k: h for k, h in held.items() if k not in auto}
     query = next(((r["evidence"] or {}).get("query") for r in rows if (r["evidence"] or {}).get("query")), None)
-    rows = [r for r in rows if r["establishment_key"] not in held]  # listed records skip the AI
+    rows = [r for r in rows if r["establishment_key"] not in held and r["establishment_key"] not in auto]  # listed records skip the AI
     clusters = sorted(_clusters(rows).items(), key=lambda kv: -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1]))
-    stats = {"clusters": len(clusters), "questions": 0, "llm_calls": 0, "held": len(held)}
+    stats = {"clusters": len(clusters), "questions": 0, "llm_calls": 0, "held": len(held), "matched": len(auto)}
     updates, red = [], []
     for i, (_, crow) in enumerate(clusters):
         keys = [r["establishment_key"] for r in crow]
@@ -435,18 +745,22 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
         red = [(rest, d, why, sum(flags.get(r["establishment_key"], 0) for r in rest))
                for crow, d, why, _ in red if (rest := [r for r in crow if r["establishment_key"] not in gc])]
         questions = questions_for(sub, red)
+        if auto:
+            _write_matches(c, sub, profile, auto, query)
+            unask(c, sub, set(auto), profile)
         open_keys = {k for q in _open_questions(c, sub_id) for k in q["establishment_keys"]}
         if held:
             _write_holds(c, sub, profile, held, query)
             # the question text names only what it asks
             fresh = {k: h for k, h in held.items() if k not in open_keys and k not in gc}
-            stats["questions"] += _ask(c, sub_id, profile_questions(sub, profile, fresh, flags), open_keys)
+            stats["questions"] += _ask(c, sub, profile_questions(sub, profile, fresh, flags), open_keys, profile=profile)
         for text, keys, suggestion, rationale in questions:
             if set(keys) <= open_keys:
                 continue  # already waiting for the GC
             c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, ai_rationale)
                          VALUES (%s, %s, %s, %s, %s)""", [sub_id, keys, text, suggestion, rationale])
             stats["questions"] += 1  # count only questions actually asked
+        cover_company_names(c, sub)
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])
     return stats
 
@@ -458,20 +772,23 @@ def answer_question(question_id: str, answer: str) -> dict:
             raise KeyError(question_id)
         c.execute("UPDATE app.match_question SET answer = %s, answered_at = now() WHERE question_id = %s",
                   [answer, question_id])
-        c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', decided_by = 'gc', decided_at = now(),
+        bucket = "matched" if answer == "yes" else "excluded"
+        c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', rule_id = NULL, decided_by = 'gc', decided_at = now(),
                             needs_adjudication = false, rationale = %s
                      WHERE sub_id = %s AND establishment_key = ANY(%s)""",
-                  ["matched" if answer == "yes" else "excluded",
-                   "Confirmed by the GC" if answer == "yes" else "Rejected by the GC", q["sub_id"], q["establishment_keys"]])
+                  [bucket, "Confirmed by the GC" if answer == "yes" else "Rejected by the GC", q["sub_id"],
+                   q["establishment_keys"]])
+        carry(c, str(q["sub_id"]), q["establishment_keys"], bucket)  # ...and the companies it named
     return q
 
 
 def override(sub_id: str, establishment_key: str, bucket: str) -> None:
     with pg.conn() as c:
-        c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', decided_by = 'gc', decided_at = now(),
+        c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', rule_id = NULL, decided_by = 'gc', decided_at = now(),
                             needs_adjudication = false, rationale = 'Set by the GC'
                      WHERE sub_id = %s AND establishment_key = %s""", [bucket, sub_id, establishment_key])
         settle(c, sub_id, establishment_key, bucket)  # answering by override also settles its questions
+        carry(c, sub_id, [establishment_key], bucket)  # ...and so does an answer about the company it names
 
 
 def settle(c, sub_id: str, establishment_key: str, bucket: str) -> None:

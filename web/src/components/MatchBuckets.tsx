@@ -30,6 +30,22 @@ const METHOD_HINT: Record<Method, string> = {
   web: "Held for your answer: a web search found whose record this is (see the question above)",
 };
 
+// A hint and label for the record itself where its method alone would mislead: a profile record that's matched
+// (M4: the sub's own name at an address its website lists) isn't held, and a decision carried from the GC's answer
+// about the same company name (C1) wasn't made on this record.
+function methodHint(est: MatchedEstablishment): string {
+  if (est.method === "profile" && est.bucket === "matched")
+    return "Matched: your sub's own name at an address its website lists, with no red flags (rule M4)";
+  if (est.method === "gc" && est.rule_id === "C1")
+    return "Carried from your answer about another record under the same company name";
+  return METHOD_HINT[est.method];
+}
+
+function decisionText(est: MatchedEstablishment): string {
+  if (est.method === "gc" && est.rule_id !== "C1") return GC_DECISION[est.bucket];
+  return est.rationale ?? "No rationale recorded.";
+}
+
 const BUCKET_LABEL: Record<Bucket, string> = {
   matched: "Matched",
   possible: "Possible",
@@ -84,14 +100,14 @@ export function EstablishmentItem({
       <p className="mt-2 text-sm text-ink-2">
         <span
           className="mr-1.5 inline-flex items-center rounded border border-line-strong px-1.5 text-xs font-medium text-ink-2"
-          title={METHOD_HINT[est.method]}
+          title={methodHint(est)}
         >
           {METHOD_LABEL[est.method]}
           {est.method === "llm" && est.confidence != null ? ` · ${Math.round(est.confidence * 100)}%` : ""}
         </span>
-        <span className="sr-only">{METHOD_HINT[est.method]}. </span>
-        {est.method === "gc" ? GC_DECISION[est.bucket] : (est.rationale ?? "No rationale recorded.")}
-        {est.method === "rule" && est.rule_id ? (
+        <span className="sr-only">{methodHint(est)}. </span>
+        {decisionText(est)}
+        {(est.method === "rule" || (est.method === "profile" && est.bucket === "matched")) && est.rule_id ? (
           <span className="ml-1 font-mono text-xs text-muted" title="Matching rule (see Method)">
             {est.rule_id}
           </span>

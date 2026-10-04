@@ -277,6 +277,11 @@ def clark(monkeypatch):
     monkeypatch.setattr(C, "establishments", lambda ks: [rows[k] for k in ks if k in rows])
     monkeypatch.setattr(C, "red_flag_counts", lambda ks: {k: 1 for k in ks if k == keys["kca"]})
     monkeypatch.setattr(C, "is_person_core", lambda core: core == "JOHN CLARK")
+    # the sub's own names; no other company's name here is distinctive enough for a question to cover it (C1)
+    monkeypatch.setattr(C, "describe_query", lambda name: {"clean": "CLARK CONSTRUCTION GROUP", "legal": None, "dba": None})
+    monkeypatch.setattr(C, "core_tier", lambda core, initials: "generic")
+    monkeypatch.setattr(C, "describe_clean", lambda clean: {"core": clean, "initials_only": False, "sibling": None})
+    monkeypatch.setattr(C, "address_keys", lambda addresses: {})
     monkeypatch.setattr(W, "model", lambda: "web-v1+test")
     yield p, s, keys
     with pg.conn() as c:

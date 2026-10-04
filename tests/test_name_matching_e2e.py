@@ -48,6 +48,23 @@ RECS = [
     Rec("317729173 - D R HORTON INC PORTLAND", "1341 Horton Cir", "Arlington", "TX", "76011"),
     *[Rec(n, "1341 Horton Cir", "Arlington", "TX", "76011") for n in
       ("SSHI LLC", "PACIFIC RIDGE - DRH, LLC", "DHI COMMUNITIES", "LEXINGTON - DRH, LLC", "DHIC NONA WEST, LLC")],
+    # a common name (CLARK) whose head office counts as shared, housing seven names, five of them its own companies:
+    # its name without GROUP there is still its record. Its regional companies add a place to its name, and one of its
+    # offices is written both WESTPARK and WEST PARK
+    Rec("CLARK CONSTRUCTION GROUP, LLC", "7500 Old Georgetown Rd", "Bethesda", "MD", "20814", n=5),
+    Rec("CLARK CONSTRUCTION", "7500 Old Georgetown Rd", "Bethesda", "MD", "20814"),
+    *[Rec(n, "7500 Old Georgetown Rd", "Bethesda", "MD", "20814") for n in
+      ("GUY F ATKINSON CONSTRUCTION", "CLARK FOUNDATIONS", "CLARK LEWIS A JV", "C3M POWER SYSTEMS", "S2N TECHNOLOGY",
+       "CLARK SMOOT CONSIGLI JOINT VENTURE")],
+    Rec("CLARK CONSTRUCTION SERVICES", "7500 Old Georgetown Rd", "Bethesda", "MD", "20814"),
+    Rec("CLARK CONSTRUCTION GROUP - CALIFORNIA, LP", "180 Howard St Ste 1200", "San Francisco", "CA", "94105"),
+    Rec("CLARK CONSTRUCTION GROUP - CHICAGO LLC", "216 S Jefferson St Ste 502", "Chicago", "IL", "60661"),
+    Rec("CLARK CONSTRUCTION GROUP, LLC", "7900 Westpark Dr", "McLean", "VA", "22102"),
+    Rec("CLARK CONSTRUCTION GROUP, LLC", "7900 West Park Dr", "McLean", "VA", "22102"),
+    *[Rec(f"CLARK {w}", f"{i} Elm St", "Omaha", "NE", "68102") for i, w in enumerate((
+        "PLUMBING", "ELECTRIC", "CONCRETE", "MASONRY", "PAINTING", "FRAMING", "DRYWALL", "SIDING", "HEATING", "EXCAVATING",
+        "STEEL", "GLASS", "STUCCO", "PAVING", "INSULATION", "TILE", "FLOORING", "FENCE", "GUTTERS", "SPRINKLER",
+        "DEMOLITION", "WELDING", "SOLAR", "LANDSCAPING", "CABINETS", "WINDOWS"))],
     # sister companies at one address: another trade word; and one name with a trade word added
     Rec("EENIGENBURG FRAMING", "2 Calumet Ave", "Dyer", "IN", "46311", n=2),
     Rec("EENIGENBURG ROOFING", "2 Calumet Ave", "Dyer", "IN", "46311"),
@@ -210,6 +227,27 @@ def test_the_subs_name_plus_a_place_at_its_own_address_is_a_question():
     assert not {n for n, c, _ in got if c == "ARLINGTON"} - {"DR HORTON", "DR HORTON INC PORTLAND"}
     # the same name away from any address the sub uses: nothing ties it to the sub
     assert got[("DR HORTON INC PORTLAND", "PORTLAND", "OR")] == ("excluded", "X1")
+
+
+def test_a_common_names_own_records_at_its_shared_head_office_and_its_regional_companies():
+    rows, q, _ = decisions("Clark Construction Group", "Bethesda", "MD")
+    assert q.tier == "generic"
+    got = {(n, c): (b, r) for n, c, _, b, r in rows}
+    # the head office is shared (seven names), but the sub's name without GROUP there is its record (M2)...
+    assert warehouse.one("SELECT is_shared_office FROM entity.address_stats WHERE addr_key = '7500 OLD'")["is_shared_office"]
+    assert got[("CLARK CONSTRUCTION GROUP", "BETHESDA")] == ("matched", "M1")
+    assert got[("CLARK CONSTRUCTION", "BETHESDA")] == ("matched", "M2")
+    # ...not one with a word swapped (SERVICES for GROUP), nor the other companies there
+    assert got.get(("CLARK CONSTRUCTION SERVICES", "BETHESDA"), ("",))[0] != "matched"
+    assert not {n for n, c in got if c == "BETHESDA"} & {"GUY F ATKINSON CONSTRUCTION", "C3M POWER SYSTEMS", "S2N TECHNOLOGY"}
+    # its regional companies (the name plus a state or the record's own city) are questions, not other companies
+    assert got[("CLARK CONSTRUCTION GROUP CALIFORNIA", "SAN FRANCISCO")] == ("uncertain", "S4")
+    assert got[("CLARK CONSTRUCTION GROUP CHICAGO", "CHICAGO")] == ("uncertain", "S4")
+    # 7900 WESTPARK DR and 7900 WEST PARK DR are one record
+    mclean = [r for r in rows if r[1] == "MCLEAN"]
+    assert len(mclean) == 1 and mclean[0][3] == "uncertain"
+    assert warehouse.one("SELECT insp_n FROM entity.establishment WHERE clean_name = 'CLARK CONSTRUCTION GROUP' "
+                         "AND city = 'MCLEAN'")["insp_n"] == 2
 
 
 def test_a_dba_trade_name_is_judged_as_the_common_name_it_is():

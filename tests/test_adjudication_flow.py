@@ -245,7 +245,7 @@ def test_an_open_question_makes_the_verdict_review_only_when_a_red_flag_is_at_st
     _, s = make_sub({red: "ACME ELECTRIC CO OF TEXAS"})
     sid = str(s["sub_id"])
     with pg.conn() as c:
-        ADJ._ask(c, sid, [{"text": "Acme Electric lists these addresses on acme.example, and OSHA has records there",
+        ADJ._ask(c, s, [{"text": "Acme Electric lists these addresses on acme.example, and OSHA has records there",
                            "keys": [listed, also_listed], "suggestion": "same", "rationale": "Listed on acme.example",
                            "sources": []}], set())
 

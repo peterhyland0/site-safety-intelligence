@@ -374,6 +374,33 @@ def test_the_subs_name_plus_a_word_at_its_address_is_a_question_not_another_comp
     assert decide(horton, c("DR HAMILTON", "DR HAMILTON", state="NC", at_addr=True), GENERIC).rule_id == "X1"
 
 
+def test_the_subs_name_plus_a_place_is_a_question_not_another_company():
+    clark = q("CLARK CONSTRUCTION GROUP", "CLARK", state="MD", tier="generic", city="Bethesda")
+    for clean, core, state, city in (
+            ("CLARK CONSTRUCTION GROUP CALIFORNIA", "CLARK CALIFORNIA", "CA", "SACRAMENTO"),  # a state's name
+            ("CLARK CONSTRUCTION GROUP CALIF", "CLARK CALIF", "CA", "SAN FRANCISCO"),  # its abbreviation, in that state
+            ("CLARK CONSTRUCTION GROUP CHICAGO", "CLARK CHICAGO", "IL", "CHICAGO"),  # the record's own city
+            ("CLARK CONSTRUCTION GROUP KANSAS CITY", "CLARK KANSAS CITY", "MO", "KANSAS CITY"),
+            ("CLARK CONSTRUCTION GROUP TEXAS", "CLARK TEXAS", "AZ", "PHOENIX")):  # a state's name anywhere
+        d = decide(clark, c(clean, core, state=state, city=city), GENERIC, DESCRIPTORS)
+        assert (d.bucket, d.rule_id) == (UNCERTAIN, "S4"), clean
+    # an abbreviation outside its state, another city, or a common core without the sub's full name: as before
+    assert decide(clark, c("CLARK CONSTRUCTION GROUP CALIF", "CLARK CALIF", state="NV", city="RENO"),
+                  GENERIC, DESCRIPTORS).rule_id == "X1"
+    assert decide(clark, c("CLARK CONSTRUCTION GROUP CHICAGO", "CLARK CHICAGO", state="IL", city="ELGIN"),
+                  GENERIC, DESCRIPTORS).rule_id == "X1"
+    assert decide(clark, c("CLARK CONSTRUCTION CHICAGO", "CLARK CHICAGO", state="IL", city="CHICAGO"),
+                  GENERIC, DESCRIPTORS).rule_id == "X1"
+    # a distinctive core plus a place counts without the descriptor words: D.R. Horton's division names
+    horton = q("DR HORTON", "DR HORTON", state="NC")
+    d = decide(horton, c("DR HORTON GREENSBORO", "DR HORTON GREENSBORO", state="NC", city="GREENSBORO"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S4")
+    # a person's name in another city stays another person (X5)
+    jose = q("JOSE HERNANDEZ", "JOSE HERNANDEZ", state="TX", tier="person", city="Dallas")
+    assert decide(jose, c("JOSE HERNANDEZ HOUSTON", "JOSE HERNANDEZ HOUSTON", state="TX", city="HOUSTON"),
+                  GENERIC).bucket == EXCLUDED
+
+
 def test_is_jv_name_is_the_macro():
     import duckdb
 

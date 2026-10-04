@@ -200,13 +200,20 @@ CREATE OR REPLACE MACRO clean_addr(s) AS trim(regexp_replace(
 CREATE OR REPLACE MACRO addr_unit(s) AS
   nullif(regexp_extract(upper(coalesce(s, '')), '\b(STE|SUITE|UNIT|APT|FL|FLOOR|RM|ROOM|BLDG|#)\s*#?\s*([A-Z0-9-]+)\s*$', 0), '');
 
+-- A direction written onto the street word after a house number is split off: OSHA writes one street both ways
+-- (7900 WESTPARK DR / 7900 WEST PARK DR, Clark's McLean office; 3715 NORTHSIDE PKWY / 3715 N SIDE PKWY), which split
+-- 21 companies' records in two. Not before ER (WESTERN, NORTHERN AVE) or fewer than 3 letters (WESTON, EASTON).
+-- Applied to a cleaned address (clean_addr), or to text holding one (a company profile's quote)
+CREATE OR REPLACE MACRO addr_split_dir(s) AS
+  regexp_replace(s, '\b([0-9]+[A-Z]? )(NORTH|SOUTH|EAST|WEST)([A-DF-Z][A-Z]{2,}|E[A-QS-Z][A-Z]+)\b', '\1\2 \3', 'g');
+
 -- Address key: house number + first street word (skipping a leading directional), or "POBOX <n>".
--- Tolerates suffix variants ("7TH AVE SOUTH" = "7TH AVE S") and suites.
+-- Tolerates suffix variants ("7TH AVE SOUTH" = "7TH AVE S"), a direction written onto the street word, and suites.
 CREATE OR REPLACE MACRO addr_key(s) AS CASE
   WHEN regexp_matches(clean_addr(s), '\bPO BOX\s+[0-9]+') THEN 'POBOX ' || regexp_extract(clean_addr(s), '\bPO BOX\s+([0-9]+)', 1)
   WHEN regexp_matches(clean_addr(s), '^[0-9]+[A-Z]?\s+') THEN
-       regexp_extract(clean_addr(s), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 1) || ' ' ||
-       regexp_extract(clean_addr(s), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 2)
+       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 1) || ' ' ||
+       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 2)
   ELSE NULL END;
 
 CREATE OR REPLACE MACRO zip5(z) AS CASE

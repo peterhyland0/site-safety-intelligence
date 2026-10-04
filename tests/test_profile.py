@@ -217,6 +217,14 @@ def warehouse_stub(monkeypatch):
     monkeypatch.setattr(C, "members", lambda keys: {k: [hash(k) % 1000] for k in keys if k in rows})
     monkeypatch.setattr(C, "at_listed_addresses", lambda locs, exclude, limit=20: [rows["v"]] if "v" not in exclude else [])
     monkeypatch.setattr(warehouse, "meta", lambda: {"build_id": "test"})
+    # the sub's own names, the locations' keys as saved, and no company name distinctive enough to cover (tests below
+    # that need them set their own)
+    monkeypatch.setattr(C, "describe_query", lambda name: {"clean": "TINDELL", "legal": None, "dba": None})
+    monkeypatch.setattr(C, "address_keys", lambda addresses: {})
+    monkeypatch.setattr(C, "core_tier", lambda core, initials: "generic")
+    monkeypatch.setattr(C, "describe_clean", lambda clean: {"core": clean, "initials_only": False, "sibling": None})
+    monkeypatch.setattr(C, "named", lambda names, limit: [])
+    return rows
 
 
 def _state(sub_id):
@@ -280,10 +288,199 @@ def test_the_button_gives_an_open_question_the_profiles_evidence(sub, warehouse_
     assert qs[0]["ai_suggestion"] == "same" and qs[0]["sources"][0]["url"] == URL  # the same question, now with evidence
     assert [x["kind"] for x in qs[1:]] == ["profile"] and qs[1]["establishment_keys"] == ["v"]  # 'v' asked separately
     assert "VIRGINIA DIVISION" in qs[1]["text"] and "'TINDALL' at" not in qs[1]["text"]  # ...and names only 'v'
-    assert stats == {"held": 2, "questions": 1}
+    assert stats == {"held": 2, "matched": 0, "questions": 1}
     assert ADJ.apply_profile(sub, PROFILE)["questions"] == 0  # idempotent
     with pg.conn() as c:
         assert c.execute("SELECT count(*) AS n FROM app.match_question WHERE sub_id = %s", [sub["sub_id"]]).fetchone()["n"] == 2
+
+
+def _add(sub, key, name, bucket="possible", method="rule", rule="U", needs=False):
+    import json
+
+    from ssi.store import pg
+    ev = {"name": name, "city": "PETERSBURG", "state": "VA", "address": "5400 OLGERS RD", "zip": "23803",
+          "years": ["2020-01-01", "2025-01-01"], "inspections": 4, "naics4": "3273", "similarity": 1.0, "reason": rule,
+          "rule": rule, "query": {"clean": "TINDELL", "core": "TINDELL", "tier": "distinctive"}}
+    with pg.conn() as c:
+        c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
+                                                needs_adjudication, decided_by)
+                     VALUES (%s, %s, %s, %s, %s, 'rule note', %s, %s, 'rules')""",
+                  [sub["sub_id"], key, bucket, method, rule, json.dumps(ev), needs])
+
+
+def _ask(sub, keys, kind="profile", text="old text"):
+    from ssi.store import pg
+    with pg.conn() as c:
+        return c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, kind)
+                            VALUES (%s, %s, %s, 'same', %s) RETURNING *""", [sub["sub_id"], keys, text, kind]).fetchone()
+
+
+@local_db
+def test_the_subs_own_name_at_an_address_on_its_own_site_is_matched_not_asked(sub, warehouse_stub, monkeypatch):
+    from ssi.matching import candidates as C
+    rows = warehouse_stub
+    for k in ("own", "own_red"):  # the sub's own name at the listed building; one of them red-flagged
+        rows[k] = {**est(k, name="TINDELL", n=4), "related_only": False}
+    rows["own_city"] = {**est("own_city", name="TINDELL", city="SAN ANTONIO", state="TX", addr_key="9 ELM", zip5="78225"),
+                        "related_only": False}
+    monkeypatch.setattr(C, "red_flag_counts", lambda keys: {k: n for k, n in {"a": 2, "own_red": 1}.items() if k in keys})
+    for k in ("own", "own_red", "own_city"):
+        _add(sub, k, "TINDELL")
+    q = _ask(sub, ["own", "a"])  # asked before M4 existed
+    stats = ADJ.apply_profile(sub, PROFILE)
+    r, qs = _state(sub["sub_id"])
+    assert stats["matched"] == 1
+    assert (r["own"]["bucket"], r["own"]["method"], r["own"]["rule_id"]) == ("matched", "profile", "M4")
+    assert "Your sub's name at an address Tindall Corporation lists on tindallcorp.com" in r["own"]["rationale"]
+    # a red flag, or only the city, is still the GC's to answer
+    assert (r["own_red"]["bucket"], r["own_red"]["method"]) == ("possible", "profile")
+    assert (r["own_city"]["bucket"], r["own_city"]["method"]) == ("possible", "profile")
+    # the old question no longer asks about the matched record, and says only what it still asks
+    # (the profile's other records at the listed address join it: one question per kind of evidence and suggestion)
+    (old,) = [x for x in qs if x["question_id"] == q["question_id"]]
+    assert old["establishment_keys"] == ["a", "own_red", "v"] and old["answer"] is None
+    assert old["text"].startswith("Tindall Corporation lists these addresses on tindallcorp.com") and "'TINDALL' at" in old["text"]
+    assert "'TINDELL'" in old["text"] and "VIRGINIA DIVISION' (another name)" in old["text"]
+    assert [x["establishment_keys"] for x in qs if x["question_id"] != q["question_id"]] == [["own_city"]]  # only in a city
+    assert all("own" not in x["establishment_keys"] for x in qs)
+    # a question left with nothing to ask is withdrawn
+    _ask(sub, ["own2"])
+    rows["own2"] = {**est("own2", name="TINDELL"), "related_only": False}
+    _add(sub, "own2", "TINDELL")
+    ADJ.apply_profile(sub, PROFILE)
+    r, qs = _state(sub["sub_id"])
+    assert r["own2"]["bucket"] == "matched" and all("own2" not in x["establishment_keys"] for x in qs)
+
+
+@local_db
+def test_profile_questions_asked_one_per_lookup_become_one(sub, warehouse_stub):
+    from ssi.store import pg
+    _add(sub, "v", "TINDALL CORPORATION VIRGINIA DIVISION", method="profile", rule="PROFILE")
+    first, _ = _ask(sub, ["a"]), _ask(sub, ["v"])
+    city = _ask(sub, ["x"], text="unsure one")  # another suggestion stays its own question
+    with pg.conn() as c:
+        c.execute("UPDATE app.match_question SET ai_suggestion = 'unsure' WHERE question_id = %s", [city["question_id"]])
+        assert ADJ.merge_open_questions(c, sub, PROFILE) == 1
+    _, qs = _state(sub["sub_id"])
+    assert [x["question_id"] for x in qs] == [first["question_id"], city["question_id"]]
+    assert qs[0]["establishment_keys"] == ["a", "v"] and "VIRGINIA DIVISION' (another name)" in qs[0]["text"]
+
+
+ATKINSON = "GUY F ATKINSON CONSTRUCTION"
+
+
+@pytest.fixture
+def atkinson(sub, warehouse_stub, monkeypatch):
+    """Another company's distinctive name with three records: one in an open question, one the sub has no row for
+    (red-flagged), one the rules excluded."""
+    from ssi.matching import candidates as C
+    rows = warehouse_stub
+    for k, city in (("atk1", "COSTA MESA"), ("atk2", "IRVINE"), ("atk3", "BETHESDA")):
+        rows[k] = {**est(k, name=ATKINSON, city=city, state="CA" if k != "atk3" else "MD"), "related_only": False}
+    monkeypatch.setattr(C, "core_tier", lambda core, initials: "distinctive" if core == ATKINSON else "generic")
+    monkeypatch.setattr(C, "named", lambda names, limit: [rows[k] for k in ("atk3", "atk1", "atk2") if ATKINSON in names])
+    monkeypatch.setattr(C, "red_flag_counts", lambda keys: {k: 1 for k in keys if k == "atk2"})
+    _add(sub, "atk1", ATKINSON, method="profile", rule="PROFILE")
+    _add(sub, "atk3", ATKINSON, bucket="excluded", rule="X1")
+    return _ask(sub, ["atk1"], text="Tindall lists this address, and OSHA has records there: 'GUY F ATKINSON CONSTRUCTION'.")
+
+
+@local_db
+def test_a_question_about_another_companys_name_covers_all_its_records(sub, atkinson):
+    from ssi.store import pg
+    with pg.conn() as c:
+        assert ADJ.cover_company_names(c, sub) == 2
+        assert ADJ.cover_company_names(c, sub) == 0  # once
+    r, (q,) = _state(sub["sub_id"])
+    assert q["establishment_keys"] == ["atk1", "atk3", "atk2"]
+    assert "The same company name has 2 more records elsewhere, covered by your answer too: " in q["text"]
+    assert "IRVINE CA (10 inspections, red flags)" in q["text"]
+    assert {k: (r[k]["bucket"], r[k]["method"], r[k]["rule_id"]) for k in ("atk2", "atk3")} == {
+        "atk2": ("possible", "profile", "C1"), "atk3": ("possible", "profile", "C1")}
+    assert "'GUY F ATKINSON CONSTRUCTION' (Costa Mesa, CA)" in r["atk2"]["rationale"]
+    # a red-flagged record in a profile question holds the verdict (Review) until the GC answers
+    from ssi.queries import core as Q
+    assert Q.red_flag_questions([q]) == [q]
+
+
+@local_db
+def test_an_answer_about_a_company_name_carries_to_its_other_records(sub, atkinson):
+    from ssi.store import pg
+    ADJ.override(str(sub["sub_id"]), "atk1", "matched")  # the GC answers one record: Atkinson is the sub's company
+    r, (q,) = _state(sub["sub_id"])
+    assert (r["atk1"]["method"], r["atk1"]["rule_id"]) == ("gc", None)
+    assert {k: (r[k]["bucket"], r[k]["method"], r[k]["rule_id"]) for k in ("atk2", "atk3")} == {
+        "atk2": ("matched", "gc", "C1"), "atk3": ("matched", "gc", "C1")}  # atk2: a row the sub didn't have
+    assert r["atk2"]["rationale"] == "Carried from your answer about 'GUY F ATKINSON CONSTRUCTION' (Costa Mesa, CA): the same company name"
+    assert q["answer"] == "yes"  # its question is settled
+    # the GC's own decision on a record isn't overwritten by a later answer about another record under the name
+    ADJ.override(str(sub["sub_id"]), "atk3", "excluded")
+    ADJ.override(str(sub["sub_id"]), "atk1", "excluded")
+    r, _ = _state(sub["sub_id"])
+    assert (r["atk3"]["bucket"], r["atk3"]["rule_id"]) == ("excluded", None) and r["atk2"]["bucket"] == "matched"
+    # "possible" says nothing about the company; the sub's own name and a common name are never carried
+    with pg.conn() as c:
+        assert ADJ.carry(c, str(sub["sub_id"]), ["atk1"], "possible") == []
+    assert ADJ.company_names(sub, [{"clean_name": "TINDELL"}, {"clean_name": "TINDALL"}]) == set()
+
+
+@local_db
+def test_a_record_covered_by_company_name_waits_through_a_rematch(sub, atkinson, warehouse_stub):
+    from ssi.matching import run as M
+    from ssi.matching.rules import Decision, Query
+    from ssi.store import pg
+    with pg.conn() as c:  # a red-flag question: the records it covers by name are rule rows
+        c.execute("UPDATE app.match_question SET kind = 'red_flag' WHERE question_id = %s", [atkinson["question_id"]])
+        ADJ.cover_company_names(c, sub)
+    rows = warehouse_stub
+    rows["atk3"]["sim"] = 0.9
+    M.persist(str(sub["sub_id"]), {"query": Query(clean="TINDELL", core="TINDELL", state="SC", city=None, trade=None,
+                                                  tier="distinctive", initials_only=False, sibling=None, aliases=set()),
+                                   "decisions": [{"row": rows["atk3"], "decision": Decision("excluded", "X1", "Other name")}],
+                                   "note": None})
+    r, _ = _state(sub["sub_id"])
+    assert (r["atk3"]["bucket"], r["atk3"]["method"], r["atk3"]["rule_id"]) == ("possible", "rule", "C1")
+    assert r["atk2"]["rule_id"] == "C1"  # not found by the rules at all: kept too
+
+
+@local_db
+def test_a_question_answered_no_carries_to_the_names_records_outside_it(sub, atkinson):
+    ADJ.answer_question(str(atkinson["question_id"]), "no")
+    r, _ = _state(sub["sub_id"])
+    assert {k: (r[k]["bucket"], r[k]["method"]) for k in ("atk1", "atk2", "atk3")} == {
+        "atk1": ("excluded", "gc"), "atk2": ("excluded", "gc"), "atk3": ("excluded", "gc")}
+
+
+@local_db
+def test_a_rematch_that_matches_a_held_record_takes_it_out_of_its_question(sub, warehouse_stub, monkeypatch):
+    from ssi.matching import candidates as C
+    from ssi.matching import run as M
+    from ssi.matching.rules import Decision, Query
+    rows = warehouse_stub
+    for k in ("hq", "hq_red"):
+        rows[k] = {**est(k, name="TINDELL CONSTRUCTION"), "related_only": False, "sim": 0.95}
+        _add(sub, k, "TINDELL CONSTRUCTION", method="profile", rule="U2")
+    rows["a"]["sim"] = 0.9
+    monkeypatch.setattr(C, "red_flag_counts", lambda keys: {k: 1 for k in keys if k in ("a", "hq_red")})
+    q = _ask(sub, ["hq", "hq_red", "a"])
+    m2 = Decision("matched", "M2", "Same address as a matched record")
+    M.persist(str(sub["sub_id"]), {"query": Query(clean="TINDELL", core="TINDELL", state="SC", city=None, trade=None,
+                                                  tier="distinctive", initials_only=False, sibling=None, aliases=set()),
+                                   "decisions": [{"row": rows["hq"], "decision": m2}, {"row": rows["hq_red"], "decision": m2}],
+                                   "note": None})
+    r, qs = _state(sub["sub_id"])
+    assert (r["hq"]["bucket"], r["hq"]["method"], r["hq"]["rule_id"]) == ("matched", "rule", "M2")
+    assert (r["hq_red"]["bucket"], r["hq_red"]["method"]) == ("possible", "profile")  # red flags: the GC's answer
+    (left,) = [x for x in qs if x["question_id"] == q["question_id"]]
+    assert left["establishment_keys"] == ["hq_red", "a"]
+
+
+def test_a_profile_saved_before_a_cleaning_change_is_keyed_as_the_rules_key_now(monkeypatch):
+    from ssi.matching import candidates as C
+    monkeypatch.setattr(C, "address_keys", lambda addresses: {a: "5400 OLGERS NEW" for a in addresses})
+    got = ADJ.rekeyed(PROFILE)
+    assert [x["addr_key"] for x in got["locations"]] == ["5400 OLGERS NEW", None]  # a city-level location stays one
+    assert PROFILE["locations"][0]["addr_key"] == "5400 OLGERS"  # the saved profile isn't changed
 
 
 # --- the Tavily backend ----------------------------------------------------------------------------------------

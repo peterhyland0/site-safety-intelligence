@@ -219,15 +219,35 @@ def test_initials_and_sibling(con):
     ("3021 Seventh-street placeholder", "3021 SEVENTH"),
     ("P. O. Box 10383", "PO BOX 10383"),
     ("P O BOX 10383", "Post Office Box 10383"),
+    # a direction written onto the street word: both spellings are in OSHA's data for one company's office
+    ("7900 Westpark Drive Suite T300", "7900 WEST PARK DR"),
+    ("3715 NORTHSIDE PKWY NW STE 175", "3715 N SIDE PKWY NW BLDG 400"),
+    ("1102 SOUTHPARK RD", "1102 S PARK RD"),
+    ("500 EASTMOREHEAD STE 300", "500 E MOREHEAD ST STE 300"),
+    ("31000 NORTHWESTERN HWY", "31000 N WESTERN HWY"),
+    ("3310 WESTEND AVE", "3310 WEST END AVE"),
 ])
 def test_addr_key_variants(con, a, b):
     assert q(con, "addr_key(?)", a) == q(con, "addr_key(?)", b)
+
+
+@pytest.mark.parametrize("a,b", [
+    ("100 WESTERN AVE", "100 EASTERN AVE"),     # ER: a street's own name, not a direction
+    ("100 WESTON RD", "100 ON RD"),             # too short to split
+    ("200 NORTHERN BLVD", "200 SOUTHERN BLVD"),
+])
+def test_addr_key_keeps_street_names_apart(con, a, b):
+    assert q(con, "addr_key(?)", a) != q(con, "addr_key(?)", b)
 
 
 def test_address_rules(con):
     assert q(con, "addr_key(?)", "3021 7th Ave South") == "3021 7TH"
     assert q(con, "addr_key(?)", "P.O. Box 1385") == "POBOX 1385"
     assert q(con, "addr_key(?)", "1201 Demonbreun St Ste 200") == "1201 DEMONBREUN"
+    assert q(con, "addr_key(?)", "7900 Westpark Drive") == "7900 PARK"
+    assert q(con, "addr_key(?)", "3810 West Broad Street Suite 103") == "3810 BROAD"
+    # a profile's quote is checked for the key's words the same way (ssi/llm/profile.py)
+    assert q(con, "addr_split_dir(clean_addr(?))", "McLean 7900 Westpark Drive Suite T300") == "MCLEAN 7900 WEST PARK DR STE T300"
     assert q(con, "addr_unit(?)", "1201 Demonbreun St Ste 200") == "Ste 200".upper()
     assert q(con, "zip5(?)", "35233-1234") == "35233"
     assert q(con, "zip5(?)", "2134") == "02134"

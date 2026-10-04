@@ -391,7 +391,7 @@ def domain(website: str | None) -> str | None:
 
 def _addr(address: str, quote: str) -> tuple[str | None, bool]:
     """The address's warehouse addr_key, and whether its house number and street word are in the quote."""
-    r = warehouse.one("SELECT addr_key(?) AS k, clean_addr(?) AS q", [address, quote])
+    r = warehouse.one("SELECT addr_key(?) AS k, addr_split_dir(clean_addr(?)) AS q", [address, quote])
     key = r["k"] if r else None
     if not key or key.startswith("POBOX"):
         return key, False

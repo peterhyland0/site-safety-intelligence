@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, replace
 
+from ssi.matching import adjudicate as ADJ
 from ssi.matching import candidates as C
 from ssi.matching.rules import (
     EXCLUDED,
@@ -16,6 +17,7 @@ from ssi.matching.rules import (
     m3_collides,
     norm_city,
     one_slip,
+    only_descriptor_difference,
     tokens,
     typo_equal,
 )
@@ -218,6 +220,27 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
         d = decide(q, _candidate(r, at_address=True), generic, descriptors)
         if d.rule_id in ("S3", "J1"):
             decided[k] = (prev[0] if prev else r, d)
+    # M2 at a shared office: the sub's own name, or it with a word like GROUP or CONTRACTORS added or dropped, in the
+    # building (and suite) of a matched record. Clark's head office houses seven names, five of them Clark companies
+    # and joint ventures, so it counts as shared, and its CLARK CONSTRUCTION records (no GROUP) were left as "related".
+    # Not one such word swapped for another: ABC SERVICES and ABC CONSTRUCTION at a registered agent's office may be two
+    own = {q.clean, *q.aliases} - {""}
+    matched = [k for k, (_, d) in decided.items() if d.bucket == MATCHED]
+    cores = sorted({q.core, *(a.core for a in q.alias_queries.values())} - {""})
+
+    def own_name_give_or_take(name: str) -> bool:
+        return name in own or any(only_descriptor_difference(name, n, descriptors) and (
+            set(tokens(name)) <= set(tokens(n)) or set(tokens(n)) <= set(tokens(name))) for n in own)
+    for r in C.at_addresses(matched, exclude=set(), cores=cores) if cores else []:
+        k = r["establishment_key"]
+        prev = decided.get(k)
+        if (prev and prev[1].bucket == MATCHED) or not own_name_give_or_take(r["clean_name"]):
+            continue
+        d = decide(q, _candidate(r, at_address=True), generic, descriptors)
+        if d.bucket == MATCHED:
+            decided[k] = (prev[0] if prev else r, Decision(MATCHED, d.rule_id, (
+                "Same address as a matched record, in a building several companies use; the name differs only by "
+                "words like GROUP or CONTRACTORS") if d.rule_id == "M2" else d.reason))
     # Red-flag safety net: a rule may not throw away a red-flagged record at an address this company uses
     # (a branch filed under another name, e.g. Barnhart's Oklahoma City fatality). It goes to the GC instead.
     still_excluded = [k for k in excluded_at_address if k not in decided or decided[k][1].bucket == EXCLUDED]
@@ -252,7 +275,10 @@ def persist(sub_id: str, result: dict) -> None:
     """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept. Each row stores
     its record's inspections, so the decision can follow them if a cleaning-rule change moves the key (remap.py).
     A record in an open question waits as possible for the GC's answer, whatever the rules say now; its row stays if
-    the rules no longer find it."""
+    the rules no longer find it. Except a record held only by web evidence (a company profile's or the web check's
+    question, method 'profile' or 'web') with no red flags: when the rules now match it on OSHA's data alone, the
+    rule's match replaces the hold and the record leaves its question (ADJ.unask). Clark's CLARK CONSTRUCTION records at
+    its head office waited in the profile's question until the shared-office M2 matched them."""
     q: Query = result["query"]
     build_id = warehouse.meta()["build_id"]
     decs = result["decisions"]
@@ -264,8 +290,19 @@ def persist(sub_id: str, result: dict) -> None:
     with pg.conn() as c:
         asked = {k for qn in c.execute("SELECT establishment_keys FROM app.match_question WHERE sub_id = %s "
                                        "AND answer IS NULL", [sub_id]).fetchall() for k in qn["establishment_keys"]}
+        # a web-evidence hold the rules now match, with no red flags, gives way to the rule and leaves its question
+        holds = [r["establishment_key"] for r in c.execute(
+            """SELECT establishment_key FROM app.sub_match WHERE sub_id = %s AND method IN ('profile', 'web')
+               AND bucket = 'possible' AND establishment_key = ANY(%s)""",
+            [sub_id, [x["row"]["establishment_key"] for x in matched]]).fetchall()]
+        flagged = C.red_flag_counts(holds)
+        released = {k for k in holds if not flagged.get(k)}
+        c.execute("DELETE FROM app.sub_match WHERE sub_id = %s AND establishment_key = ANY(%s)", [sub_id, list(released)])
+        asked -= released
+        # a record a question covers by company name (C1) waits as written, saying so, while its question is open
         c.execute("""DELETE FROM app.sub_match WHERE sub_id = %s AND method = 'rule'
-                     AND (establishment_key = ANY(%s) OR NOT establishment_key = ANY(%s))""", [sub_id, found, list(asked)])
+                     AND (establishment_key = ANY(%s) OR NOT establishment_key = ANY(%s))
+                     AND NOT (rule_id = 'C1' AND establishment_key = ANY(%s))""", [sub_id, found, list(asked), list(asked)])
         c.execute("""UPDATE app.sub_match SET bucket = 'possible', needs_adjudication = false
                      WHERE sub_id = %s AND method = 'rule' AND establishment_key = ANY(%s)""", [sub_id, list(asked)])
         kept = {r["establishment_key"] for r in c.execute(
@@ -284,6 +321,8 @@ def persist(sub_id: str, result: dict) -> None:
                      f"{d.reason}; waiting for your answer to its question" if held else d.reason,
                      json.dumps(_evidence(r, d, q), default=str), needs and not held, build_id,
                      nrs.get(r["establishment_key"])])
+        if released:
+            ADJ.unask(c, c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone(), released)
         c.execute("UPDATE app.project_sub SET matched_build = %s, adjudicated_at = NULL WHERE sub_id = %s",
                   [build_id, sub_id])
         if result.get("note"):

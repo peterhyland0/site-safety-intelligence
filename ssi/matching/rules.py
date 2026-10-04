@@ -204,6 +204,36 @@ def without_suffix(core: str, suffix: str | None, generic: frozenset[str]) -> st
     return core
 
 
+# State names, and the abbreviations companies write into their names (CLARK CONSTRUCTION GROUP-CALIF, LP). A full name
+# names a place anywhere; an abbreviation only in its own state (WASH, MASS and IND are also words)
+STATE_NAMES: dict[str, tuple[str, ...]] = {
+    "AL": ("ALABAMA", "ALA"), "AK": ("ALASKA",), "AZ": ("ARIZONA", "ARIZ"), "AR": ("ARKANSAS", "ARK"),
+    "CA": ("CALIFORNIA", "CALIF", "CAL"), "CO": ("COLORADO", "COLO"), "CT": ("CONNECTICUT", "CONN"),
+    "DE": ("DELAWARE", "DEL"), "DC": ("DISTRICT OF COLUMBIA",), "FL": ("FLORIDA", "FLA"), "GA": ("GEORGIA",),
+    "HI": ("HAWAII",), "ID": ("IDAHO",), "IL": ("ILLINOIS", "ILL"), "IN": ("INDIANA", "IND"), "IA": ("IOWA",),
+    "KS": ("KANSAS", "KANS", "KAN"), "KY": ("KENTUCKY",), "LA": ("LOUISIANA",), "ME": ("MAINE",), "MD": ("MARYLAND",),
+    "MA": ("MASSACHUSETTS", "MASS"), "MI": ("MICHIGAN", "MICH"), "MN": ("MINNESOTA", "MINN"),
+    "MS": ("MISSISSIPPI", "MISS"), "MO": ("MISSOURI",), "MT": ("MONTANA", "MONT"), "NE": ("NEBRASKA", "NEBR", "NEB"),
+    "NV": ("NEVADA", "NEV"), "NH": ("NEW HAMPSHIRE",), "NJ": ("NEW JERSEY",), "NM": ("NEW MEXICO",), "NY": ("NEW YORK",),
+    "NC": ("NORTH CAROLINA",), "ND": ("NORTH DAKOTA",), "OH": ("OHIO",), "OK": ("OKLAHOMA", "OKLA"),
+    "OR": ("OREGON", "OREG", "ORE"), "PA": ("PENNSYLVANIA", "PENNA", "PENN"), "RI": ("RHODE ISLAND",),
+    "SC": ("SOUTH CAROLINA",), "SD": ("SOUTH DAKOTA",), "TN": ("TENNESSEE", "TENN"), "TX": ("TEXAS", "TEX"),
+    "UT": ("UTAH",), "VT": ("VERMONT",), "VA": ("VIRGINIA",), "WA": ("WASHINGTON", "WASH"), "WV": ("WEST VIRGINIA",),
+    "WI": ("WISCONSIN", "WISC", "WIS"), "WY": ("WYOMING", "WYO"), "PR": ("PUERTO RICO",),
+}
+_STATE_FULL = frozenset(names[0] for names in STATE_NAMES.values())
+
+
+def names_a_place(words: list[str], state: str | None, city: str | None) -> bool:
+    """The words name a state, or the record's own state (its code or an abbreviation) or city."""
+    w = " ".join(words)
+    if w in _STATE_FULL:
+        return True
+    if state and (w == state or w in STATE_NAMES.get(state, ())):
+        return True
+    return bool(city) and norm_city(w) == norm_city(city)
+
+
 # M3 guard (run.match): in the M3 audit (eval/m3_audit/review.md) the wrong cross-state matches were small firms whose
 # names collide, mostly "<word> CONSTRUCTION" or "<word> ELECTRIC" under a trade code the sub's own records don't
 # have: 10 of 21 wrong matches looked like that, against 1 of 35 right ones.
@@ -307,6 +337,17 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
         return matched("M3", f"Same distinctive name, another state ({c.state or 'unknown'})")
     if generic_diff and not descriptor_diff and distinctive:
         return Decision(UNCERTAIN, "U3", "Same family name but a different trade; often a sister company")
+    # S4: the sub's name plus a place, a state or the record's own city (CLARK CONSTRUCTION GROUP CALIFORNIA in San
+    # Francisco, CLARK CONSTRUCTION GROUP CHICAGO at Clark's Chicago office, D R HORTON INC GREENSBORO). X1 excluded
+    # them for the extra word; they're usually the company's regional companies or divisions: a question, never
+    # "different". A common or medium name counts only in full (CLARK CONSTRUCTION GROUP, not CLARK); a person's
+    # name keeps P1 / X5
+    if q.tier != "person":
+        place = added_words(c.clean_name, {q.clean, *q.aliases}) or (
+            added_words(c.name_core, {q.core}) if distinctive else [])
+        if place and names_a_place(place, c.state, c.city):
+            return Decision(UNCERTAIN, "S4", f"The sub's name plus a place ({' '.join(place[:3])}): usually a regional "
+                                             "company or division of the same group")
     if q.core and c.name_core and not core_equal and not typo_equal(q.core, c.name_core):
         # do the cores differ on a real (non-generic) word that has no near-spelling on the other side?
         qa, ca = set(tokens(q.core)), set(tokens(c.name_core))

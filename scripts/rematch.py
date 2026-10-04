@@ -39,12 +39,17 @@ def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = 
     res = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state,
                 sub.get("trade"), sub.get("licence"))
     changes = []
+    holds = set()  # web-evidence holds the rules now match: they give way unless red-flagged (run.persist)
     for x in res["decisions"]:
         k, d = x["row"]["establishment_key"], x["decision"]
         old = stored.get(k)
-        if old and old["method"] != "rule":
+        hold = bool(old) and old["method"] in ("profile", "web") and old["bucket"] == "possible" and d.bucket == MATCHED
+        if old and old["method"] != "rule" and not hold:
             continue  # the GC's or the AI's decision stands
-        new_bucket = "possible" if k in asked else BUCKET[d.bucket]
+        if old and old["rule_id"] == "C1" and k in asked:
+            continue  # covered by a question about its company name: waits as it is (run.persist)
+        holds |= {k} if hold else set()
+        new_bucket = "possible" if k in asked and not hold else BUCKET[d.bucket]
         if old and old["bucket"] == new_bucket and old["rule_id"] == d.rule_id:
             continue
         if not old and new_bucket == "excluded":
@@ -59,6 +64,7 @@ def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = 
             changes.append({"key": k, "name": ev.get("name") or k[:8], "place": f"{ev.get('city')}, {ev.get('state')}",
                             "old": f"{old['bucket']}/{old['rule_id']}", "new": "removed"})
     flags = C.red_flag_counts([ch["key"] for ch in changes])
+    changes = [ch for ch in changes if not (ch["key"] in holds and flags.get(ch["key"]))]
     for ch in changes:
         ch["red_flags"] = flags.get(ch["key"], 0)
     return changes
@@ -104,6 +110,19 @@ def remap_lines(rp: dict) -> list[str]:
     return out
 
 
+def _profile_and_names(sub: dict, prof: dict | None = None) -> None:
+    """The sub's company profile applied to its undecided records (M4 matches the sub's own name at an address on its
+    own site; the rest at listed locations are asked), and its open questions widened to every record under each
+    company name they ask about (C1). Changes nothing the GC decided; no model calls."""
+    prof = prof or P.load(sub.get("profile_id"))
+    stats = ADJ.apply_profile(sub, prof) if prof else None
+    if stats and stats["matched"]:
+        print(f"    company profile: {stats['matched']} record(s) matched under the sub's own name (M4)")
+    if not prof:
+        with pg.conn() as c:
+            ADJ.cover_company_names(c, sub)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--project", help="project name (default: every project)")
@@ -140,6 +159,7 @@ def main() -> None:
                     with ADJ.claim(str(s["sub_id"])) as claimed:
                         if claimed is not None:
                             remap.apply(claimed, remap.plan(claimed))
+                            _profile_and_names(claimed)
                 if moves:
                     print(f"  {s['entered_name']}")
                     print("\n".join(moves))
@@ -168,12 +188,14 @@ def main() -> None:
                         with pg.conn() as c:
                             c.execute("UPDATE app.sub_match SET needs_adjudication = true WHERE sub_id = %s AND method = 'llm_rejected'",
                                       [s["sub_id"]])
-                    prof = P.load(claimed.get("profile_id")) if P.m3_check_enabled() else None
-                    if prof:
+                    prof = P.load(claimed.get("profile_id"))
+                    if prof and P.m3_check_enabled():
                         m3 = ADJ.check_m3(claimed, prof, P.build)
                         if m3["moved"] or m3["confirmed"]:
                             print(f"    M3 web check: {m3['moved']} record(s) sent back, {m3['confirmed']} confirmed")
-                    stats = ADJ.adjudicate(claimed, llm=llm, packet_fn=ADJ.evidence_packet)
+                    # with the profile, as the app resolves a sub: records at its listed locations skip the AI
+                    stats = ADJ.adjudicate(claimed, llm=llm, packet_fn=ADJ.evidence_packet, profile=prof)
+                    _profile_and_names(claimed, prof)
                 print(f"    applied; adjudicated {stats['clusters']} uncertain group(s), {stats['questions']} new GC question(s)")
 
 

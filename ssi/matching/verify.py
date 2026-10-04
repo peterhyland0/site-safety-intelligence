@@ -251,5 +251,7 @@ def check_records(sub: dict, project: dict, profile: dict | None = None,
                      if ck["verdict"] == "same" or (ck["verdict"] == "different" and r["method"] == "web")]
             items += [(k, est[k], ck) for k in asked]
         open_keys = {k for q in ADJ._open_questions(c, sub_id) for k in q["establishment_keys"]}
-        stats["questions"] = ADJ._ask(c, sub_id, web_questions(sub, items, flags), open_keys, kind="web")
+        stats["questions"] = ADJ._ask(c, sub, web_questions(sub, items, flags), open_keys, kind="web", profile=profile)
+        if stats["questions"]:
+            ADJ.cover_company_names(c, sub)
     return stats

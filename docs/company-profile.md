@@ -10,8 +10,11 @@ adjudicator and go to the GC in one question:
 > RD, PETERSBURG VA (10 inspections, red flags); 'TINDALL CORPORATION VIRGINIA DIVISION' (another name) at 5400
 > OLGERS RD, PETERSBURG VA (2 inspections); … Are these the same company as your sub 'Tindell Corporation'?
 
-Nothing is matched from the web on its own: the GC's answer decides, and a Yes is a GC decision that survives data
-refreshes. Code: [ssi/llm/profile.py](../ssi/llm/profile.py) (the search and the checks),
+Nothing else is matched from the web on its own: the GC's answer decides, and a Yes is a GC decision that survives
+data refreshes. The exception is a record under the sub's own name at an address on the company's own site, with no
+red flags (rule M4): the name and the company's page agree, so it's matched, not asked. Clark Construction Group's
+profile question had asked about 'CLARK CONSTRUCTION GROUP' at each office on clarkconstruction.com (McLean, El Paso,
+Houston, Chicago, Kansas City, Richmond). Code: [ssi/llm/profile.py](../ssi/llm/profile.py) (the search and the checks),
 [ssi/matching/adjudicate.py](../ssi/matching/adjudicate.py) (`listed_records`, `profile_questions`, `apply_profile`),
 [ssi/matching/candidates.py](../ssi/matching/candidates.py) (`at_listed_addresses`).
 
@@ -41,7 +44,15 @@ GC adds sub ─► rules (instant): the scorecard appears; uncertain records wai
   asks about their undecided possible and excluded records (including ones the AI excluded), and an open red-flag
   question about exactly those records gets the profile's evidence as its suggestion instead of a second question.
 - **Records the profile routes to the GC** are written with method `profile` (possible until answered), which a
-  re-match keeps, so the question's records stay put after a data refresh.
+  re-match keeps, so the question's records stay put after a data refresh. If the rules later match one on OSHA's
+  data alone (a rule change), and it has no red flags, the rule's match replaces the hold and the record leaves its
+  question.
+- **One company name, one answer** (rule C1). A question about a record under another company's distinctive name (an
+  affiliate the site lists, like Guy F. Atkinson on clarkconstruction.com) covers that name's other records too: they
+  join the question, red flags and all, and the GC's yes or no carries to them. Clark's question had named Atkinson's
+  Costa Mesa office only, leaving out its 23 inspections at Clark's own head office and a 2018 cited fatality in Irvine.
+- **Saved profiles follow cleaning changes.** A location's address key is worked out again from its address each time
+  it's used, so a profile saved before a rule change (7900 WESTPARK, now 7900 PARK) still finds its records.
 
 ## What is checked
 
