@@ -158,7 +158,8 @@ ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS adjudicating_since timestam
 -- whose GC decisions disagree since a rebuild grouped them as one
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'red_flag';
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS sources jsonb;
--- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows.
+-- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows, though a
+-- profile or web hold still possible, or an AI decision, gives way when a rule now matches it (run.gives_way).
 -- method 'remap': a record whose GC decisions disagree since a rebuild grouped them as one (ssi/matching/remap.py);
 -- possible until the GC answers its question, and kept on re-match too.
 -- method 'web': a record the web check (ssi/matching/verify.py) found evidence for, waiting for the GC's answer to

@@ -51,7 +51,8 @@ labels ("X3, different company") and repeated them, and it had no way to show wh
 
 Every checked record keeps what was found in its evidence (`web_check`: verdict, company, page, quote) and isn't
 checked again for 90 days. A failed search leaves no mark, so the next press tries it again. A re-match keeps `web`
-rows as it keeps every non-rule row.
+rows as it keeps the GC's, except a record still possible that a rule now matches on OSHA's data alone, without red
+flags: the rule's match replaces it, as it replaces an AI decision (`run.gives_way`).
 
 **Web questions don't hold anything up.** Questions about red-flagged records keep a sub's verdict at Review and stop
 the foreman assistant from answering about it until the GC confirms. Web questions do neither: they're suggestions
@@ -73,7 +74,7 @@ and they save for every sub on the project as they're switched):
   "Excluded automatically" in the rationale. **Never a red-flagged record**: as with the adjudicator, those are the
   GC's, so they're held and asked about as above. Switching it on also settles the web questions already open that
   have no red-flagged record, with their suggestion (`verify.accept_questions`). What auto-match decides isn't a GC
-  decision: a re-match keeps it as it keeps every non-rule row, and the GC can move the record or answer about its
+  decision: a re-match keeps it as it keeps the GC's, and the GC can move the record or answer about its
   company name (C1) over it.
 
 ## Limits and cost

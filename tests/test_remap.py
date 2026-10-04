@@ -186,16 +186,17 @@ def test_gc_answers_that_disagree_become_a_question(builds, new_sub):
     assert (rows(sub)[plain]["bucket"], rows(sub)[plain]["method"]) == ("matched", "gc")
 
 
-@pytest.mark.parametrize("ai, plain_after", [("matched", ("matched", "llm")), ("excluded", ("matched", "rule"))])
-def test_an_ai_answer_carries_over_only_when_the_merged_record_agrees(builds, new_sub, ai, plain_after):
+@pytest.mark.parametrize("ai", ["matched", "excluded"])
+def test_an_ai_answer_carries_over_only_when_the_merged_record_agrees(builds, new_sub, ai):
     sub, plain, lc = adelphi_on_a(builds, new_sub)
     set_ai(sub, lc, ai)
     p, stats = rematch_on(builds, sub)
     # agreeing with the rules' match of the LLC's record, the AI's answer carries; disagreeing, the rules decide again
     assert p["targets"][plain]["action"] == ("carry" if ai == "matched" else "release")
     assert stats["released"] == (ai == "excluded")
+    # either way the rules match the merged record, and a rule's match replaces an AI decision (run.gives_way)
     r = rows(sub)
-    assert lc not in r and (r[plain]["bucket"], r[plain]["method"]) == plain_after
+    assert lc not in r and (r[plain]["bucket"], r[plain]["method"]) == ("matched", "rule")
 
 
 def test_a_question_moved_onto_a_record_the_rules_matched_keeps_it_waiting(builds, new_sub):
@@ -261,6 +262,28 @@ def test_a_record_in_an_open_question_waits_through_a_re_match(builds, new_sub):
                                      "decisions": [], "note": None})
     assert {k: r["bucket"] for k, r in rows(sub).items()} == {lc: "possible"}
     assert len(open_questions(sub)) == 1
+
+
+def test_a_rule_that_now_matches_a_record_replaces_the_ais_decision(builds, new_sub, monkeypatch):
+    # Hoffman's OF OREGON records at its head office: S1 left them to Jev, which excluded them, and when rule M1s came
+    # to match them a re-match kept Jev's exclusion, since it kept every AI decision. The AI is asked only about records
+    # the rules leave uncertain, so its answer is stale once a rule matches one
+    sub, plain, lc = adelphi_on_a(builds, new_sub)
+    set_ai(sub, lc, "excluded")  # as Jev left it before the rule matched it
+    assert [(ch["key"], ch["old"], ch["new"]) for ch in rematch.plan(fresh(sub), "IA")] == [(lc, "excluded/M2", "matched/M2")]
+    rematch_on(builds, sub, "A")
+    r = rows(sub)
+    assert (r[lc]["bucket"], r[lc]["method"], r[lc]["rule_id"], r[lc]["decided_by"]) == ("matched", "rule", "M2", "rules")
+    # the GC's decision stands, whatever the rules say
+    ADJ.override(str(sub["sub_id"]), plain, "excluded")
+    rematch_on(builds, sub, "A")
+    assert (rows(sub)[plain]["bucket"], rows(sub)[plain]["method"]) == ("excluded", "gc")
+    # and so does an AI decision on a red-flagged record: no machine settles a red flag
+    set_ai(sub, lc, "possible")
+    monkeypatch.setattr(run.C, "red_flag_counts", lambda keys: {k: 1 for k in keys if k == lc})  # rematch's C too
+    assert rematch.plan(fresh(sub), "IA") == []
+    rematch_on(builds, sub, "A")
+    assert (rows(sub)[lc]["bucket"], rows(sub)[lc]["method"]) == ("possible", "llm")
 
 
 # --- rows saved before activity_nrs ---------------------------------------------------------------------------

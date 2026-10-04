@@ -12,11 +12,12 @@ all left the data, stays as it is.
 
 Where records land on one new record, with any row the sub already has for it:
 - the GC's decisions win. GC decisions that disagree become a question to the GC instead of one being picked; the
-  record waits as possible (method 'remap'), and a re-match keeps it, as it keeps every non-rule row. An open
+  record waits as possible (method 'remap'), and a re-match keeps it, as it keeps every GC decision. An open
   question about a record that lands on one the GC decided is settled by that decision;
 - the AI's decisions and the holds from a company profile or the web check (methods 'profile' and 'web') carry over
   when every record landing there was decided the same way. If not, they're dropped and the rules (then the AI)
-  decide the merged record again;
+  decide the merged record again. Either way the re-match replaces one when a rule now matches its record
+  (run.gives_way);
 - rule decisions aren't carried: the re-match that follows runs the rules on the new keys.
 
 Every build does this for every sub (follow_all, from the build and from Modal's refresh, once the new build is live):

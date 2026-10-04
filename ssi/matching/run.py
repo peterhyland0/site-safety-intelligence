@@ -277,15 +277,29 @@ def _evidence(r: dict, d, q: Query) -> dict:
     }
 
 
+def gives_way(row: dict) -> bool:
+    """Whether a saved decision gives way to a rule that now matches its record (persist, and scripts/rematch.py's dry
+    run): a hold on web evidence (a company profile's or the web check's question, method 'profile' or 'web', still
+    possible), or the AI's decision (method 'llm' or 'llm_rejected'). The AI is asked only about records the rules
+    leave uncertain, so once a rule change matches one its answer is stale: Jev excluded Hoffman's OF OREGON records at
+    its head office, which M1s now matches. Not the AI's decision after the M3 web check (rule M3w): the rules would
+    match the record again as plain M3, without the other company's website the check found. The GC's decisions never
+    give way, and the caller keeps any red-flagged record as it is: no machine settles a red flag."""
+    if row["method"] in ("profile", "web"):
+        return row["bucket"] == "possible"
+    return row["method"] in ("llm", "llm_rejected") and row["rule_id"] != "M3w"
+
+
 def persist(sub_id: str, result: dict, conn=None) -> None:
-    """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept. In the caller's
-    transaction when given one (`conn`): adding subs, and moving decisions after a rebuild, write all or nothing. Each row stores
-    its record's inspections, so the decision can follow them if a cleaning-rule change moves the key (remap.py).
+    """Replace this sub's rule decisions; the GC's decisions on the same records are kept, and so are the AI's, unless
+    a rule now matches the record. In the caller's transaction when given one (`conn`): adding subs, and moving
+    decisions after a rebuild, write all or nothing. Each row stores its record's inspections, so the decision can
+    follow them if a cleaning-rule change moves the key (remap.py).
     A record in an open question waits as possible for the GC's answer, whatever the rules say now; its row stays if
-    the rules no longer find it. Except a record held only by web evidence (a company profile's or the web check's
-    question, method 'profile' or 'web') with no red flags: when the rules now match it on OSHA's data alone, the
-    rule's match replaces the hold and the record leaves its question (ADJ.unask). Clark's CLARK CONSTRUCTION records at
-    its head office waited in the profile's question until the shared-office M2 matched them."""
+    the rules no longer find it. A web-evidence hold or an AI decision (gives_way) with no red flags is replaced when
+    the rules now match its record on OSHA's data alone, and the record leaves any question it was in (ADJ.unask).
+    Clark's CLARK CONSTRUCTION records at its head office waited in the profile's question until the shared-office M2
+    matched them."""
     q: Query = result["query"]
     build_id = warehouse.meta()["build_id"]
     decs = result["decisions"]
@@ -297,11 +311,12 @@ def persist(sub_id: str, result: dict, conn=None) -> None:
     with pg.conn(conn) as c:
         asked = {k for qn in c.execute("SELECT establishment_keys FROM app.match_question WHERE sub_id = %s "
                                        "AND answer IS NULL", [sub_id]).fetchall() for k in qn["establishment_keys"]}
-        # a web-evidence hold the rules now match, with no red flags, gives way to the rule and leaves its question
+        # a web-evidence hold or an AI decision the rules now match, with no red flags, gives way to the rule and
+        # leaves its question
         holds = [r["establishment_key"] for r in c.execute(
-            """SELECT establishment_key FROM app.sub_match WHERE sub_id = %s AND method IN ('profile', 'web')
-               AND bucket = 'possible' AND establishment_key = ANY(%s)""",
-            [sub_id, [x["row"]["establishment_key"] for x in matched]]).fetchall()]
+            """SELECT establishment_key, method, bucket, rule_id FROM app.sub_match WHERE sub_id = %s
+               AND establishment_key = ANY(%s)""",
+            [sub_id, [x["row"]["establishment_key"] for x in matched]]).fetchall() if gives_way(r)]
         flagged = C.red_flag_counts(holds)
         released = {k for k in holds if not flagged.get(k)}
         c.execute("DELETE FROM app.sub_match WHERE sub_id = %s AND establishment_key = ANY(%s)", [sub_id, list(released)])

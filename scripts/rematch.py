@@ -1,11 +1,12 @@
-"""Re-run matching for existing subs after a rules or data change, keeping every GC and AI decision.
+"""Re-run matching for existing subs after a rules or data change, keeping every GC decision.
 
 Dry run by default: shows, per sub, the decisions that move to new establishment keys (a cleaning-rule change
 regroups records; ssi/matching/remap.py) and the records whose rule decision would change. --apply moves the
 decisions (GC answers that now disagree about one record become a question to the GC), rewrites the rule
-decisions (decisions made by the GC or the AI reviewer are kept), checks M3 matches against the sub's company
-profile when it has one (adjudicate.check_m3: a re-match writes them as plain M3 again), then sends newly uncertain
-records through the adjudicator, which turns red-flagged ones into GC questions.
+decisions (the GC's decisions are kept, and the AI reviewer's unless a rule now matches the record: run.gives_way),
+checks M3 matches against the sub's company profile when it has one (adjudicate.check_m3: a re-match writes them as
+plain M3 again), then sends newly uncertain records through the adjudicator, which turns red-flagged ones into GC
+questions.
 
     uv run python -m scripts.rematch                              # every project, dry run
     uv run python -m scripts.rematch --project "Demo: Hospital expansion, Nashville TN" --apply
@@ -18,7 +19,7 @@ from ssi.llm import profile as P
 from ssi.matching import adjudicate as ADJ
 from ssi.matching import candidates as C
 from ssi.matching import remap
-from ssi.matching.run import EXCLUDED, MATCHED, UNCERTAIN, match, match_and_persist
+from ssi.matching.run import EXCLUDED, MATCHED, UNCERTAIN, gives_way, match, match_and_persist
 from ssi.store import pg, warehouse
 
 BUCKET = {MATCHED: "matched", UNCERTAIN: "possible", EXCLUDED: "excluded"}
@@ -39,13 +40,13 @@ def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = 
     res = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state,
                 sub.get("trade"), sub.get("licence"))
     changes = []
-    holds = set()  # web-evidence holds the rules now match: they give way unless red-flagged (run.persist)
+    holds = set()  # web-evidence holds and AI decisions the rules now match: they give way unless red-flagged (run.persist)
     for x in res["decisions"]:
         k, d = x["row"]["establishment_key"], x["decision"]
         old = stored.get(k)
-        hold = bool(old) and old["method"] in ("profile", "web") and old["bucket"] == "possible" and d.bucket == MATCHED
+        hold = bool(old) and gives_way(old) and d.bucket == MATCHED
         if old and old["method"] != "rule" and not hold:
-            continue  # the GC's or the AI's decision stands
+            continue  # the GC's decision stands, and the AI's unless a rule now matches the record
         if old and old["rule_id"] == "C1" and k in asked:
             continue  # covered by a question about its company name: waits as it is (run.persist)
         holds |= {k} if hold else set()

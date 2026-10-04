@@ -622,3 +622,16 @@ def test_a_trade_the_gcs_contradicts_or_a_facility_not_coded_as_construction_sta
     assert set(rules.home_office(roofer, fam, DESC)) == {"am"}  # the record OSHA lists as a plumber stays S1
     fam = [HOFFMAN_HQ[0], sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", related=True)]
     assert set(rules.home_office(HOFFMAN, fam, DESC)) == {"oregon"}  # its sibling still vouches for the office
+
+
+def test_a_rule_match_replaces_web_holds_and_ai_decisions_never_the_gcs():
+    from ssi.matching.run import gives_way
+
+    def row(method, bucket="excluded", rule_id="S1"):
+        return {"method": method, "bucket": bucket, "rule_id": rule_id}
+    assert gives_way(row("llm")) and gives_way(row("llm", "matched")) and gives_way(row("llm_rejected", "possible"))
+    assert gives_way(row("web", "possible")) and gives_way(row("profile", "possible", "PROFILE"))
+    assert not gives_way(row("gc")) and not gives_way(row("remap", "possible"))
+    assert not gives_way(row("web", "excluded")) and not gives_way(row("profile", "matched", "M4"))  # settled, not held
+    # after the M3 web check found another company's website: the rules alone would match it as plain M3 again
+    assert not gives_way(row("llm", "excluded", "M3w"))

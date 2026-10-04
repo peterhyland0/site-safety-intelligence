@@ -341,12 +341,10 @@ def test_the_verdict_says_when_the_ai_couldnt_check_records():
     assert v == "no_flags" and [x.code for x in r] == ["I_ai_unchecked"]  # possible records count neither way
 
 
-def test_a_gcs_own_companies_at_its_office_never_reach_the_ai(tmp_path):
-    # "Hoffman Construction Company, Portland" read "No OSHA record": with no record under exactly that name there,
-    # rule S1 sent Hoffman's OF OREGON and OF AMERICA records at its head office to the adjudicator, which, told a
-    # suffix usually means a sister company, excluded them. Now they're matched (M1s), and the record it's still asked
-    # about is judged against them. A tiny warehouse of OSHA records (tests/mini_warehouse.py) stands in for the real one
-    from ssi.matching import run
+@pytest.fixture
+def hoffman(tmp_path):
+    """"Hoffman Construction Company, Portland" on a tiny warehouse of OSHA records (tests/mini_warehouse.py): two of
+    its OF <PLACE> companies at its head office, and its Seattle one. Yields the sub, not yet matched."""
     from ssi.store import warehouse
     from tests.mini_warehouse import Rec, build
     hq = "805 SW Broadway Ste 2100"
@@ -363,25 +361,51 @@ def test_a_gcs_own_companies_at_its_office_never_reach_the_ai(tmp_path):
         s = c.execute("""INSERT INTO app.project_sub (project_id, entered_name, entered_city, entered_state, trade)
                          VALUES (%s, 'Hoffman Construction Company', 'Portland', 'OR', 'general contractor') RETURNING *""",
                       [p["project_id"]]).fetchone()
-    try:
-        run.match_and_persist(s, "OR")
-        asked = []
+    yield s
+    with pg.conn() as c:
+        c.execute("DELETE FROM app.project WHERE project_id = %s", [p["project_id"]])
+    warehouse._con.close()
+    warehouse._con, warehouse._path, warehouse._meta = saved
 
-        def ai(packet):
-            asked.append(packet)
-            return different(packet)
-        ADJ.adjudicate(s, llm=ai, packet_fn=ADJ.evidence_packet)
-        got = {(r["evidence"]["name"], r["evidence"]["city"]): (r["bucket"], r["method"], r["rule_id"])
-               for r in rows(str(s["sub_id"])).values() if r["evidence"]}
-        assert got == {("HOFFMAN CONSTRUCTION CO OF OREGON", "PORTLAND"): ("matched", "rule", "M1s"),
-                       ("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "PORTLAND"): ("matched", "rule", "M1s"),
-                       ("HOFFMAN CONSTRUCTION COMPANY OF WA", "SEATTLE"): ("excluded", "llm", "S1")}
-        # one question for the AI, the Seattle company, with the head office's records as the sub's matched ones
-        assert len(asked) == 1 and any(" OF WA" in line["text"] for line in asked[0]["lines"])
-        matched = [line["text"] for line in asked[0]["lines"] if line["text"].startswith("Already matched OSHA record")]
-        assert len(matched) == 2 and all("PORTLAND OR 97205" in t for t in matched)
-    finally:
-        with pg.conn() as c:
-            c.execute("DELETE FROM app.project WHERE project_id = %s", [p["project_id"]])
-        warehouse._con.close()
-        warehouse._con, warehouse._path, warehouse._meta = saved
+
+def by_name(sub) -> dict[tuple, tuple]:
+    return {(r["evidence"]["name"], r["evidence"]["city"]): (r["bucket"], r["method"], r["rule_id"])
+            for r in rows(str(sub["sub_id"])).values() if r["evidence"]}
+
+
+HQ_MATCHED = {("HOFFMAN CONSTRUCTION CO OF OREGON", "PORTLAND"): ("matched", "rule", "M1s"),
+              ("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "PORTLAND"): ("matched", "rule", "M1s"),
+              ("HOFFMAN CONSTRUCTION COMPANY OF WA", "SEATTLE"): ("excluded", "llm", "S1")}
+
+
+def test_a_gcs_own_companies_at_its_office_never_reach_the_ai(hoffman):
+    # "Hoffman Construction Company, Portland" read "No OSHA record": with no record under exactly that name there,
+    # rule S1 sent Hoffman's OF OREGON and OF AMERICA records at its head office to the adjudicator, which, told a
+    # suffix usually means a sister company, excluded them. Now they're matched (M1s), and the record it's still asked
+    # about is judged against them
+    from ssi.matching import run
+    run.match_and_persist(hoffman, "OR")
+    asked = []
+
+    def ai(packet):
+        asked.append(packet)
+        return different(packet)
+    ADJ.adjudicate(hoffman, llm=ai, packet_fn=ADJ.evidence_packet)
+    assert by_name(hoffman) == HQ_MATCHED
+    # one question for the AI, the Seattle company, with the head office's records as the sub's matched ones
+    assert len(asked) == 1 and any(" OF WA" in line["text"] for line in asked[0]["lines"])
+    matched = [line["text"] for line in asked[0]["lines"] if line["text"].startswith("Already matched OSHA record")]
+    assert len(matched) == 2 and all("PORTLAND OR 97205" in t for t in matched)
+
+
+def test_a_re_match_replaces_the_ais_exclusion_of_records_a_rule_now_matches(hoffman, monkeypatch):
+    # the live sub: added before M1s, so Jev excluded its head office's records. A re-match (make follow,
+    # scripts/rematch.py) used to keep every AI decision, so the sub kept reading "No OSHA record"
+    from ssi.matching import run
+    with monkeypatch.context() as m:
+        m.setattr(run, "home_office", lambda q, cands, descriptors=None: {})  # the rules before M1s
+        run.match_and_persist(hoffman, "OR")
+    ADJ.adjudicate(hoffman, llm=different, packet_fn=packet)
+    assert {k: v[:2] for k, v in by_name(hoffman).items()} == {k: ("excluded", "llm") for k in HQ_MATCHED}
+    run.match_and_persist(hoffman, "OR")  # the re-match, with M1s
+    assert by_name(hoffman) == HQ_MATCHED  # the Seattle company, still S1 to the rules, keeps the AI's answer
