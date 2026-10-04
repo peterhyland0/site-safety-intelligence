@@ -1,0 +1,436 @@
+{
+ "meta": {
+  "build_id": "20261004T171230Z",
+  "seed": 7,
+  "searches": 2986,
+  "pools": {
+   "general": 1500,
+   "person": 282,
+   "shared address": 271,
+   "joint venture": 93,
+   "branch or sibling": 272,
+   "related facility": 268,
+   "licence": 300
+  },
+  "records": 140425,
+  "labelled": 23418,
+  "graded": 7813,
+  "seconds": 298
+ },
+ "rules": [
+  {
+   "rule": "M1",
+   "bucket": "matched",
+   "searches": 899,
+   "records": 1544,
+   "labelled": 879,
+   "firms": 547,
+   "same": 875,
+   "different": 4,
+   "different_local": 3,
+   "share_same": 0.995,
+   "ci": [
+    0.99,
+    1.0
+   ],
+   "apparent_errors": 4,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M1b",
+   "bucket": "matched",
+   "searches": 111,
+   "records": 177,
+   "labelled": 43,
+   "firms": 21,
+   "same": 19,
+   "different": 24,
+   "different_local": 9,
+   "share_same": 0.442,
+   "ci": [
+    0.3,
+    0.59
+   ],
+   "apparent_errors": 24,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M2",
+   "bucket": "matched",
+   "searches": 225,
+   "records": 306,
+   "labelled": 36,
+   "firms": 26,
+   "same": 24,
+   "different": 12,
+   "different_local": 6,
+   "share_same": 0.667,
+   "ci": [
+    0.5,
+    0.8
+   ],
+   "apparent_errors": 12,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M3",
+   "bucket": "matched",
+   "searches": 403,
+   "records": 3577,
+   "labelled": 461,
+   "firms": 120,
+   "same": 359,
+   "different": 102,
+   "different_local": 40,
+   "share_same": 0.779,
+   "ci": [
+    0.74,
+    0.81
+   ],
+   "apparent_errors": 102,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "L1",
+   "bucket": "matched",
+   "searches": 93,
+   "records": 126,
+   "labelled": 114,
+   "firms": 80,
+   "same": 114,
+   "different": 0,
+   "different_local": 0,
+   "share_same": 1.0,
+   "ci": [
+    0.97,
+    1.0
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "X1",
+   "bucket": "excluded",
+   "searches": 2332,
+   "records": 86409,
+   "labelled": 3521,
+   "firms": 1343,
+   "same": 26,
+   "different": 3495,
+   "different_local": 2942,
+   "share_same": 0.007,
+   "ci": [
+    0.01,
+    0.01
+   ],
+   "apparent_errors": 26,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "X3",
+   "bucket": "excluded",
+   "searches": 709,
+   "records": 21478,
+   "labelled": 1216,
+   "firms": 476,
+   "same": 1,
+   "different": 1215,
+   "different_local": 1088,
+   "share_same": 0.001,
+   "ci": [
+    0.0,
+    0.0
+   ],
+   "apparent_errors": 1,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "X4",
+   "bucket": "excluded",
+   "searches": 22,
+   "records": 94,
+   "labelled": 17,
+   "firms": 7,
+   "same": 10,
+   "different": 7,
+   "different_local": 7,
+   "share_same": 0.588,
+   "ci": [
+    0.36,
+    0.78
+   ],
+   "apparent_errors": 10,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "X5",
+   "bucket": "excluded",
+   "searches": 17,
+   "records": 23,
+   "labelled": 0,
+   "firms": 0,
+   "same": 0,
+   "different": 0,
+   "different_local": 0,
+   "share_same": null,
+   "ci": null,
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M3u",
+   "bucket": "uncertain",
+   "searches": 62,
+   "records": 110,
+   "labelled": 24,
+   "firms": 15,
+   "same": 14,
+   "different": 10,
+   "different_local": 10,
+   "share_same": 0.583,
+   "ci": [
+    0.39,
+    0.76
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "S1",
+   "bucket": "uncertain",
+   "searches": 415,
+   "records": 20424,
+   "labelled": 479,
+   "firms": 209,
+   "same": 5,
+   "different": 474,
+   "different_local": 455,
+   "share_same": 0.01,
+   "ci": [
+    0.0,
+    0.02
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "S2",
+   "bucket": "uncertain",
+   "searches": 9,
+   "records": 51,
+   "labelled": 2,
+   "firms": 1,
+   "same": 2,
+   "different": 0,
+   "different_local": 0,
+   "share_same": 1.0,
+   "ci": [
+    0.34,
+    1.0
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "P1",
+   "bucket": "uncertain",
+   "searches": 9,
+   "records": 9,
+   "labelled": 2,
+   "firms": 2,
+   "same": 2,
+   "different": 0,
+   "different_local": 0,
+   "share_same": 1.0,
+   "ci": [
+    0.34,
+    1.0
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "P3",
+   "bucket": "uncertain",
+   "searches": 54,
+   "records": 91,
+   "labelled": 24,
+   "firms": 13,
+   "same": 24,
+   "different": 0,
+   "different_local": 0,
+   "share_same": 1.0,
+   "ci": [
+    0.86,
+    1.0
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "J1",
+   "bucket": "uncertain",
+   "searches": 3,
+   "records": 3,
+   "labelled": 0,
+   "firms": 0,
+   "same": 0,
+   "different": 0,
+   "different_local": 0,
+   "share_same": null,
+   "ci": null,
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "U3",
+   "bucket": "uncertain",
+   "searches": 384,
+   "records": 1087,
+   "labelled": 149,
+   "firms": 92,
+   "same": 20,
+   "different": 129,
+   "different_local": 100,
+   "share_same": 0.134,
+   "ci": [
+    0.09,
+    0.2
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "U2",
+   "bucket": "uncertain",
+   "searches": 104,
+   "records": 155,
+   "labelled": 30,
+   "firms": 21,
+   "same": 6,
+   "different": 24,
+   "different_local": 23,
+   "share_same": 0.2,
+   "ci": [
+    0.1,
+    0.37
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "G1",
+   "bucket": "uncertain",
+   "searches": 104,
+   "records": 431,
+   "labelled": 61,
+   "firms": 31,
+   "same": 31,
+   "different": 30,
+   "different_local": 29,
+   "share_same": 0.508,
+   "ci": [
+    0.39,
+    0.63
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "N1",
+   "bucket": "uncertain",
+   "searches": 289,
+   "records": 800,
+   "labelled": 315,
+   "firms": 118,
+   "same": 268,
+   "different": 47,
+   "different_local": 21,
+   "share_same": 0.851,
+   "ci": [
+    0.81,
+    0.89
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "R1",
+   "bucket": "uncertain",
+   "searches": 122,
+   "records": 147,
+   "labelled": 60,
+   "firms": 35,
+   "same": 7,
+   "different": 53,
+   "different_local": 21,
+   "share_same": 0.117,
+   "ci": [
+    0.06,
+    0.22
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "U",
+   "bucket": "uncertain",
+   "searches": 637,
+   "records": 3383,
+   "labelled": 380,
+   "firms": 183,
+   "same": 104,
+   "different": 276,
+   "different_local": 213,
+   "share_same": 0.274,
+   "ci": [
+    0.23,
+    0.32
+   ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  }
+ ]
+}

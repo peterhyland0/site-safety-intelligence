@@ -1,5 +1,5 @@
 # Site Safety Intelligence — common tasks
-.PHONY: setup download build dev api web test eval eval-adjudication seed-demo add-user deploy refresh
+.PHONY: setup download build dev api web test eval eval-rules eval-adjudication seed-demo add-user deploy refresh
 
 setup:            ## Python env, local Postgres databases, web deps
 	uv sync
@@ -25,9 +25,13 @@ dev:              ## API + web together
 test:
 	uv run pytest
 
-eval:             ## Matching + foreman evals (foreman eval spends API credit)
+eval:             ## Matching, per-rule and foreman evals (foreman eval spends API credit)
 	uv run python -m eval.matching.run
+	uv run python -m eval.rules.run
 	uv run python -m eval.foreman.run
+
+eval-rules:       ## Each matching rule graded on its own (about 5 minutes, no model calls)
+	uv run python -m eval.rules.run
 
 eval-adjudication: ## Adjudicators compared on uncertain matches, both samples (answers cached; each model needs its key/URL)
 	uv run python -m eval.adjudication.run --seed 7 $(EVAL_LLMS)
