@@ -13,7 +13,14 @@ A GC bidding a job enters its 10–15 subcontractors (one row of fields each, or
   - Each person signs in (accounts are invite-only), and their conversations are saved, private to them, to reopen later.
 - **Data:** the last 10 years of OSHA construction enforcement: 319,689 inspections (plus 18,550 files where OSHA didn't inspect) and 585,758 citations, Sept 2016 to Sept 2026. The history length is a setting, `SSI_HISTORY_YEARS`; `0` keeps all 2.5M inspections back to 1972, which the pipeline also builds and tests. It's enriched with OSHA's injury-rate filings (ITA 300A) and WA, OR and CA contractor licences.
 
-> Demo project: *Hospital expansion, Nashville TN*, 13 real Southeast subs (`make seed-demo`). All facts come from public OSHA records; verdicts are mechanical summaries of those records, not judgements about any company.
+## Start here
+
+- **Live app:** [site-safety-intelligence.vercel.app](https://site-safety-intelligence.vercel.app). Accounts are invite-only: ask me for a login.
+- **The GC's view:** open the demo project, *Hospital expansion, Nashville TN*: 13 real Southeast subs, worst first. Open Jake Marshall to see the inspections behind each reason, and Riverbend Glazing for what "No OSHA record" looks like.
+- **The foreman's view:** open the Foreman assistant (full page on a phone) and ask "Which subs had a fatality?", "How's the mechanical sub doing?" (there are two, so it asks which) or "Tell me about the fatality at Jake Marshall".
+- **The schema:** [§1](#1-the-database-schema-and-why-its-structured-this-way) explains it and why it's shaped this way. [§9](#9-running-it) covers running it yourself.
+
+All facts come from public OSHA records; verdicts are mechanical summaries of those records, not judgements about any company.
 
 Supporting docs:
 - [docs/thought-process.md](docs/thought-process.md): the full decision log
@@ -401,7 +408,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 764 test cases:
+**Tests:** `uv run pytest`, 903 test cases:
 - the cleaning traps, and properties over many spellings of each name (legal forms, ID prefixes, case, accents, initials never split a company)
 - people's names: who is and isn't one, and the Python and SQL copies of the rule agreeing on ~40,000 names
 - every matching rule, and what the rules must never do (a person matched outside the GC's city, another real word matched without an address)
@@ -414,7 +421,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - sign-in, sessions and lockout, and that chats stay private to their user and use the stored history, not the browser's
 - the adjudicator eval's thresholds, packets and Jev client
 
-The web front end has 56 more (`npm test`).
+The web front end has 77 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
