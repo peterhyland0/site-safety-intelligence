@@ -308,3 +308,34 @@ def test_the_api_leaves_a_sub_alone_while_another_request_resolves_it(client, ma
     r = c.post(base + "/adjudicate")  # once it's free, this request resolves it
     assert r.status_code == 200 and r.json()["match_status"] == "resolved"
     assert len(looked_up) == 1 and claimed_at(sid) is None
+
+
+def test_records_the_ai_couldnt_decide_go_back_to_it(make_sub, flags):
+    # an outage or a spent budget used to leave them possible for good, shown as resolved, never counted or retried
+    red, plain = key(), key()
+    p, s = make_sub({red: "ACME ELECTRIC CO OF TEXAS", plain: "ACME ELECTRICAL"})
+    sid = str(s["sub_id"])
+    flags[red] = 1
+    stats = ADJ.adjudicate(s, llm=lambda pk: None, packet_fn=packet)
+    r = rows(sid)
+    assert stats["unavailable"] == 1
+    assert (r[plain]["bucket"], r[plain]["decided_by"], r[plain]["needs_adjudication"]) == ("possible", ADJ.AI_UNAVAILABLE, False)
+    assert ADJ.UNAVAILABLE_NOTE in r[plain]["rationale"]
+    assert r[red]["decided_by"] == "rules" and len(questions(sid)) == 1  # a red flag is the GC's question regardless
+    assert ADJ.requeue_unavailable(str(p["project_id"])) == []  # not before the wait
+    assert ADJ.requeue_unavailable(str(p["project_id"]), minutes=0) == [sid]
+    assert rows(sid)[plain]["needs_adjudication"]
+    ADJ.adjudicate(s, llm=lambda pk: None, packet_fn=packet)  # down again: one note, not two
+    assert rows(sid)[plain]["rationale"].count(ADJ.UNAVAILABLE_NOTE) == 1
+    ADJ.requeue_unavailable(str(p["project_id"]), minutes=0)
+    ADJ.adjudicate(s, llm=different, packet_fn=packet)  # back up: decided
+    assert (rows(sid)[plain]["bucket"], rows(sid)[plain]["decided_by"]) == ("excluded", "ai:test")
+
+
+def test_the_verdict_says_when_the_ai_couldnt_check_records():
+    from ssi.scoring.verdict import Facts, evaluate
+    f = Facts(as_of_year=2026, window_years=5, matched_establishments=1, inspections_all=3, inspections_window=1,
+              rated_window=1, serious_plus_window=0, red_flags=[], hazards=[], open_serious_cases=[], pending_questions=0,
+              ai_unchecked=2)
+    v, r = evaluate(f)
+    assert v == "no_flags" and [x.code for x in r] == ["I_ai_unchecked"]  # possible records count neither way

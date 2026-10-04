@@ -70,7 +70,7 @@ class FakeProvider:
 def no_budget_db(monkeypatch):
     """The token budget and usage counters without Postgres."""
     from ssi.llm import client as llm
-    monkeypatch.setattr(llm, "budget_ok", lambda: True)
+    monkeypatch.setattr(llm, "budget_ok", lambda share=1.0: True)
     monkeypatch.setattr(llm, "record_usage", lambda i, o: None)
 
 

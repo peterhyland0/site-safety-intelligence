@@ -84,7 +84,7 @@ def run(monkeypatch, project, script, question="How is Brasfield doing?", **ids)
     from ssi.llm import client as llm
     fake = Fake(script)
     monkeypatch.setattr(llm, "available", lambda role="foreman": True)
-    monkeypatch.setattr(llm, "budget_ok", lambda: True)
+    monkeypatch.setattr(llm, "budget_ok", lambda share=1.0: True)
     monkeypatch.setattr(llm, "get", lambda role="foreman": fake)
     monkeypatch.setattr(llm, "record_usage", lambda *a: None)
     monkeypatch.setattr(llm, "model_label", lambda role="foreman": "fake")

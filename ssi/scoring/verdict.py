@@ -113,6 +113,8 @@ class Facts:
     stale_records: int = 0
     # possible records with red flags still waiting for the adjudicator (each becomes a GC question)
     unresolved_red_flags: int = 0
+    # possible records the AI reviewer couldn't check (it was unavailable); checked again later
+    ai_unchecked: int = 0
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -213,6 +215,9 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     if f.unresolved_red_flags:  # ...including before the adjudicator has turned them into questions
         add("R_unresolved", f"{f.unresolved_red_flags} possible match(es) with red flags still being checked; you'll be "
             "asked to confirm them", "review", count=f.unresolved_red_flags)
+    if f.ai_unchecked:
+        add("I_ai_unchecked", f"{f.ai_unchecked} possible match(es) not checked yet: the AI reviewer was unavailable. "
+            "They aren't counted until it has", "info", count=f.ai_unchecked)
     if f.stale_records:  # a decision on a record the build doesn't have counts nothing: never shown as clean
         add("R_stale", f"{f.stale_records} OSHA record(s) matched or asked about for this sub aren't in this data "
             "update yet (it regrouped them), so their history isn't counted", "review", count=f.stale_records)

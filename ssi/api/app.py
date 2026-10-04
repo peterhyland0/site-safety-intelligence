@@ -207,6 +207,7 @@ def get_project(project_id: str):
     p = _project(project_id)
     m = warehouse.meta()
     from ssi.llm import web_check as W
+    ADJ.requeue_unavailable(project_id)  # records the AI couldn't decide, back to it after a wait
     cards = _cards(p)
     # subs left unresolved (the server stopped before it finished them) are picked up when the project is opened
     resolve_later(p, [c.sub_id for c in cards if c.match_status == "needs_adjudication"])

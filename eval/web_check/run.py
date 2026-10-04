@@ -117,7 +117,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
     config.TRACING = False
-    llm.budget_ok = lambda: True  # no app database: the eval's own caches stand in for the token counters
+    llm.budget_ok = lambda share=1.0: True  # no app database: the eval's own caches stand in for the token counters
     llm.record_usage = lambda i, o: None
     warehouse.open_warehouse()
     gold = [json.loads(line) for line in (OUT / "gold.jsonl").read_text().splitlines()]

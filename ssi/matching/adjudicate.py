@@ -27,6 +27,10 @@ LLMFn = Callable[[dict], dict | None]
 
 CLAIM_STALE_MINUTES = 15  # a claim older than this was abandoned (the request died); the next request takes over
 M3_CHECK_LIMIT = 5  # M3 groups (a name in a state) looked up per sub, most inspections first
+# decided_by for records the AI was asked about and couldn't decide (it was down, timed out, or the day's budget was
+# spent): possible, not counted, and back to the AI after config.AI_RETRY_MINUTES (requeue_unavailable)
+AI_UNAVAILABLE = "ai_unavailable"
+UNAVAILABLE_NOTE = "not checked yet: the AI reviewer was unavailable; it's checked again later"
 
 
 @contextmanager
@@ -760,11 +764,11 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
     for i, (_, crow) in enumerate(clusters):
         keys = [r["establishment_key"] for r in crow]
         n_flags = sum(flags.get(k, 0) for k in keys)
-        decision = None
+        decision, asked_ai = None, False
         if llm and packet_fn and i < config.ADJUDICATE_MAX_CLUSTERS:
             packet = packet_fn(sub, crow)
             packet["red_flagged"] = n_flags > 0  # goes to the LLM, whose reason the GC reads (adjudicator.decide)
-            decision = llm(packet)
+            decision, asked_ai = llm(packet), True
             stats["llm_calls"] += 1
         bucket, method, conf, rationale = "possible", "rule", None, crow[0]["rationale"]
         if decision:
@@ -778,6 +782,10 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
             bucket = "possible"
             red.append((crow, decision, rationale if decision else None, n_flags))
         decided_by = (decision or {}).get("decided_by") or (_ai_label() if method.startswith("llm") else "rules")
+        if asked_ai and decision is None and not n_flags:  # not a decision: tried again later, and the GC is told
+            decided_by = AI_UNAVAILABLE
+            rationale = rationale if UNAVAILABLE_NOTE in (rationale or "") else f"{rationale}; {UNAVAILABLE_NOTE}"
+            stats["unavailable"] = stats.get("unavailable", 0) + 1
         updates.append((bucket, method, conf, rationale, keys, decided_by))
     with pg.conn() as c:
         for bucket, method, conf, rationale, keys, decided_by in updates:
@@ -810,6 +818,19 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
         cover_company_names(c, sub)
         c.execute("UPDATE app.project_sub SET adjudicated_at = now() WHERE sub_id = %s", [sub_id])
     return stats
+
+
+def requeue_unavailable(project_id: str, minutes: int | None = None) -> list[str]:
+    """Records the AI couldn't decide go back to it once they've waited `minutes` (config.AI_RETRY_MINUTES): an outage
+    or a spent budget left them possible for good, shown as resolved, and never counted. Returns their subs."""
+    minutes = config.AI_RETRY_MINUTES if minutes is None else minutes
+    with pg.conn() as c:
+        rows = c.execute("""UPDATE app.sub_match m SET needs_adjudication = true FROM app.project_sub s
+                            WHERE m.sub_id = s.sub_id AND s.project_id = %s AND m.decided_by = %s AND m.method = 'rule'
+                              AND m.bucket = 'possible' AND NOT m.needs_adjudication
+                              AND m.decided_at <= now() - make_interval(mins => %s)
+                            RETURNING m.sub_id""", [project_id, AI_UNAVAILABLE, minutes]).fetchall()
+    return list(dict.fromkeys(str(r["sub_id"]) for r in rows))
 
 
 def answer_question(question_id: str, answer: str) -> dict:

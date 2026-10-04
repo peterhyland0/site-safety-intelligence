@@ -118,7 +118,7 @@ def answer(project: dict, question: str, history: list[dict], *, chat_id: str | 
     if not llm.available("foreman"):
         return S.AskResponse(status="no_api_key", answer="The question assistant needs an AI key, which isn't set up "
                              "on this deployment. The scorecard and sub pages still show everything.")
-    if not llm.budget_ok():
+    if not llm.budget_ok(config.FOREMAN_BUDGET_SHARE):  # the rest is kept for resolving subs
         return S.AskResponse(status="no_api_key", answer="Today's question budget is used up. The scorecard and sub "
                              "pages still show everything.")
     with pg.conn() as c:

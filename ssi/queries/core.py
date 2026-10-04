@@ -12,6 +12,7 @@ from ssi import config
 from ssi.api import schemas as S
 from ssi.matching import candidates as C
 from ssi.matching import verify as V
+from ssi.matching.adjudicate import AI_UNAVAILABLE
 from ssi.matching.trades import NAICS4_LABELS, trade_naics4
 from ssi.scoring.verdict import (
     VERDICT_LABELS,
@@ -427,6 +428,7 @@ def compute(sub: dict, project: dict) -> dict:
         ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),
         visits_without_inspection=tot["insp_n"] - tot["insp_conducted_n"], ita_deaths=ita_deaths,
         stale_records=len(stale), unresolved_red_flags=unresolved_red_flags(sc),
+        ai_unchecked=sum(1 for k in sc["possible"] if sc["rows"][k]["decided_by"] == AI_UNAVAILABLE),
     )
     verdict, reasons = evaluate(facts)
     est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, insp_conducted_n, first_seen, last_seen

@@ -27,6 +27,9 @@ TRACING = bool(os.environ.get("LANGSMITH_API_KEY")) and \
 MODEL = os.environ.get("SSI_MODEL", "claude-sonnet-5-5")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY") or None
 DAILY_TOKEN_BUDGET = int(os.environ.get("SSI_DAILY_TOKEN_BUDGET", "2000000"))
+# the foreman stops at this share of the day's budget: the rest is kept for resolving subs, so a busy chat day
+# can't leave new subs' records unchecked
+FOREMAN_BUDGET_SHARE = 0.7
 
 # How much OSHA history the warehouse keeps: inspections opened in the last N years before the newest
 # inspection in the data (0 = all years, back to 1972). Default 10.
@@ -49,6 +52,7 @@ QUESTION_GROUP_THRESHOLD = 3  # past this many red-flag questions for a sub, one
 # 0 leaves it to the page (the tests: it calls the adjudicator and the web search)
 RESOLVE_ON_SERVER = os.environ.get("SSI_RESOLVE_ON_SERVER", "1") != "0"
 RESOLVE_WORKERS = 2  # subs resolved at once by one server process
+AI_RETRY_MINUTES = 30  # records the AI couldn't decide (down, or out of budget) go back to it after this
 
 
 def current_warehouse() -> Path | None:

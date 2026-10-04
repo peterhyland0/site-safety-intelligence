@@ -66,12 +66,13 @@ def model_label(role: str = "foreman") -> str:
     return f"{provider_name()}:{get(role).model}" if available(role) else "none"
 
 
-def budget_ok() -> bool:
+def budget_ok(share: float = 1.0) -> bool:
+    """Whether today's tokens are under `share` of the daily budget (the foreman's is config.FOREMAN_BUDGET_SHARE)."""
     from ssi.store import pg
     with pg.conn() as c:
         r = c.execute("SELECT input_tokens + output_tokens AS t FROM app.llm_usage_daily WHERE day = %s",
                       [date.today()]).fetchone()
-    return (r["t"] if r else 0) < config.DAILY_TOKEN_BUDGET
+    return (r["t"] if r else 0) < config.DAILY_TOKEN_BUDGET * share
 
 
 def record_usage(input_tokens: int, output_tokens: int) -> None:
