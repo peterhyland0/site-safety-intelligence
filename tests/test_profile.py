@@ -212,7 +212,8 @@ def test_the_half_of_the_street_an_address_is_on(address, side):
     ("1214 5TH ST NE", "1214 5TH ST NW", True), ("100 N 7TH AVE", "100 7TH AVE S", True),
     # one building written two ways in OSHA's data, and an address with no side, aren't opposite
     ("312 NE LOOP 289", "312 N LOOP 289", False), ("16798 N BERNARDO DR", "16798 W BERNARDO DR", False),
-    ("525 N TRYON ST", "525 TRYON ST", False), ("525 N TRYON ST", "525 NORTH TRYON STREET", False)])
+    ("525 N TRYON ST", "525 TRYON ST", False), ("525 N TRYON ST", "525 NORTH TRYON STREET", False),
+    ("805 SOUTHWEST BROADWAY", "805 SW BROADWAY STE 2100", False), ("805 SOUTHWEST BROADWAY", "805 NE BROADWAY", True)])
 def test_opposite_halves_of_a_street(a, b, opposite):
     from ssi.matching.rules import opposite_sides
     assert opposite_sides(a, b) is opposite and opposite_sides(b, a) is opposite

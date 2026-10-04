@@ -1,6 +1,6 @@
 # Matching rules, one at a time (silver labels from ITA EINs)
 
-3262 searches (general 1500, person 282, shared address 272, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T203138Z: 140,808 records decided, 23,598 of them labelled; 8,008 graded after the cap of 3 per search, rule and bucket. 437 s.
+3264 searches (general 1500, person 282, shared address 274, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T230852Z: 140,766 records decided, 23,612 of them labelled; 8,020 graded after the cap of 3 per search, rule and bucket. 477 s.
 
 The targeted pools oversample the cases their rules act on, so each share describes a rule where it acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a corporate family's divisions as different companies.
 
@@ -10,12 +10,12 @@ Share same = precision: the rest are records of another company counted in the s
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M1 | Same name, same state (distinctive, or the same city) | 968 | 1621 | 951 (586) | 947 | 4 (3) | 0.996 [0.99–1.0] | 0 of 4 reviewed |
+| M1 | Same name, same state (distinctive, or the same city) | 967 | 1620 | 950 (585) | 946 | 4 (3) | 0.996 [0.99–1.0] | 0 of 4 reviewed |
 | M1b | Same distinctive core, differing only by descriptor words | 113 | 180 | 44 (21) | 20 | 24 (9) | 0.455 [0.32–0.6] | 0 of 24 reviewed |
 | M1s | The sub's name plus OF <PLACE>, in its city, at an address where another OF <PLACE> of it files | 1 | 2 | 0 (0) | 0 | 0 (0) |  |  |
-| M2 | At a matched address, the name differs only by spelling | 235 | 316 | 40 (28) | 28 | 12 (6) | 0.7 [0.55–0.82] | 0 of 12 reviewed |
-| M3 | Same distinctive name in another state | 407 | 3588 | 467 (120) | 365 | 102 (40) | 0.782 [0.74–0.82] | 0 of 102 reviewed |
-| L1 | Linked to the licence number entered | 92 | 125 | 113 (79) | 113 | 0 (0) | 1.0 [0.97–1.0] |  |
+| M2 | At a matched address, the name differs only by spelling | 237 | 318 | 40 (28) | 28 | 12 (6) | 0.7 [0.55–0.82] | 0 of 12 reviewed |
+| M3 | Same distinctive name in another state | 409 | 3593 | 469 (120) | 366 | 103 (40) | 0.78 [0.74–0.82] | 0 of 103 reviewed |
+| L1 | Linked to the licence number entered | 91 | 124 | 112 (78) | 112 | 0 (0) | 1.0 [0.97–1.0] |  |
 
 ## Rules that exclude
 
@@ -23,8 +23,8 @@ Share same = the share wrongly excluded: the sub's own records hidden.
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| X1 | A different real word in the name | 2315 | 86047 | 3494 (1334) | 18 | 3476 (2935) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
-| X3 | A common name with different words | 709 | 21318 | 1209 (473) | 1 | 1208 (1082) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
+| X1 | A different real word in the name | 2317 | 86030 | 3497 (1336) | 18 | 3479 (2937) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
+| X3 | A common name with different words | 706 | 21243 | 1204 (472) | 1 | 1203 (1076) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
 | X5 | A person's name in another city or state | 17 | 23 | 0 (0) | 0 | 0 (0) |  |  |
 
 ## Rules that hold records back
@@ -34,20 +34,20 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
 | M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 61 | 109 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
-| S1 | Differs only by OF <STATE> / AT <project> | 415 | 20502 | 476 (206) | 5 | 471 (452) | 0.011 [0.0–0.02] |  |
-| S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 10 | 52 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
-| S3 | The sub's name plus a real word, at an address the sub uses | 120 | 208 | 47 (28) | 18 | 29 (20) | 0.383 [0.26–0.53] |  |
-| S4 | The sub's name plus a state, or the record's own city | 43 | 111 | 23 (8) | 3 | 20 (8) | 0.13 [0.05–0.32] |  |
+| S1 | Differs only by OF <STATE> / AT <project> | 416 | 20537 | 482 (208) | 5 | 477 (458) | 0.01 [0.0–0.02] |  |
+| S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 9 | 51 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
+| S3 | The sub's name plus a real word, at an address the sub uses | 120 | 209 | 48 (28) | 18 | 30 (21) | 0.375 [0.25–0.52] |  |
+| S4 | The sub's name plus a state, or the record's own city | 42 | 110 | 23 (8) | 3 | 20 (8) | 0.13 [0.05–0.32] |  |
 | P1 | A person's name without a city to tell people apart | 9 | 9 | 2 (2) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
 | P3 | A company named after a person, in another city or state | 53 | 90 | 23 (13) | 23 | 0 (0) | 1.0 [0.86–1.0] |  |
 | J1 | A joint venture at a member's address | 62 | 85 | 0 (0) | 0 | 0 (0) |  |  |
-| U3 | Same family name, a different trade word | 384 | 1086 | 147 (91) | 20 | 127 (98) | 0.136 [0.09–0.2] |  |
+| U3 | Same family name, a different trade word | 383 | 1088 | 149 (92) | 20 | 129 (98) | 0.134 [0.09–0.2] |  |
 | U2 | A common name with other words, same city | 125 | 183 | 42 (29) | 7 | 35 (34) | 0.167 [0.08–0.31] |  |
 | U4 | The sub's common name in another state | 121 | 378 | 72 (36) | 18 | 54 (52) | 0.25 [0.16–0.36] |  |
 | G1 | Initials-only names | 104 | 431 | 61 (31) | 31 | 30 (29) | 0.508 [0.39–0.63] |  |
 | N1 | A related facility (not coded construction), by name | 290 | 809 | 319 (117) | 272 | 47 (21) | 0.853 [0.81–0.89] |  |
 | R1 | A red-flagged record at an address the company uses | 115 | 127 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
-| U | Anything else the rules can't settle | 669 | 3408 | 399 (193) | 124 | 275 (213) | 0.311 [0.27–0.36] |  |
+| U | Anything else the rules can't settle | 671 | 3417 | 404 (195) | 127 | 277 (214) | 0.314 [0.27–0.36] |  |
 
 ## Rules that never fired in these searches
 
@@ -92,7 +92,7 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 | different (local firms) | WA317965131 - SYNERGY INC (WOODINVILLE, WA) | WA317942742 - SYNERGY CONSTRUCTION INC (14040 NE 181ST ST, WOODINVILLE, WA) |  |
 | different (local firms) | 104048 - NOR-SON CONSTRUCTION LLC (BAXTER, MN) | 103175 - NOR-SON INC (7900 HASTINGS RD, BAXTER, MN) |  |
 
-### M3 (matched): 102
+### M3 (matched): 103
 
 | Silver | Search (A) | Record (B) | Verdict |
 |---|---|---|---|
@@ -114,7 +114,7 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 | same | TINDALL CORPORATION-VIRGINIA DIVISION (PETERSBURG, VA) | TINDALL CORPORATION (PO BOX 280, CONLEY, GA) |  |
 | same | LGI HOMES (THE WOODLANDS, TX) | LGI HOMES CORPORATE, LLC (1450 LAKE ROBBINS DR STE 430 ATTN JAMIE SCHILLING, THE WOODLANDS, TX) |  |
 | same | TINDALL CORPORATION-VIRGINIA DIVISION (PETERSBURG, VA) | 75691 - TINDALL CORPORATION (2273 HAYNE ST, SPARTANBURG, SC) |  |
-| same | TK ELEVATOR RICHMOND (ASHLAND, VA) | TK ELEVATOR CORPORATION (788 CIR 75 PKWY SOUTHEAST, ATLANTA, GA) |  |
+| same | TK ELEVATOR RICHMOND (ASHLAND, VA) | TK ELEVATOR CORPORATION (788 CIR 75 PKWY SE, ATLANTA, GA) |  |
 | same | TK ELEVATOR RICHMOND (ASHLAND, VA) | TK ELEVATOR (929 EASTWIND DR STE 218, WESTERVILLE, OH) |  |
 | same | TINDALL CORPORATION-VIRGINIA DIVISION (PETERSBURG, VA) | TINDALL CORPORATION (3361 GRANT RD, CONLEY, GA) |  |
 

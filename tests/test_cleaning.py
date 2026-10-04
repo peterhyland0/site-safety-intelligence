@@ -226,6 +226,13 @@ def test_initials_and_sibling(con):
     ("500 EASTMOREHEAD STE 300", "500 E MOREHEAD ST STE 300"),
     ("31000 NORTHWESTERN HWY", "31000 N WESTERN HWY"),
     ("3310 WESTEND AVE", "3310 WEST END AVE"),
+    # NORTHWEST is one direction, not NORTH + WEST: Hoffman's Portland office, written both ways
+    ("805 SOUTHWEST BROADWAY", "805 SW BROADWAY STE 2100"),
+    ("6616 Northwest 32nd Street", "6616 NW 32ND ST"),
+    # and once it's read as one, FREEWAY must be FWY: DPR's Houston office (both were 3200 WEST)
+    ("3200 SOUTHWEST FREEWAY STE 1550", "3200 SOUTHWEST FWY STE 1550"),
+    ("13939 NW FRWY", "13939 NW FREEWAY"),
+    ("2515 NE EXPRESSWAY", "2515 NE EXPY"),
 ])
 def test_addr_key_variants(con, a, b):
     assert q(con, "addr_key(?)", a) == q(con, "addr_key(?)", b)
@@ -235,9 +242,21 @@ def test_addr_key_variants(con, a, b):
     ("100 WESTERN AVE", "100 EASTERN AVE"),     # ER: a street's own name, not a direction
     ("100 WESTON RD", "100 ON RD"),             # too short to split
     ("200 NORTHERN BLVD", "200 SOUTHERN BLVD"),
+    ("805 SOUTHWEST BROADWAY", "805 NORTHWEST GLISAN ST"),       # both were 805 WEST
+    ("11718 SOUTHEAST FEDERAL HWY", "11718 NORTHEAST 2ND AVE"),  # both were 11718 EAST
 ])
 def test_addr_key_keeps_street_names_apart(con, a, b):
     assert q(con, "addr_key(?)", a) != q(con, "addr_key(?)", b)
+
+
+@pytest.mark.parametrize("address,key,side", [
+    ("805 SOUTHWEST BROADWAY", "805 BROADWAY", {"S", "W"}), ("11718 SOUTHEAST FEDERAL HWY", "11718 FEDERAL", {"S", "E"}),
+    ("7900 WESTPARK DR", "7900 PARK", {"W"}), ("31000 NORTHWESTERN HWY", "31000 WESTERN", {"N"}),
+    ("525 WEST ST", "525 ST", {"W"}), ("100 WESTERN AVE", "100 WESTERN", set())])
+def test_the_direction_addr_key_drops_is_the_side_street_side_reads(con, address, key, side):
+    """ssi.matching.rules.street_side mirrors addr_key: what the key drops before the street word is the side."""
+    from ssi.matching.rules import street_side
+    assert (q(con, "addr_key(?)", address), street_side(address)) == (key, side)
 
 
 def test_address_rules(con):
@@ -245,9 +264,12 @@ def test_address_rules(con):
     assert q(con, "addr_key(?)", "P.O. Box 1385") == "POBOX 1385"
     assert q(con, "addr_key(?)", "1201 Demonbreun St Ste 200") == "1201 DEMONBREUN"
     assert q(con, "addr_key(?)", "7900 Westpark Drive") == "7900 PARK"
+    assert q(con, "addr_key(?)", "7900 WESTPARK DR") == "7900 PARK"
+    assert q(con, "addr_key(?)", "805 SOUTHWEST BROADWAY") == "805 BROADWAY"
     assert q(con, "addr_key(?)", "3810 West Broad Street Suite 103") == "3810 BROAD"
     # a profile's quote is checked for the key's words the same way (ssi/llm/profile.py)
     assert q(con, "addr_split_dir(clean_addr(?))", "McLean 7900 Westpark Drive Suite T300") == "MCLEAN 7900 WEST PARK DR STE T300"
+    assert q(con, "addr_split_dir(clean_addr(?))", "805 Southwest Broadway") == "805 SW BROADWAY"
     assert q(con, "addr_unit(?)", "1201 Demonbreun St Ste 200") == "Ste 200".upper()
     assert q(con, "zip5(?)", "35233-1234") == "35233"
     assert q(con, "zip5(?)", "2134") == "02134"

@@ -183,16 +183,21 @@ CREATE OR REPLACE MACRO is_person_name(core, given, surnames) AS
            AND ssi_person_tokens(string_split(core, ' '), given, surnames), false);
 
 -- Addresses ------------------------------------------------------------------------------------
--- USPS abbreviations and directionals (WEST left alone: often a street name)
+-- USPS abbreviations and directionals (WEST left alone: often a street name). NORTHWEST is NW, one direction:
+-- addr_split_dir read 805 SOUTHWEST BROADWAY as SOUTH + WEST, and keyed it 805 WEST (805 SW BROADWAY is 805 BROADWAY).
+-- FREEWAY is FWY: DPR's Houston office is 3200 SW FREEWAY and 3200 SW FWY in OSHA's data
 CREATE OR REPLACE MACRO clean_addr(s) AS trim(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
  regexp_replace(regexp_replace(regexp_replace(regexp_replace(
+ regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
    regexp_replace(regexp_replace(upper(coalesce(s, '')), '[^A-Z0-9 ]', ' ', 'g'), '\s+', ' ', 'g'),
    '\b(P O|POST OFFICE|P0)\s+BOX\b', 'PO BOX', 'g'),
    '\bSTREET\b', 'ST', 'g'), '\bAVENUE\b', 'AVE', 'g'), '\bROAD\b', 'RD', 'g'), '\bDRIVE\b', 'DR', 'g'),
    '\bBOULEVARD\b', 'BLVD', 'g'), '\bSUITE\b', 'STE', 'g'), '\bHIGHWAY\b', 'HWY', 'g'), '\bPARKWAY\b', 'PKWY', 'g'),
+   '\b(FREEWAY|FRWY)\b', 'FWY', 'g'), '\b(EXPRESSWAY|EXPRESSWY|EXPWY)\b', 'EXPY', 'g'),
    '\bLANE\b', 'LN', 'g'), '\bCOURT\b', 'CT', 'g'), '\bPLACE\b', 'PL', 'g'), '\bCIRCLE\b', 'CIR', 'g'),
+   '\bNORTHEAST\b', 'NE', 'g'), '\bNORTHWEST\b', 'NW', 'g'), '\bSOUTHEAST\b', 'SE', 'g'), '\bSOUTHWEST\b', 'SW', 'g'),
    '\bNORTH\b', 'N', 'g'), '\bSOUTH\b', 'S', 'g'), '\bEAST\b', 'E', 'g'),
  '\s+', ' ', 'g'));
 
@@ -203,6 +208,7 @@ CREATE OR REPLACE MACRO addr_unit(s) AS
 -- A direction written onto the street word after a house number is split off: OSHA writes one street both ways
 -- (7900 WESTPARK DR / 7900 WEST PARK DR, Clark's McLean office; 3715 NORTHSIDE PKWY / 3715 N SIDE PKWY), which split
 -- 21 companies' records in two. Not before ER (WESTERN, NORTHERN AVE) or fewer than 3 letters (WESTON, EASTON).
+-- NORTHWESTERN HWY is split (31000 N WESTERN HWY is the same building); NORTHWEST is already NW (clean_addr).
 -- Applied to a cleaned address (clean_addr), or to text holding one (a company profile's quote)
 CREATE OR REPLACE MACRO addr_split_dir(s) AS
   regexp_replace(s, '\b([0-9]+[A-Z]? )(NORTH|SOUTH|EAST|WEST)([A-DF-Z][A-Z]{2,}|E[A-QS-Z][A-Z]+)\b', '\1\2 \3', 'g');
