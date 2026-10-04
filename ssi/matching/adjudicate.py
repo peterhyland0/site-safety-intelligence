@@ -471,15 +471,19 @@ def override(sub_id: str, establishment_key: str, bucket: str) -> None:
         c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', decided_by = 'gc', decided_at = now(),
                             needs_adjudication = false, rationale = 'Set by the GC'
                      WHERE sub_id = %s AND establishment_key = %s""", [bucket, sub_id, establishment_key])
-        # answering by override also settles any open question about that record
-        c.execute("""UPDATE app.match_question SET answer = %s, answered_at = now()
-                     WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL
-                       AND cardinality(establishment_keys) = 1""",
-                  ["yes" if bucket == "matched" else "no", sub_id, establishment_key])
-        # a grouped question ("these records under one name") stays open for the rest of its records
-        c.execute("""UPDATE app.match_question SET establishment_keys = array_remove(establishment_keys, %s)
-                     WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL""",
-                  [establishment_key, sub_id, establishment_key])
+        settle(c, sub_id, establishment_key, bucket)  # answering by override also settles its questions
+
+
+def settle(c, sub_id: str, establishment_key: str, bucket: str) -> None:
+    """Open questions about a record the GC has decided: one about it alone is answered with the GC's decision."""
+    c.execute("""UPDATE app.match_question SET answer = %s, answered_at = now()
+                 WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL
+                   AND cardinality(establishment_keys) = 1""",
+              ["yes" if bucket == "matched" else "no", sub_id, establishment_key])
+    # a grouped question ("these records under one name") stays open for the rest of its records
+    c.execute("""UPDATE app.match_question SET establishment_keys = array_remove(establishment_keys, %s)
+                 WHERE sub_id = %s AND %s = ANY(establishment_keys) AND answer IS NULL""",
+              [establishment_key, sub_id, establishment_key])
 
 
 def evidence_packet(sub: dict, crow: list[dict]) -> dict:

@@ -15,6 +15,7 @@ from scripts import rematch
 from ssi import cleaning
 from ssi.matching import adjudicate as ADJ
 from ssi.matching import remap, run
+from ssi.matching.rules import Query
 from ssi.store import pg, warehouse
 from tests.mini_warehouse import Rec
 
@@ -98,6 +99,21 @@ def open_questions(sub):
                          [sub["sub_id"]]).fetchall()
 
 
+def questions(sub):
+    with pg.conn() as c:
+        return c.execute("SELECT * FROM app.match_question WHERE sub_id = %s ORDER BY created_at",
+                         [sub["sub_id"]]).fetchall()
+
+
+def ask_about(sub, k):
+    """A red-flag question about `k` as rules-only adjudication leaves it: the rule's row, possible, waiting."""
+    with pg.conn() as c:
+        c.execute("""UPDATE app.sub_match SET bucket = 'possible', needs_adjudication = false
+                     WHERE sub_id = %s AND establishment_key = %s""", [sub["sub_id"], k])
+        c.execute("INSERT INTO app.match_question (sub_id, establishment_keys, text) VALUES (%s, %s, 'q')",
+                  [sub["sub_id"], [k]])
+
+
 def set_ai(sub, k, bucket):
     with pg.conn() as c:
         c.execute("""UPDATE app.sub_match SET method = 'llm', bucket = %s, confidence = 0.9, rationale = 'AI: test',
@@ -142,7 +158,10 @@ def test_a_gc_answer_follows_its_record_into_the_merged_one(builds, new_sub):
     assert len(r[plain]["activity_nrs"]) == 5 and r[plain]["build_id"] == "B"
     assert r[plain]["evidence"]["inspections"] == 5
     assert r[plain]["evidence"]["remapped_from"] == [{"key": lc, "name": "ADELPHI CONSTRUCTION LC", "shared_inspections": 2}]
-    assert [q["establishment_keys"] for q in open_questions(sub)] == [[plain]]  # asks about where its records are now
+    # the question would now ask about a record the GC matched (it used to stay open, about a counted record): the
+    # GC's decision settles it
+    assert open_questions(sub) == []
+    assert [(q["establishment_keys"], q["answer"]) for q in questions(sub)] == [([plain], "yes")]
     assert not remap.changes(remap.plan(fresh(sub), builds))  # done: running it again moves nothing
 
 
@@ -179,6 +198,26 @@ def test_an_ai_answer_carries_over_only_when_the_merged_record_agrees(builds, ne
     assert lc not in r and (r[plain]["bucket"], r[plain]["method"]) == plain_after
 
 
+def test_a_question_moved_onto_a_record_the_rules_matched_keeps_it_waiting(builds, new_sub):
+    # the L.C.'s record waits for the GC's answer (red flags, no AI answer); merged into the LLC's record, which the
+    # rules match, the question asks about the merged record, and the rules' match waits for the answer too
+    sub, plain, lc = adelphi_on_a(builds, new_sub)
+    ask_about(sub, lc)
+    use(builds, "B")
+    p = remap.plan(fresh(sub), builds)
+    assert p["targets"][plain]["action"] == "rules"
+    dry = rematch.plan(fresh(sub), "IA", p["after"], {plain})  # the dry run says what the re-match will do
+    assert [(ch["key"], ch["old"], ch["new"]) for ch in dry] == [(plain, "matched/M1", "possible/M1")]
+    rematch_on(builds, sub)
+    r = rows(sub)
+    assert lc not in r and (r[plain]["bucket"], r[plain]["method"], r[plain]["needs_adjudication"]) == ("possible", "rule", False)
+    assert r[plain]["rationale"].endswith("; waiting for your answer to its question")
+    (q,) = open_questions(sub)
+    assert q["establishment_keys"] == [plain]
+    ADJ.answer_question(str(q["question_id"]), "yes")
+    assert (rows(sub)[plain]["bucket"], rows(sub)[plain]["method"]) == ("matched", "gc")
+
+
 def test_a_record_that_left_the_data_keeps_its_answer(builds, new_sub):
     use(builds, "A")
     sub = new_sub("Kestrel Roofing")
@@ -203,6 +242,25 @@ def test_a_split_record_passes_the_gc_answer_to_the_part_that_left(builds, new_s
     r = rows(sub)
     assert {k: (r[k]["bucket"], r[k]["method"]) for k in (plain, lc)} == {plain: ("excluded", "gc"), lc: ("excluded", "gc")}
     assert len(r[plain]["activity_nrs"]) == 3 and len(r[lc]["activity_nrs"]) == 2  # stored as this build has them
+
+
+# --- a re-match on the same build ----------------------------------------------------------------------------
+def test_a_record_in_an_open_question_waits_through_a_re_match(builds, new_sub):
+    # The rules match the L.C.'s record (M2), but a question about it is open: a re-match used to replace its row
+    # with the rules' match, counting it while the question still asked
+    sub, plain, lc = adelphi_on_a(builds, new_sub)
+    ask_about(sub, lc)
+    assert rematch.plan(fresh(sub), "IA") == []  # the dry run: nothing changes
+    rematch_on(builds, sub, "A")
+    r = rows(sub)
+    assert (r[lc]["bucket"], r[lc]["rule_id"], r[lc]["needs_adjudication"]) == ("possible", "M2", False)
+    assert (r[plain]["bucket"], r[plain]["rule_id"]) == ("matched", "M1")  # the rest as before
+    # and if the rules no longer find it at all, its row stays, waiting; the others go
+    run.persist(str(sub["sub_id"]), {"query": Query(clean="ADELPHI", core="ADELPHI", state="IA", city=None, trade=None,
+                                                     tier="distinctive", initials_only=False, sibling=None, aliases=set()),
+                                     "decisions": [], "note": None})
+    assert {k: r["bucket"] for k, r in rows(sub).items()} == {lc: "possible"}
+    assert len(open_questions(sub)) == 1
 
 
 # --- rows saved before activity_nrs ---------------------------------------------------------------------------

@@ -24,14 +24,18 @@ from ssi.store import pg, warehouse
 BUCKET = {MATCHED: "matched", UNCERTAIN: "possible", EXCLUDED: "excluded"}
 
 
-def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = None) -> list[dict]:
+def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = None,
+         asked: set[str] | None = None) -> list[dict]:
     """Rule decisions that would change for this sub (GC and AI decisions are never touched). `stored`: the sub's
-    rows to compare with, by key (default: as saved; rematch passes them as they'll be after remap.apply)."""
-    if stored is None:
-        with pg.conn() as c:
+    rows to compare with, by key (default: as saved; rematch passes them as they'll be after remap.apply). `asked`:
+    the records in open questions, which wait as possible whatever the rules say (default: as saved)."""
+    with pg.conn() as c:
+        if stored is None:
             stored = {r["establishment_key"]: r for r in c.execute(
                 "SELECT * FROM app.sub_match WHERE sub_id = %s AND establishment_key <> '__note__'",
                 [sub["sub_id"]]).fetchall()}
+        if asked is None:
+            asked = {k for q in ADJ._open_questions(c, str(sub["sub_id"])) for k in q["establishment_keys"]}
     res = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state,
                 sub.get("trade"), sub.get("licence"))
     changes = []
@@ -40,17 +44,17 @@ def plan(sub: dict, project_state: str | None, stored: dict[str, dict] | None = 
         old = stored.get(k)
         if old and old["method"] != "rule":
             continue  # the GC's or the AI's decision stands
-        new_bucket = BUCKET[d.bucket]
+        new_bucket = "possible" if k in asked else BUCKET[d.bucket]
         if old and old["bucket"] == new_bucket and old["rule_id"] == d.rule_id:
             continue
-        if not old and d.bucket == EXCLUDED:
+        if not old and new_bucket == "excluded":
             continue  # a new lookalike that stays out changes nothing the GC sees
         changes.append({"key": k, "name": x["row"]["display_name"], "place": f"{x['row']['city']}, {x['row']['state']}",
                         "old": f"{old['bucket']}/{old['rule_id']}" if old else "-", "new": f"{new_bucket}/{d.rule_id}"})
     # rule decisions that would disappear: the record left the data (scope change) or the search
     seen = {x["row"]["establishment_key"] for x in res["decisions"]}
     for k, old in stored.items():
-        if old["method"] == "rule" and old["bucket"] != "excluded" and k not in seen:
+        if old["method"] == "rule" and old["bucket"] != "excluded" and k not in seen and k not in asked:
             ev = old["evidence"] or {}
             changes.append({"key": k, "name": ev.get("name") or k[:8], "place": f"{ev.get('city')}, {ev.get('state')}",
                             "old": f"{old['bucket']}/{old['rule_id']}", "new": "removed"})
@@ -122,7 +126,10 @@ def main() -> None:
         for s in subs:
             rp = remap.plan(s)
             moves = remap_lines(rp)
-            changes = plan(s, p["state"], rp["after"])
+            with pg.conn() as c:  # the open questions, about where their records will be
+                asked = {t for q in ADJ._open_questions(c, str(s["sub_id"])) for k in q["establishment_keys"]
+                         for t in remap.moved_to(rp).get(k, [k])}
+            changes = plan(s, p["state"], rp["after"], asked)
             retry = 0
             if a.retry_ai_rejections:
                 with pg.conn() as c:

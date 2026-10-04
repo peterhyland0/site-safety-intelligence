@@ -12,7 +12,8 @@ all left the data, stays as it is.
 
 Where records land on one new record, with any row the sub already has for it:
 - the GC's decisions win. GC decisions that disagree become a question to the GC instead of one being picked; the
-  record waits as possible (method 'remap'), and a re-match keeps it, as it keeps every non-rule row;
+  record waits as possible (method 'remap'), and a re-match keeps it, as it keeps every non-rule row. An open
+  question about a record that lands on one the GC decided is settled by that decision;
 - the AI's decisions and the holds from a company profile or the web check (methods 'profile' and 'web') carry over
   when every record landing there was decided the same way. If not, they're dropped and the rules (then the AI)
   decide the merged record again;
@@ -26,6 +27,7 @@ from pathlib import Path
 import duckdb
 
 from ssi import config
+from ssi.matching import adjudicate as ADJ
 from ssi.matching import candidates as C
 from ssi.store import pg, warehouse
 
@@ -151,6 +153,11 @@ def new_keys(old: dict[str, list[int]]) -> dict[str, dict[str, int]]:
     return out
 
 
+def moved_to(p: dict) -> dict[str, list[str]]:
+    """{old key: the keys its inspections are on once the plan is applied}, for keys the plan moves or splits."""
+    return {k: list(m["targets"]) for k, m in p["moves"].items()} | {k: [k, *m["targets"]] for k, m in p["splits"].items()}
+
+
 def changes(p: dict) -> bool:
     """Whether the plan moves any decision."""
     return bool(p["moves"] or p["splits"])
@@ -190,14 +197,19 @@ def apply(sub: dict, p: dict) -> dict:
             c.execute("DELETE FROM app.sub_match WHERE sub_id = %s AND establishment_key = ANY(%s)",
                       [sub_id, list(p["moves"])])
             # an open question about a record asks about wherever its inspections are now
-            now = {k: list(m["targets"]) for k, m in p["moves"].items()} | \
-                  {k: [k, *m["targets"]] for k, m in p["splits"].items()}
+            now = moved_to(p)
             for q in c.execute("SELECT * FROM app.match_question WHERE sub_id = %s AND answer IS NULL",
                                [sub_id]).fetchall():
                 keys = list(dict.fromkeys(t for k in q["establishment_keys"] for t in now.get(k, [k])))
                 if keys != q["establishment_keys"]:
                     c.execute("UPDATE app.match_question SET establishment_keys = %s WHERE question_id = %s",
                               [keys, q["question_id"]])
+            # ... unless it's now part of a record the GC decided: the GC's decision wins (as for the AI's), so it
+            # settles the question, which would otherwise ask about a record that's counted or dropped
+            for r in c.execute("""SELECT establishment_key, bucket FROM app.sub_match WHERE sub_id = %s AND method = 'gc'
+                                  AND bucket <> 'possible' AND establishment_key = ANY(%s)""",
+                               [sub_id, list(targets)]).fetchall():
+                ADJ.settle(c, sub_id, r["establishment_key"], r["bucket"])
         for k in held:
             if k in nrs and list(p["after"][k].get("activity_nrs") or []) != nrs[k]:
                 c.execute("UPDATE app.sub_match SET activity_nrs = %s WHERE sub_id = %s AND establishment_key = %s",
