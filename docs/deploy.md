@@ -19,10 +19,12 @@ forwards `/api/*` to Modal, so the browser sees one site. The GC's decisions liv
        SSI_LLM_MODAL_KEY='wk-...' SSI_LLM_MODAL_SECRET='ws-...'
    uv run modal secret create ssi-langsmith LANGSMITH_API_KEY='...' LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
    uv run modal secret create ssi-jev JEV_API_KEY='...'   # from console.typesafe.ai/keys
-   uv run modal secret create ssi-anthropic ANTHROPIC_API_KEY='...'   # company profiles (Claude + web search)
+   uv run modal secret create ssi-tavily TAVILY_API_KEY='...' SSI_PROFILE_BACKEND=tavily   # web check + profiles
    ```
    With `ssi-jev`, Jev adjudicates uncertain matches without red flags and DeepSeek the red-flagged ones
-   ([why](adjudicator.md)). Use TypeSafe's own API (`api.typesafe.ai`, the default): lookalike sites resell
+   ([why](adjudicator.md)). `ssi-tavily` runs the web check ([web-check.md](web-check.md)) and company profiles
+   ([company-profile.md](company-profile.md)) on Tavily and the adjudicator LLM. For Claude-backed profiles instead
+   (~$0.20 each), create `ssi-anthropic` with `ANTHROPIC_API_KEY` and deploy with `SSI_WITH_ANTHROPIC=1` added. Use TypeSafe's own API (`api.typesafe.ai`, the default): lookalike sites resell
    Jev access through their own servers.
 4. **Accounts.** Sign-in is invite-only (there is no sign-up page), and accounts live in the app database. Create
    them from your machine against the hosted database; the password is asked for at the prompt:
@@ -44,14 +46,18 @@ uv run modal run modal_app.py::refresh
 
 ## Deploy the API (and the nightly refresh)
 ```bash
-SSI_WITH_GLM=1 SSI_WITH_LANGSMITH=1 SSI_WITH_JEV=1 SSI_WITH_ANTHROPIC=1 uv run modal deploy modal_app.py
+make deploy        # builds web/dist, then deploys with ssi-db, ssi-glm, ssi-langsmith, ssi-jev and ssi-tavily
 uv run modal run modal_app.py::seed_demo        # demo project against the deployed data
 ```
-`modal deploy` prints the API URL, e.g. `https://<workspace>--site-safety-intelligence-web.modal.run`.
+Each secret is named by an `SSI_WITH_*` flag (list in [modal_app.py](../modal_app.py)); deploy without one by
+overriding the list, e.g. `make deploy SSI_SECRETS="SSI_WITH_DB=1 SSI_WITH_GLM=1"`. `ssi-db` is required: without
+it the API has no database. `modal deploy` prints the API URL, e.g.
+`https://<workspace>--site-safety-intelligence-web.modal.run`.
 Set `SSI_MIN_CONTAINERS=1` on deploy while reviewers are looking, to avoid cold starts.
 
 ## Deploy the website on Vercel
-1. Put the Modal URL into `web/vercel.json` (replace `MODAL_WORKSPACE--site-safety-intelligence-web.modal.run`).
+1. `web/vercel.json` forwards `/api/*` to `peterhyland101210--site-safety-intelligence-web.modal.run`; another
+   workspace puts its own Modal URL there.
 2. In the Vercel dashboard: **Add New → Project → import `peterhyland0/site-safety-intelligence`**, set
    **Root Directory = `web`** (framework: Vite). Deploy.
 3. Settings → Deployment Protection: turn off Vercel Authentication if reviewers should only see the app's own

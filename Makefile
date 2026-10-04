@@ -52,6 +52,8 @@ refresh:          ## Download + build on Modal
 	cd web && npm run build
 	uv run modal run modal_app.py::refresh
 
-deploy:           ## Deploy web app + nightly refresh to Modal
+deploy:           ## Deploy web app + nightly refresh to Modal (secrets: docs/deploy.md; drop one with SSI_SECRETS=...)
 	cd web && npm run build
-	uv run modal deploy modal_app.py
+	$(SSI_SECRETS) uv run modal deploy modal_app.py
+
+SSI_SECRETS = SSI_WITH_DB=1 SSI_WITH_GLM=1 SSI_WITH_LANGSMITH=1 SSI_WITH_JEV=1 SSI_WITH_TAVILY=1
