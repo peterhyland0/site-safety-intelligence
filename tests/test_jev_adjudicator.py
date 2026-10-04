@@ -42,16 +42,32 @@ def test_facts_describe_the_whole_cluster():
     assert f["place"] == "Eastvale and Cerritos, CA" and f["shared_address"] and f["trade"] == "2212, 2371"
     three = two + [{"city": "IRVINE", "state": "CA"}]
     assert packet_facts(ANCHORS, three, "OK")["place"] == "3 places in CA"
-    assert "trade code 2212, 2371, the matched records' 2371" in jev.rationale(0.04, "different", f)
+    assert "For: shares an address with the sub's matched records; shares a trade code (2371)." in \
+        jev.rationale(0.04, "different", f)
 
 
 def test_reason_is_written_from_the_evidence():
     facts = packet_facts(ANCHORS, [{"address": "9 DESERT RD", "city": "LAS VEGAS", "state": "NV", "naics4": "2382"}], "OK")
     text = jev.rationale(0.04, "different", facts)
-    assert text == ("Likely a different company: Jev puts the chance it's the same company at 4%. Las Vegas, NV, "
-                    "outside the sub's state (OK); no address in common with the sub's matched records; "
+    assert text == ("Likely a different company: Jev puts the chance it's the same company at 4%. Against: Las Vegas, "
+                    "NV, outside the sub's state (OK); no address in common with the sub's matched records; "
                     "trade code 2382, the matched records' 2371.")
     assert jev.rationale(0.5, "unsure", {}) == "Unclear: Jev puts the chance it's the same company at 50%."
+
+
+def test_reason_says_which_way_each_fact_points_verdict_side_first():
+    branch = packet_facts(ANCHORS, [{"address": "9 DESERT RD", "city": "LAS VEGAS", "state": "NV", "naics4": "2371"}], "OK")
+    assert jev.rationale(0.04, "different", branch).endswith(
+        "Against: Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records. "
+        "For: same trade code (2371).")
+    near = packet_facts(ANCHORS, [{"address": "1 MAIN ST", "city": "TULSA", "state": "OK", "naics4": "2382"}], "OK")
+    assert jev.rationale(0.45, "unsure", near).endswith(
+        "For: Tulsa, OK, in the sub's state; shares an address with the sub's matched records. "
+        "Against: trade code 2382, the matched records' 2371.")
+    unknown = packet_facts(ANCHORS, [{"city": "TULSA", "state": "OK", "naics4": "2371"}], None)
+    assert jev.rationale(0.3, "unsure", unknown) == (
+        "Unclear: Jev puts the chance it's the same company at 30%. In Tulsa, OK. "
+        "For: same trade code (2371). Against: no address in common with the sub's matched records.")
 
 
 def test_jev_answer_has_the_adjudicator_shape():

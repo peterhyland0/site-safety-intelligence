@@ -1,8 +1,8 @@
 # Adjudicator comparison (silver labels from ITA EINs)
 
-Seed 7: the development set, where Jev's tuned thresholds were picked.
+Seed 7: the development set, where the app's Jev thresholds were picked.
 
-2400 silver pairs; the rules leave **302** uncertain (87 same company, 215 different). Those go to each adjudicator with the packet the app would build. 46 carry red flags (the app asks the GC about those whatever the AI says). 1 s.
+2400 silver pairs; the rules leave **302** uncertain (87 same company, 215 different). Those go to each adjudicator with the packet the app would build. 46 carry red flags (the app asks the GC about those whatever the AI says). 937 s.
 
 Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, jev: `jev-latest` (Jev served by jev-1.13.0).
 
@@ -24,7 +24,7 @@ Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, jev: `jev-latest` (Jev served by
 
 Tokens: LLM 240,675 (in + out); Jev 379,359 input (≈ $0.0159 at list price; output is free).
 
-Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "Jev choice, tuned" uses the choice's P(same) instead: excluded at ≤ 0.2 in the sub's state and ≤ 0.06 in another, matched at ≥ 0.85.
+Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "Jev choice, tuned" is what the app does with Jev (`ssi.llm.jev.decision`): the choice's P(same), excluded at ≤ 0.2 in the sub's state and ≤ 0.06 in another, matched at ≥ 0.85.
 
 ## What the rules do with each pair type
 
@@ -101,9 +101,9 @@ Matched if P(same) ≥ t: same-company records matched / different-company recor
 
 | Label | Search (A) | Candidate (B) | Answer |
 |---|---|---|---|
-| same | PAR ELECTRICAL CONTRACTORS (KANSAS CITY, MO) | PAR ELECTRICAL CONTRACTORS (VACAVILLE, CA) | P(same) 0.04, excluded at ≤ 0.06 |
-| same | CAMP CONSTRUCTION SERVICES (HOUSTON, TX) | CAMP ROOFING (HOUSTON, TX) | P(same) 0.04, excluded at ≤ 0.2 |
-| same | NVR (HUNTERSVILLE, NC) | NVR (LANHAM, MD) | P(same) 0.04, excluded at ≤ 0.06 |
+| same | PAR ELECTRICAL CONTRACTORS (KANSAS CITY, MO) | PAR ELECTRICAL CONTRACTORS (VACAVILLE, CA) | different (P(same) 0.04) |
+| same | CAMP CONSTRUCTION SERVICES (HOUSTON, TX) | CAMP ROOFING (HOUSTON, TX) | different (P(same) 0.04) |
+| same | NVR (HUNTERSVILLE, NC) | NVR (LANHAM, MD) | different (P(same) 0.04) |
 
 ## Jev yes/no: disagreements with the silver label (22, first 15)
 

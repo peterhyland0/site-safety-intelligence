@@ -58,7 +58,9 @@ def uncertain_cases(pairs: list[dict]) -> tuple[list[dict], dict]:
     """The pairs whose B the rules leave uncertain, each with its packet. Also counts B's rule outcome by pair
     type, with the rule that matched it."""
     cases, outcomes = [], {}
-    for p in pairs:
+    for i, p in enumerate(pairs, 1):
+        if i % 400 == 0 or i == len(pairs):
+            print(f"  rules: {i}/{len(pairs)} pairs, {len(cases)} uncertain", flush=True)
         res = M.match(p["query_name"], p["query_city"], p["query_state"], None)
         q = res["query"]
         by_key = {x["row"]["establishment_key"]: x for x in res["decisions"]}

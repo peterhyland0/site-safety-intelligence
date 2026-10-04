@@ -1,10 +1,11 @@
 {
   "seed": 7,
   "held_out": false,
-  "tuned_exclude": [
-    0.2,
-    0.06
-  ],
+  "jev_thresholds": {
+    "match": 0.85,
+    "same_state": 0.2,
+    "other_state": 0.06
+  },
   "pairs": 2400,
   "rule_outcomes": {
     "same_name_other_address": {
@@ -195,7 +196,7 @@
     "jev_input_tokens": 379359
   },
   "errors": [],
-  "seconds": 1,
+  "seconds": 937,
   "cases": [
     {
       "a": "TURNER CONSTRUCTION",

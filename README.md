@@ -235,7 +235,7 @@ Both are served from Modal as OpenAI-compatible APIs.
 **The AI adjudicator** ([ssi/llm/adjudicator.py](ssi/llm/adjudicator.py), [ssi/llm/jev.py](ssi/llm/jev.py)):
 - **Who decides:** Jev for groups without red flags, the LLM for red-flagged ones (and for everything with `SSI_ADJUDICATOR=llm` or no Jev key). On a held-out sample Jev excluded 130 lookalikes against the LLM's 110, with 9 wrong exclusions against 13 and no wrong merges against 2 ([why and how it was tested](docs/adjudicator.md)).
 - **What it sees:** identity evidence only (names, addresses, years, trade codes, the GC's input). **Never safety history**, so a fatality can't bias whether a record is judged "the same company".
-- **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence ("Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records").
+- **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence, each fact for or against the same company ("Against: Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records. For: same trade code (2371).").
 - **Mapping:** LLM "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible. Jev's P(same) ≥0.85 → matched; ≤0.20 → excluded (≤0.06 for a record outside the sub's state, where a national firm's own branches are); otherwise possible.
 - **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
@@ -281,7 +281,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 281 test cases:
+**Tests:** `uv run pytest`, 282 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds

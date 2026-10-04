@@ -104,9 +104,15 @@ Development sample ([full table](../eval/adjudication/results.md)):
 ## What it gives up, and how that's handled
 
 - **No written reason.** Jev's reason line is written in code from the evidence, so every fact in it is true by
-  construction. For example:
-  > Likely a different company: Jev puts the chance it's the same company at 4%. Las Vegas, NV, outside the sub's
-  > state (OK); no address in common with the sub's matched records; same trade code (2371).
+  construction. Each fact is listed as for or against the same company, the side that agrees with the verdict
+  first, so a fact that points the other way reads as weighed rather than as a contradiction. For example:
+  > Likely a different company: Jev puts the chance it's the same company at 4%. Against: Las Vegas, NV, outside
+  > the sub's state (OK); no address in common with the sub's matched records. For: same trade code (2371).
+
+  A shared trade code is real but weak evidence: in the held-out sample 80% of same-company pairs shared the sub's
+  code, but so did 34% of the lookalikes, and the pairs that shared one split 59 same, 58 different. (This
+  example is NPL Construction, a national firm: the "for" side was right, and it's one of the wrong exclusions
+  below.)
 - **Red-flagged groups stay on DeepSeek.** They're the one place a person reads the AI's reasoning to decide,
   about 1 group in 10 (23 of 246 held out). Without an LLM configured, Jev takes them too, with the same code-written
   reason.

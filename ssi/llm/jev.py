@@ -127,25 +127,34 @@ def decision(p: float, same_state: bool | None) -> dict:
 
 
 def rationale(p: float, verdict: str, facts: dict) -> str:
-    """The reason line, written from the packet's evidence (adjudicate.packet_facts), never from the model."""
+    """The reason line, written from the packet's evidence (adjudicate.packet_facts), never from the model. Each fact
+    is sorted by which way it points, for or against the same company, so one that cuts against the verdict reads
+    as weighed, not as a contradiction. The side that agrees with the verdict comes first."""
     lead = {"same": "Likely the same company", "different": "Likely a different company"}.get(verdict, "Unclear")
-    parts = []
+    pro, con, where = [], [], ""
     place = facts.get("place")
-    if facts.get("same_state") is False and place:
-        parts.append(f"{place}, outside the sub's state" + (f" ({facts['sub_state']})" if facts.get("sub_state") else ""))
-    elif facts.get("same_state") and place:
-        parts.append(f"{place}, in the sub's state")
+    if place and facts.get("same_state") is False:
+        con.append(f"{place}, outside the sub's state" + (f" ({facts['sub_state']})" if facts.get("sub_state") else ""))
+    elif place and facts.get("same_state"):
+        pro.append(f"{place}, in the sub's state")
     elif place:
-        parts.append(place)
+        where = f" In {place}."  # the sub's state isn't known: no side
     if facts.get("anchor_addresses"):
-        parts.append("shares an address with the sub's matched records" if facts.get("shared_address")
-                     else "no address in common with the sub's matched records")
-    trade, theirs = facts.get("trade"), facts.get("anchor_trades") or []
-    if trade and theirs:
-        parts.append(f"same trade code ({trade})" if trade.split(", ") == theirs
-                     else f"trade code {trade}, the matched records' {', '.join(theirs)}")
-    text = f"{lead}: Jev puts the chance it's the same company at {round(p * 100)}%."
-    if not parts:
-        return text
-    tail = "; ".join(parts)
-    return f"{text} {tail[0].upper()}{tail[1:]}."
+        if facts.get("shared_address"):
+            pro.append("shares an address with the sub's matched records")
+        else:
+            con.append("no address in common with the sub's matched records")
+    trades, theirs = (facts.get("trade") or "").split(", "), facts.get("anchor_trades") or []
+    common = [t for t in trades if t in theirs]
+    if trades != [""] and theirs:
+        if trades == theirs:
+            pro.append(f"same trade code ({', '.join(trades)})")
+        elif common:
+            pro.append(f"shares a trade code ({', '.join(common)})")
+        else:
+            con.append(f"trade code {', '.join(trades)}, the matched records' {', '.join(theirs)}")
+    sides = [("For", pro), ("Against", con)]
+    if verdict == "different":
+        sides.reverse()
+    return (f"{lead}: Jev puts the chance it's the same company at {round(p * 100)}%.{where}"
+            + "".join(f" {label}: {'; '.join(items)}." for label, items in sides if items))
