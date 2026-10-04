@@ -69,7 +69,7 @@ export function Layout() {
           <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
             {/* On phones the Demo pill sits under the name so it costs no width; under 360px only the mark shows. */}
             <Link to="/" className="mr-auto flex min-h-10 min-w-0 items-center gap-2.5 text-ink">
-              <LogoMark size={32} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
+              <LogoMark size={32} className="shrink-0" />
               <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                 <span className="max-w-full truncate text-[17px] leading-tight font-bold tracking-[-0.02em] max-[359px]:sr-only">
                   Site Safety<span className="hidden font-medium text-muted sm:inline"> Intelligence</span>

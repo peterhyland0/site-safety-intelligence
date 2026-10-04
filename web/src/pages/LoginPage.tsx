@@ -36,7 +36,7 @@ export function LoginPage({ ended, onSignedIn }: { ended: boolean; onSignedIn: (
   return (
     <main id="main" className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
       <div className="mb-6 flex items-center gap-2.5 text-ink">
-        <LogoMark size={36} className="shrink-0 rounded-lg dark:ring-1 dark:ring-white/10" />
+        <LogoMark size={36} className="shrink-0" />
         <span className="text-[19px] leading-tight font-bold tracking-[-0.02em]">Site Safety Intelligence</span>
       </div>
       <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4 p-6" aria-labelledby="sign-in-title">
