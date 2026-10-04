@@ -233,6 +233,15 @@ def update_project(project_id: str, body: S.ProjectUpdate):
     return _project_model(_project(project_id))
 
 
+@app.delete("/api/projects/{project_id}")
+def delete_project(project_id: str):
+    """Its subs, match decisions, questions and chats go with it (ON DELETE CASCADE); the question log keeps its rows."""
+    _project(project_id)
+    with pg.conn() as c:
+        c.execute("DELETE FROM app.project WHERE project_id = %s", [project_id])
+    return {"ok": True}
+
+
 @app.post("/api/projects/{project_id}/subs", response_model=list[S.SubCard])
 def add_subs(project_id: str, body: S.SubsCreate):
     """All or nothing: the subs and their rule matches are written in one transaction, so a failure part way never

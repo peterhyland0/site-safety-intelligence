@@ -325,6 +325,16 @@ const routes: Route[] = [
     },
   },
   {
+    method: "DELETE",
+    pattern: /^\/api\/projects\/([^/]+)$/,
+    run: (m) => {
+      const p = findProject(decodeURIComponent(m[1]));
+      projects.splice(projects.indexOf(p), 1);
+      for (let i = chats.length - 1; i >= 0; i--) if (chats[i].project_id === p.project_id) chats.splice(i, 1);
+      return { ok: true };
+    },
+  },
+  {
     method: "POST",
     pattern: /^\/api\/projects\/([^/]+)\/subs$/,
     run: async (m, body) => {

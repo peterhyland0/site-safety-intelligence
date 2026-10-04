@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   updateProject: vi.fn(),
   addSubs: vi.fn(),
   adjudicate: vi.fn(),
+  deleteProject: vi.fn(),
   health: vi.fn(),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
 }));
@@ -45,6 +46,7 @@ function renderPage() {
     <MemoryRouter initialEntries={["/projects/demo-riverside"]}>
       <Routes>
         <Route path="/projects/:projectId" element={<ProjectPage />} />
+        <Route path="/" element={<h1>All projects</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -178,6 +180,25 @@ describe("GC scorecard", () => {
       ],
       false,
     );
+  });
+
+  it("deletes the project only after the GC confirms, then goes back to all projects", async () => {
+    const user = userEvent.setup();
+    api.getProject.mockResolvedValue(detail());
+    api.adjudicate.mockImplementation(() => new Promise(() => {}));
+    api.deleteProject.mockResolvedValue({ ok: true });
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal("confirm", confirm);
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Delete project" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Delete Riverside Medical Office Building?"));
+    expect(api.deleteProject).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
+    await user.click(screen.getByRole("button", { name: "Delete project" }));
+    expect(api.deleteProject).toHaveBeenCalledWith("demo-riverside");
+    expect(await screen.findByRole("heading", { name: "All projects" })).toBeInTheDocument();
   });
 
   it("shows an access message on 401", async () => {

@@ -122,3 +122,19 @@ def test_long_titles_blank_questions_and_bad_ids(client, make_user, projects, fo
     assert c.get("/api/chats/not-a-uuid").status_code == 404
     assert c.get("/api/projects/not-a-uuid/chats").status_code == 404
     assert c.post("/api/projects/00000000-0000-0000-0000-000000000000/chats", json={"question": "Hi"}).status_code == 404
+
+
+def test_deleting_a_project_deletes_its_subs_and_chats_and_no_other_projects(client, make_user, projects, foreman):
+    c = client(signed_in_as=make_user())
+    gone, kept = (c.post(f"/api/projects/{p}/chats", json={"question": "Who has open cases?"}).json()["chat"]["chat_id"]
+                  for p in projects)
+    with pg.conn() as conn:
+        sub_id = conn.execute("INSERT INTO app.project_sub (project_id, entered_name) VALUES (%s, 'Acme Roofing') "
+                              "RETURNING sub_id", [projects[0]]).fetchone()["sub_id"]
+    assert c.delete(f"/api/projects/{projects[0]}").json() == {"ok": True}
+    assert c.delete(f"/api/projects/{projects[0]}").status_code == 404
+    assert c.get(f"/api/chats/{gone}").status_code == 404
+    assert c.get(f"/api/chats/{kept}").status_code == 200
+    with pg.conn() as conn:
+        assert not conn.execute("SELECT 1 FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone()
+        assert conn.execute("SELECT 1 FROM app.project WHERE project_id = %s", [projects[1]]).fetchone()

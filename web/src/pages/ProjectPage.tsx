@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { api, errorMessage, MOCK_MODE } from "../api/client";
 import type { LookbackYears, ProjectDetail, SubCard as SubCardT, Verdict } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AddSubsBox } from "../components/AddSubsBox";
 import { AskForemanButton } from "../components/AskForemanButton";
-import { IconDownload, IconPlus } from "../components/Icons";
+import { IconDownload, IconPlus, IconTrash } from "../components/Icons";
 import { LookbackToggle } from "../components/LookbackToggle";
 import { SubCard } from "../components/SubCard";
 import { BackLink, ErrorBanner, InlineError, Loading } from "../components/ui";
 import type { WebCheckSettingsPatch } from "../components/WebCheck";
 import { VerdictIcon } from "../components/VerdictChip";
-import { rememberProjectName } from "../lib/chatPanel";
+import { rememberOpenChat, rememberProjectName, useChatPanel } from "../lib/chatPanel";
 import { formatDate, plural } from "../lib/format";
 import { US_STATES } from "../lib/parseSubs";
 import { useAdjudication } from "../lib/useAdjudication";
@@ -192,6 +192,38 @@ export function ProjectPage() {
           </p>
         </section>
       ) : null}
+
+      <DeleteProject projectId={project.project_id} name={project.name} />
+    </div>
+  );
+}
+
+function DeleteProject({ projectId, name }: { projectId: string; name: string }) {
+  const navigate = useNavigate();
+  const chatPanel = useChatPanel();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function remove() {
+    if (!window.confirm(`Delete ${name}? Its subs, match decisions and chats will be lost. This can't be undone.`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.deleteProject(projectId);
+      rememberOpenChat(projectId, null);
+      if (chatPanel?.openProjectId === projectId) chatPanel.close();
+      navigate("/");
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="border-t border-line pt-4">
+      <InlineError message={error} />
+      <button type="button" className="btn btn-ghost btn-sm text-high-fg" onClick={remove} disabled={busy}>
+        <IconTrash size={16} />
+        {busy ? "Deleting…" : "Delete project"}
+      </button>
     </div>
   );
 }

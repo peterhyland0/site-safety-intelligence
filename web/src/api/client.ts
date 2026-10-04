@@ -184,6 +184,8 @@ export const api = {
   /** Returns the updated Project; callers refetch the detail because the lookback re-scores every card. */
   updateProject: (projectId: string, body: ProjectUpdate) =>
     request<Project>("PATCH", `/api/projects/${enc(projectId)}`, body),
+  /** Deletes the project with its subs, match decisions and chats. */
+  deleteProject: (projectId: string) => request<{ ok: boolean }>("DELETE", `/api/projects/${enc(projectId)}`),
 
   addSubs: (projectId: string, rows: SubInput[], lookupProfiles = false) =>
     request<SubCard[]>("POST", `/api/projects/${enc(projectId)}/subs`, { rows, lookup_profiles: lookupProfiles }),
