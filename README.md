@@ -288,7 +288,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 
 **Name distinctiveness** is measured from the data, not hand-listed: how many distinct full names share the name's core.
 - `BRASFIELD GORRIE` has 3, so it's distinctive.
-- `CLARK` has 112 and `ABC` has 114, so they're generic.
+- `CLARK` has 34 and `ABC` has 32, so they're generic.
 
 A sub's other names (the legal name and DBA it was entered with, names on its licence) are rated on their own, so a generic DBA can't borrow a distinctive legal name's rarity: a test sub "… Holdings LLC dba Quality Roofing" in Nashville once auto-matched 15 QUALITY ROOFING records in 11 states.
 

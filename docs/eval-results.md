@@ -126,7 +126,7 @@ right on real records is in [§3.6](#36-each-rule-on-its-own).
 
 | Rule | Bucket | Why it's there |
 |---|---|---|
-| **Distinctiveness** (used by M1, M3) | | Measured from the data, not hand-listed: the number of distinct full names sharing a core. `BRASFIELD GORRIE` has 3 (distinctive); `CLARK` 112 and `ABC` 114 (generic). Generic names need a city match to auto-match |
+| **Distinctiveness** (used by M1, M3) | | Measured from the data, not hand-listed: the number of distinct full names sharing a core. `BRASFIELD GORRIE` has 3 (distinctive); `CLARK` 34 and `ABC` 32 (generic). Generic names need a city match to auto-match |
 | **M1** same full name, same state | Matched | The baseline: on the development sample it made 142 of the 285 auto-matches of same-company, same-name pairs (M3 made the other 143) |
 | **M1b** differs only by descriptor words | Matched | The first eval run (above): descriptors may differ, trade words may not |
 | **M2** at a matched address, name differs by spelling | Matched | Typos at the company's own address (`GORIE`, `VAUGN`). The [name-matching audit](name-matching-audit.md) collected all 1,990 differently named pairs sharing a non-shared building: mostly real typos, but also the cases J1, U3 and P2 now carve out |
