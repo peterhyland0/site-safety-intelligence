@@ -1,10 +1,17 @@
 """Fixtures for tests that sign in through the API. They write to the app database, so the tests that use them
 carry `local_db` and run only against a local Postgres."""
+import os
 import uuid
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 import pytest
+
+# Tests write to a database of their own, never the one .env names (often the deployed app's, which made every test
+# that writes skip): SSI_TEST_DATABASE_URL, by default the ssi_test database `make setup` creates. Set before ssi.config
+# is imported, which reads DATABASE_URL once (load_dotenv doesn't override it).
+os.environ["DATABASE_URL"] = os.environ.get("SSI_TEST_DATABASE_URL", "postgresql://localhost:5432/ssi_test")
+os.environ["LANGSMITH_TRACING"] = "false"  # the fake models' runs aren't sent to LangSmith (or counted on its plan)
 
 from ssi import config
 
