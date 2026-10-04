@@ -171,6 +171,53 @@ def test_records_match_a_listed_building_or_only_its_city():
     assert got == {"a": "address", "b": "city", "c": "city", "e": "city"}
 
 
+# Allison-Smith Company (Smyrna GA) lists its Charlotte office on its own site; DUKE ENERGY FLORIDA is at 525 S TRYON ST
+CHARLOTTE = {"address": "525 North Tryon Street, Suite 1600", "addr_key": "525 TRYON", "city": "Charlotte",
+             "state": "NC", "zip": "28202", "kind": "office", "source_url": "https://allisonsmith.com/locations/",
+             "quote": "Charlotte 525 North Tryon Street, Suite 1600 Charlotte, NC 28202", "own_site": True}
+ALLISON_SMITH = {"found": True, "name": "Allison-Smith Company, LLC", "website": "allisonsmith.com",
+                 "domain": "allisonsmith.com", "locations": [CHARLOTTE]}
+
+
+def test_the_other_half_of_a_street_is_not_the_listed_building():
+    import duckdb
+
+    from ssi.cleaning import install_macros
+    con = duckdb.connect()
+    install_macros(con)
+    # the build keys both as one building: the directional is dropped
+    keys = {con.execute("SELECT addr_key(?)", [a]).fetchone()[0] for a in (CHARLOTTE["address"], "525 S TRYON ST")}
+    assert keys == {"525 TRYON"}
+    at = {"name": "DUKE ENERGY FLORIDA", "city": "CHARLOTTE", "state": "NC", "zip5": "28202", "addr_key": "525 TRYON",
+          "n": 4}
+    rows = [est("s", address="525 S TRYON ST", **at), est("n", address="525 N TRYON ST", **at),
+            est("bare", address="525 TRYON ST STE 300", **at)]
+    got = {k: v["level"] for k, v in ADJ.listed_records(ALLISON_SMITH, rows).items()}
+    # South Tryon is only in the listed city; North Tryon, or a Tryon with no side written, is the listed building
+    assert got == {"s": "city", "n": "address", "bare": "address"}
+
+
+@pytest.mark.parametrize("address,side", [
+    ("525 North Tryon Street, Suite 1600", {"N"}), ("525 S TRYON ST", {"S"}), ("525 TRYON ST", set()),
+    ("7900 WESTPARK DR", {"W"}), ("525 WEST ST", {"W"}), ("2455 PACES FERRY RD SE", {"S", "E"}),
+    ("1278 PARK AVE S W", {"S", "W"}), ("1402 LAKE TAPPS PKWY E STE 104", {"E"}), ("3021 7th Ave South", {"S"}),
+    ("1B E DUNDEE QUARTER DR UNIT 203", {"E"}), ("100 N 5TH ST S", set()), ("PO BOX 12", set()), (None, set())])
+def test_the_half_of_the_street_an_address_is_on(address, side):
+    from ssi.matching.rules import street_side
+    assert street_side(address) == side
+
+
+@pytest.mark.parametrize("a,b,opposite", [
+    ("525 North Tryon Street", "525 S TRYON ST", True), ("1001 PROSPERITY AVE NE", "1001 PROSPERITY AVE SE", True),
+    ("1214 5TH ST NE", "1214 5TH ST NW", True), ("100 N 7TH AVE", "100 7TH AVE S", True),
+    # one building written two ways in OSHA's data, and an address with no side, aren't opposite
+    ("312 NE LOOP 289", "312 N LOOP 289", False), ("16798 N BERNARDO DR", "16798 W BERNARDO DR", False),
+    ("525 N TRYON ST", "525 TRYON ST", False), ("525 N TRYON ST", "525 NORTH TRYON STREET", False)])
+def test_opposite_halves_of_a_street(a, b, opposite):
+    from ssi.matching.rules import opposite_sides
+    assert opposite_sides(a, b) is opposite and opposite_sides(b, a) is opposite
+
+
 def test_the_profile_question_names_records_red_flags_and_the_page():
     held = {"a": {"loc": {**PROFILE["locations"][0], "level": "address"}, "est": est("a"), "new": False},
             "v": {"loc": {**PROFILE["locations"][0], "level": "address"}, "est": est("v", name="TINDALL CORPORATION VIRGINIA DIVISION", n=2), "new": True},
@@ -354,6 +401,20 @@ def test_the_subs_own_name_at_an_address_on_its_own_site_is_matched_not_asked(su
     ADJ.apply_profile(sub, PROFILE_HQ)
     r, qs = _state(sub["sub_id"])
     assert r["own2"]["bucket"] == "matched" and all("own2" not in x["establishment_keys"] for x in qs)
+
+
+@local_db
+def test_a_record_on_the_other_half_of_the_street_isnt_asked_about(sub, warehouse_stub, monkeypatch):
+    from ssi.matching import candidates as C
+    at = {"city": "CHARLOTTE", "state": "NC", "zip5": "28202", "addr_key": "525 TRYON", "n": 4}
+    found = [est("south", name="DUKE ENERGY FLORIDA", address="525 S TRYON ST", **at),  # the build's key: one building
+             est("north", name="ALLISON SMITH", address="525 N TRYON ST STE 1600", **at)]
+    monkeypatch.setattr(C, "at_listed_addresses",
+                        lambda locs, exclude, limit=20: [e for e in found if e["establishment_key"] not in exclude])
+    assert ADJ.apply_profile(sub, ALLISON_SMITH)["held"] == 1
+    rows, (q,) = _state(sub["sub_id"])
+    assert "south" not in rows and rows["north"]["method"] == "profile"
+    assert q["establishment_keys"] == ["north"] and "DUKE" not in q["text"]
 
 
 @local_db

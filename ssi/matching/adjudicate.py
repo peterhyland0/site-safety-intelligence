@@ -19,7 +19,7 @@ from contextlib import contextmanager
 
 from ssi import config
 from ssi.matching import candidates as C
-from ssi.matching.rules import norm_city
+from ssi.matching.rules import norm_city, opposite_sides
 from ssi.store import pg, warehouse
 
 # llm(packet) -> {"decision": same|different|unsure, "confidence": float, "rationale": str} or None
@@ -225,7 +225,8 @@ PROFILE_LIST_LIMIT = 8  # records named in a question's text (all are listed bel
 
 def listed_records(profile: dict, rows: list[dict]) -> dict[str, dict]:
     """{establishment_key: location} for warehouse rows at a location the profile lists: the same building
-    (addr_key, and zip3 when both have a zip) or, weaker, the same city and state. A building beats a city."""
+    (addr_key, and zip3 when both have a zip, and not the other half of the street: 525 North Tryon isn't 525 S TRYON
+    ST) or, weaker, the same city and state. A building beats a city."""
     out = {}
     for r in rows:
         best = None
@@ -233,7 +234,8 @@ def listed_records(profile: dict, rows: list[dict]) -> dict[str, dict]:
             if loc["state"] != (r.get("state") or ""):
                 continue
             if loc.get("addr_key") and r.get("addr_key") == loc["addr_key"] and (
-                    not loc.get("zip") or not r.get("zip5") or loc["zip"][:3] == r["zip5"][:3]):
+                    not loc.get("zip") or not r.get("zip5") or loc["zip"][:3] == r["zip5"][:3]) \
+                    and not opposite_sides(loc.get("address"), r.get("address")):
                 best = {**loc, "level": "address"}
                 break
             if best is None and norm_city(loc["city"]) == norm_city(r.get("city") or ""):

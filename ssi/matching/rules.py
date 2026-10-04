@@ -85,6 +85,45 @@ def norm_city(city: str | None) -> str:
     return "".join(ch for ch in c if ch.isalnum())
 
 
+_DIRECTIONS = {"N": "N", "S": "S", "E": "E", "W": "W", "NE": "NE", "NW": "NW", "SE": "SE", "SW": "SW",
+               "NORTH": "N", "SOUTH": "S", "EAST": "E", "WEST": "W", "NORTHEAST": "NE", "NORTHWEST": "NW",
+               "SOUTHEAST": "SE", "SOUTHWEST": "SW"}
+_STREET_TYPES = frozenset({"ST", "STREET", "AVE", "AVENUE", "RD", "ROAD", "DR", "DRIVE", "BLVD", "BOULEVARD", "HWY",
+                           "HIGHWAY", "PKWY", "PARKWAY", "LN", "LANE", "CT", "COURT", "PL", "PLACE", "CIR", "CIRCLE",
+                           "WAY", "TER", "TRL", "LOOP", "PIKE", "SQ", "PLZ"})
+# 7900 WESTPARK DR is 7900 WEST PARK DR: the addr_split_dir macro's rule
+_SPLIT_DIR = re.compile(r"(NORTH|SOUTH|EAST|WEST)([A-DF-Z][A-Z]{2,}|E[A-QS-Z][A-Z]+)")
+
+
+def street_side(address: str | None) -> frozenset[str]:
+    """The compass letters an address gives its half of the street: before the street (525 N TRYON ST, 7900 WESTPARK
+    DR) or after its type (2455 PACES FERRY RD SE, 1278 PARK AVE S W). The addr_key macro drops them, so 525 NORTH
+    TRYON and 525 S TRYON share a key. Empty when none is written, or the address contradicts itself."""
+    w = re.sub(r"[^A-Z0-9 ]", " ", (address or "").upper()).split()
+    if len(w) < 3 or not re.fullmatch(r"\d+[A-Z]?", w[0]):
+        return frozenset()
+    side, street = "", 1
+    if w[1] in _DIRECTIONS:  # as addr_key reads it: 525 WEST ST is W, on a street called ST
+        side, street = _DIRECTIONS[w[1]], 2
+    elif m := _SPLIT_DIR.fullmatch(w[1]):
+        side = m.group(1)[0]
+    typ = next((i for i in range(street + 1, len(w)) if w[i] in _STREET_TYPES), None)
+    for t in w[typ + 1:typ + 3] if typ else []:
+        if t not in _DIRECTIONS:
+            break
+        side += _DIRECTIONS[t]
+    letters = frozenset(side)
+    return frozenset() if {"N", "S"} <= letters or {"E", "W"} <= letters else letters
+
+
+def opposite_sides(a: str | None, b: str | None) -> bool:
+    """Two addresses on opposite halves of a street, so not one building though they share an address key: one says
+    N and the other S, or E and W. Not N against NE or E: OSHA's data writes one building both ways (312 NE LOOP 289,
+    312 N LOOP 289; 16798 N and W BERNARDO DR, Swinerton's San Diego office)."""
+    x, y = street_side(a), street_side(b)
+    return any((p in x and q in y) or (q in x and p in y) for p, q in (("N", "S"), ("E", "W")))
+
+
 def tokens(s: str | None) -> list[str]:
     return [t for t in (s or "").split(" ") if t]
 
