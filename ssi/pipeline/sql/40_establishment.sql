@@ -48,7 +48,8 @@ SELECT b.*,
        sibling_suffix(b.clean_name) AS sibling_suffix
 FROM base b LEFT JOIN naics n USING (establishment_key) LEFT JOIN sic s USING (establishment_key);
 
--- membership is stored so a later rule change can remap old keys to new ones by inspection overlap
+-- membership: when a cleaning-rule change gives records new keys, scripts/rematch.py moves the GC's and the AI's
+-- decisions to the keys that now hold their inspections (ssi/matching/remap.py)
 CREATE OR REPLACE TABLE wh.entity.establishment_member AS
 SELECT establishment_key, activity_nr FROM wh.osha.inspection;
 

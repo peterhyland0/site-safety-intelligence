@@ -215,13 +215,15 @@ def _evidence(r: dict, d, q: Query) -> dict:
 
 
 def persist(sub_id: str, result: dict) -> None:
-    """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept."""
+    """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept. Each row stores
+    its record's inspections, so the decision can follow them if a cleaning-rule change moves the key (remap.py)."""
     q: Query = result["query"]
     build_id = warehouse.meta()["build_id"]
     decs = result["decisions"]
     matched = [x for x in decs if x["decision"].bucket == MATCHED]
     uncertain = sorted([x for x in decs if x["decision"].bucket == UNCERTAIN], key=lambda x: -(x["row"].get("sim") or 0))[:UNCERTAIN_KEEP]
     excluded = sorted([x for x in decs if x["decision"].bucket == EXCLUDED], key=lambda x: -(x["row"].get("sim") or 0))[:EXCLUDED_KEEP]
+    nrs = C.members([x["row"]["establishment_key"] for x in matched + uncertain + excluded])
     with pg.conn() as c:
         c.execute("DELETE FROM app.sub_match WHERE sub_id = %s AND method = 'rule'", [sub_id])
         kept = {r["establishment_key"] for r in c.execute(
@@ -233,10 +235,10 @@ def persist(sub_id: str, result: dict) -> None:
                     continue
                 c.execute(
                     """INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale,
-                                                  evidence, needs_adjudication, decided_by, build_id)
-                       VALUES (%s, %s, %s, 'rule', %s, %s, %s, %s, 'rules', %s)""",
+                                                  evidence, needs_adjudication, decided_by, build_id, activity_nrs)
+                       VALUES (%s, %s, %s, 'rule', %s, %s, %s, %s, 'rules', %s, %s)""",
                     [sub_id, r["establishment_key"], bucket, d.rule_id, d.reason,
-                     json.dumps(_evidence(r, d, q), default=str), needs, build_id])
+                     json.dumps(_evidence(r, d, q), default=str), needs, build_id, nrs.get(r["establishment_key"])])
         c.execute("UPDATE app.project_sub SET matched_build = %s, adjudicated_at = NULL WHERE sub_id = %s",
                   [build_id, sub_id])
         if result.get("note"):

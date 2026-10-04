@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field, StringConstraints
 
 Verdict = Literal["high", "review", "no_record", "no_recent", "no_flags"]
 Bucket = Literal["matched", "possible", "excluded"]
-Method = Literal["rule", "llm", "gc", "llm_rejected", "profile"]  # profile: held for the GC by a company profile
+# profile: held for the GC by a company profile; remap: held for the GC, whose answers on records a rebuild grouped
+# as one disagree (ssi/matching/remap.py)
+Method = Literal["rule", "llm", "gc", "llm_rejected", "profile", "remap"]
 Severity = Literal["high", "review", "info"]
 MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
@@ -150,7 +152,9 @@ class MatchQuestion(BaseModel):
     establishment_keys: list[str]
     ai_suggestion: Literal["same", "different", "unsure"] | None
     ai_rationale: str | None
-    kind: Literal["red_flag", "profile"] = "red_flag"  # profile: from the locations a company profile lists
+    # profile: from the locations a company profile lists; remap: about records a rebuild grouped as one that the GC
+    # answered differently
+    kind: Literal["red_flag", "profile", "remap"] = "red_flag"
     sources: list[ProfileSource] = []
 
 

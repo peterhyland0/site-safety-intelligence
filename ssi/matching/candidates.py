@@ -199,6 +199,17 @@ def red_flag_counts(keys: list[str]) -> dict[str, int]:
     return {r["establishment_key"]: r["n"] for r in rs}
 
 
+def members(keys: list[str]) -> dict[str, list[int]]:
+    """{establishment_key: its inspections' activity numbers}. OSHA's activity numbers never change, so a decision
+    stored with them can find its record again after a cleaning change gives the record a new key (remap.py)."""
+    if not keys:
+        return {}
+    rs = warehouse.rows("""SELECT establishment_key, list(activity_nr ORDER BY activity_nr) AS nrs
+                           FROM entity.establishment_member WHERE establishment_key IN (SELECT unnest(?::VARCHAR[]))
+                           GROUP BY 1""", [keys])
+    return {r["establishment_key"]: list(r["nrs"]) for r in rs}
+
+
 def establishments(keys: list[str]) -> list[dict]:
     if not keys:
         return []

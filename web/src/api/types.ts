@@ -9,8 +9,9 @@
 
 export type Verdict = "high" | "review" | "no_record" | "no_recent" | "no_flags";
 export type Bucket = "matched" | "possible" | "excluded";
-/** profile: held for the GC because the company's own website lists the record's location */
-export type Method = "rule" | "llm" | "gc" | "llm_rejected" | "profile";
+/** profile: held for the GC because the company's own website lists the record's location;
+ *  remap: held for the GC because its earlier answers on records a data update grouped as one disagree */
+export type Method = "rule" | "llm" | "gc" | "llm_rejected" | "profile" | "remap";
 export type Severity = "high" | "review" | "info";
 export type MatchStatus = "resolved" | "needs_adjudication" | "questions_pending";
 export type FatalityStatus =
@@ -196,8 +197,9 @@ export interface MatchQuestion {
   establishment_keys: string[];
   ai_suggestion: "same" | "different" | "unsure" | null;
   ai_rationale: string | null;
-  /** profile: asked from the locations a company profile lists (sources are its pages) */
-  kind?: "red_flag" | "profile";
+  /** profile: asked from the locations a company profile lists (sources are its pages);
+   *  remap: the GC answered differently about records a data update grouped as one */
+  kind?: "red_flag" | "profile" | "remap";
   sources?: ProfileSource[];
 }
 

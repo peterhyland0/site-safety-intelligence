@@ -363,7 +363,7 @@ def for_sub(sub: dict, project: dict, force: bool = False) -> dict | None:
         rows = c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s AND establishment_key <> '__note__'",
                          [sub_id]).fetchall()
     ctx = context(sub, sub.get("entered_state") or project.get("state"), rows)
-    wanted = (any(r["method"] != "gc" and r["bucket"] in ("possible", "excluded") for r in rows) if force
+    wanted = (any(r["method"] not in ("gc", "remap") and r["bucket"] in ("possible", "excluded") for r in rows) if force
               else any(r["needs_adjudication"] for r in rows))
     prof = None
     if available() and wanted and ctx.get("tier") != "person":

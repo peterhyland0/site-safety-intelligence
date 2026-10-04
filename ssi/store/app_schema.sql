@@ -1,6 +1,8 @@
 -- app: the GC's projects and decisions. The only layer that can't be rebuilt from OSHA files, so it
 -- lives in Postgres (transactional writes) and has NO foreign keys into the rebuildable warehouse:
--- establishment keys are stable hashes, and entity.key_remap repairs them if cleaning rules change.
+-- establishment keys are hashes of the cleaned values, stable while the cleaning rules are. When a rule change
+-- gives records new keys, scripts/rematch.py moves decisions to them by the inspections they share
+-- (ssi/matching/remap.py, from sub_match.activity_nrs).
 CREATE SCHEMA IF NOT EXISTS app;
 
 CREATE TABLE IF NOT EXISTS app.project (
@@ -31,7 +33,7 @@ CREATE TABLE IF NOT EXISTS app.sub_match (
   sub_id             uuid NOT NULL REFERENCES app.project_sub ON DELETE CASCADE,
   establishment_key  text NOT NULL,
   bucket             text NOT NULL CHECK (bucket IN ('matched', 'possible', 'excluded')),
-  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile')),
+  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap')),
   rule_id            text,
   confidence         real,
   rationale          text,
@@ -152,15 +154,21 @@ ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_status text;
 ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_id uuid;
 -- set while a request looks the sub's company up and adjudicates its records, so only one does at a time
 ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS adjudicating_since timestamptz;
--- 'profile' questions come from a company profile and carry the pages they quote
+-- 'profile' questions come from a company profile and carry the pages they quote; 'remap' ones ask about a record
+-- whose GC decisions disagree since a rebuild grouped them as one
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'red_flag';
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS sources jsonb;
--- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows
+-- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows.
+-- method 'remap': a record whose GC decisions disagree since a rebuild grouped them as one (ssi/matching/remap.py);
+-- possible until the GC answers its question, and kept on re-match too.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sub_match_method_check'
-                 AND pg_get_constraintdef(oid) LIKE '%profile%') THEN
+                 AND pg_get_constraintdef(oid) LIKE '%remap%') THEN
     ALTER TABLE app.sub_match DROP CONSTRAINT IF EXISTS sub_match_method_check;
     ALTER TABLE app.sub_match ADD CONSTRAINT sub_match_method_check
-      CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile'));
+      CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile', 'remap'));
   END IF;
 END $$;
+-- The record's inspections (OSHA activity numbers, which never change) when the row was written: when a cleaning-rule
+-- change gives the record a new key, the decision follows its inspections there (ssi/matching/remap.py)
+ALTER TABLE app.sub_match ADD COLUMN IF NOT EXISTS activity_nrs bigint[];

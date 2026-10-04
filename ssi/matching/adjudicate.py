@@ -241,20 +241,23 @@ def _write_holds(c, sub: dict, profile: dict, held: dict[str, dict], query: dict
     sub_id = str(sub["sub_id"])
     by = f"profile:{profile.get('model') or 'unknown'}"
     build_id = warehouse.meta()["build_id"]
+    nrs = C.members([k for k, h in held.items() if h["new"]])
     for k, h in held.items():
         loc = h["loc"]
         reason = (f"{'At an address' if loc['level'] == 'address' else 'In a city'} {profile['name']} lists on "
                   f"{_site(profile)} ({_place(loc)}); waiting for your answer")
         if h["new"]:
             c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
-                                                    needs_adjudication, decided_by, build_id)
-                         VALUES (%s, %s, 'possible', 'profile', 'PROFILE', %s, %s, false, %s, %s)
+                                                    needs_adjudication, decided_by, build_id, activity_nrs)
+                         VALUES (%s, %s, 'possible', 'profile', 'PROFILE', %s, %s, false, %s, %s, %s)
                          ON CONFLICT (sub_id, establishment_key) DO NOTHING""",
-                      [sub_id, k, reason, json.dumps(_evidence_for(h["est"], query, reason), default=str), by, build_id])
+                      [sub_id, k, reason, json.dumps(_evidence_for(h["est"], query, reason), default=str), by, build_id,
+                       nrs.get(k)])
         else:
             c.execute("""UPDATE app.sub_match SET bucket = 'possible', method = 'profile', rationale = %s, confidence = NULL,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
-                         WHERE sub_id = %s AND establishment_key = %s AND method <> 'gc'""", [reason, by, sub_id, k])
+                         WHERE sub_id = %s AND establishment_key = %s AND method NOT IN ('gc', 'remap')""",
+                      [reason, by, sub_id, k])
 
 
 def _ask(c, sub_id: str, questions: list[dict], open_keys: set[str]) -> int:
@@ -283,7 +286,7 @@ def apply_profile(sub: dict, profile: dict) -> dict:
     if not profile or not profile.get("locations"):
         return stats
     with pg.conn() as c:
-        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND method <> 'gc'
+        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND method NOT IN ('gc', 'remap')
                             AND bucket IN ('possible', 'excluded') AND establishment_key <> '__note__'""", [sub_id]).fetchall()
     held = _holds(sub_id, profile, rows)
     if not held:

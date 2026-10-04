@@ -203,6 +203,7 @@ def warehouse_stub(monkeypatch):
             "v": est("v", name="TINDALL CORPORATION VIRGINIA DIVISION", n=2)}
     monkeypatch.setattr(C, "establishments", lambda keys: [rows[k] for k in keys if k in rows])
     monkeypatch.setattr(C, "red_flag_counts", lambda keys: {"a": 2} if "a" in keys else {})
+    monkeypatch.setattr(C, "members", lambda keys: {k: [hash(k) % 1000] for k in keys if k in rows})
     monkeypatch.setattr(C, "at_listed_addresses", lambda locs, exclude, limit=20: [rows["v"]] if "v" not in exclude else [])
     monkeypatch.setattr(warehouse, "meta", lambda: {"build_id": "test"})
 
