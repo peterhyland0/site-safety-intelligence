@@ -2,7 +2,7 @@
 
 Seed 11: held out from the seed-7 development set (no shared pair or search), so Jev's tuned thresholds were fixed before this sample was drawn.
 
-1931 silver pairs; the rules leave **246** uncertain (74 same company, 172 different). Those go to each adjudicator with the packet the app would build. 23 carry red flags (the app asks the GC about those whatever the AI says). 803 s.
+1931 silver pairs; the rules leave **246** uncertain (74 same company, 172 different). Those go to each adjudicator with the packet the app would build. 23 carry red flags (the app asks the GC about those whatever the AI says). 745 s.
 
 Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, jev: `jev-latest` (Jev served by jev-1.13.0).
 
@@ -24,7 +24,7 @@ Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, jev: `jev-latest` (Jev served by
 
 Tokens: LLM 194,014 (in + out); Jev 307,191 input (≈ $0.0129 at list price; output is free).
 
-Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "Jev choice, tuned" uses the choice's P(same) instead: excluded at ≤ 0.2 in the sub's state and ≤ 0.06 in another, matched at ≥ 0.85.
+Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "Jev choice, tuned" is what the app does with Jev (`ssi.llm.jev.decision`): the choice's P(same), excluded at ≤ 0.2 in the sub's state and ≤ 0.06 in another, matched at ≥ 0.85.
 
 ## What the rules do with each pair type
 
@@ -106,15 +106,15 @@ Matched if P(same) ≥ t: same-company records matched / different-company recor
 
 | Label | Search (A) | Candidate (B) | Answer |
 |---|---|---|---|
-| same | NPL CONSTRUCTION (HOUSTON, PA) | NPL CONSTRUCTION (GLENDALE, AZ) | P(same) 0.05, excluded at ≤ 0.06 |
-| same | NPL CONSTRUCTION (TOPEKA, KS) | NPL CONSTRUCTION (LAS VEGAS, NV) | P(same) 0.03, excluded at ≤ 0.06 |
-| same | NPL CONSTRUCTION (CORTLAND, IL) | NPL CONSTRUCTION (LAS VEGAS, NV) | P(same) 0.04, excluded at ≤ 0.06 |
-| same | NPL CONSTRUCTION (WOODBRIDGE, CT) | NPL CONSTRUCTION (LAS VEGAS, NV) | P(same) 0.06, excluded at ≤ 0.06 |
-| same | NVR (HUNTERSVILLE, NC) | NVR (FREDERICK, MD) | P(same) 0.06, excluded at ≤ 0.06 |
-| same | NVR (HUNTERSVILLE, NC) | NVR (OWINGS MILLS, MD) | P(same) 0.04, excluded at ≤ 0.06 |
-| same | NPL CONSTRUCTION (EASTVALE, CA) | NPL CONSTRUCTION (LAS VEGAS, NV) | P(same) 0.06, excluded at ≤ 0.06 |
-| same | PAR ELECTRICAL CONTRACTORS (LENEXA, KS) | PAR ELECTRICAL CONTRACTORS (VACAVILLE, CA) | P(same) 0.05, excluded at ≤ 0.06 |
-| same | NPL CONSTRUCTION (EASTVALE, CA) | NPL CONSTRUCTION (HOUSTON, PA) | P(same) 0.02, excluded at ≤ 0.06 |
+| same | NPL CONSTRUCTION (HOUSTON, PA) | NPL CONSTRUCTION (GLENDALE, AZ) | different (P(same) 0.05) |
+| same | NPL CONSTRUCTION (TOPEKA, KS) | NPL CONSTRUCTION (LAS VEGAS, NV) | different (P(same) 0.03) |
+| same | NPL CONSTRUCTION (CORTLAND, IL) | NPL CONSTRUCTION (LAS VEGAS, NV) | different (P(same) 0.04) |
+| same | NPL CONSTRUCTION (WOODBRIDGE, CT) | NPL CONSTRUCTION (LAS VEGAS, NV) | different (P(same) 0.06) |
+| same | NVR (HUNTERSVILLE, NC) | NVR (FREDERICK, MD) | different (P(same) 0.06) |
+| same | NVR (HUNTERSVILLE, NC) | NVR (OWINGS MILLS, MD) | different (P(same) 0.04) |
+| same | NPL CONSTRUCTION (EASTVALE, CA) | NPL CONSTRUCTION (LAS VEGAS, NV) | different (P(same) 0.06) |
+| same | PAR ELECTRICAL CONTRACTORS (LENEXA, KS) | PAR ELECTRICAL CONTRACTORS (VACAVILLE, CA) | different (P(same) 0.05) |
+| same | NPL CONSTRUCTION (EASTVALE, CA) | NPL CONSTRUCTION (HOUSTON, PA) | different (P(same) 0.02) |
 
 ## Jev yes/no: disagreements with the silver label (26, first 15)
 

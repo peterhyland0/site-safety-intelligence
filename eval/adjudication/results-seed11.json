@@ -1,10 +1,11 @@
 {
   "seed": 11,
   "held_out": true,
-  "tuned_exclude": [
-    0.2,
-    0.06
-  ],
+  "jev_thresholds": {
+    "match": 0.85,
+    "same_state": 0.2,
+    "other_state": 0.06
+  },
   "pairs": 1931,
   "rule_outcomes": {
     "different_name": {
@@ -195,7 +196,7 @@
     "jev_input_tokens": 307191
   },
   "errors": [],
-  "seconds": 803,
+  "seconds": 745,
   "cases": [
     {
       "a": "ADI CONSTRUCTION",
