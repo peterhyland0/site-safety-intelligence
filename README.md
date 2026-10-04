@@ -25,6 +25,7 @@ Supporting docs:
 ---
 
 ## Contents
+0. [How it works](#how-it-works)
 1. [The database schema, and why it's structured this way](#1-the-database-schema-and-why-its-structured-this-way)
 2. [The data and its traps](#2-the-data-and-its-traps)
 3. [Matching subs to OSHA records](#3-matching-subs-to-osha-records)
@@ -35,6 +36,111 @@ Supporting docs:
 8. [Evaluation](#8-evaluation)
 9. [Running it](#9-running-it)
 10. [Assumptions, limitations, next steps](#10-assumptions-limitations-next-steps)
+
+---
+
+## How it works
+
+Four diagrams: the whole system, the data build, matching a sub, and answering. The sections below have each step's detail. Cylinders are stores; hexagons are AI or web steps.
+
+**The system.** A build turns public data into a read-only DuckDB warehouse. The API serves the app from it and keeps every human and AI decision in Postgres, the one store a rebuild can't touch.
+
+```mermaid
+flowchart TB
+  src["Public data<br/>OSHA enforcement · ITA 300A · WA/OR/CA licences"]
+  build["Data build (Modal job)<br/>ordered SQL steps + build checks"]
+  wh[("DuckDB warehouse<br/>read-only facts")]
+  web["Web app (React, on Vercel)<br/>GC scorecard · foreman chat"]
+  api["FastAPI on Modal<br/>matching · named queries · guards"]
+  pg[("Postgres<br/>matches, questions, chats")]
+  subgraph ai["AI services (optional: without keys the app runs rules-only)"]
+    jev{{"Jev<br/>match calls"}}
+    ds{{"DeepSeek V4.1 Flash<br/>red-flag matches, web reads"}}
+    glm{{"GLM 5.3<br/>foreman chat"}}
+    tav{{"Tavily<br/>web search"}}
+  end
+  src --> build --> wh
+  wh -- "copied to local disk on cold start" --> api
+  web <--> api
+  api <--> pg
+  api --> ai
+```
+
+**The data build** (§1, §2, §7). Each step fixes a trap in OSHA's data, and bad values are flagged, never deleted. Every build writes a new file, which goes live only if the error-level checks pass.
+
+```mermaid
+flowchart TB
+  dl["Download<br/>OSHA zips · WA and OR licences"]
+  scope["Load and scope<br/>construction firms, last 10 years"]
+  clean["Clean and type<br/>bad values flagged, never deleted"]
+  haz["Hazard map<br/>standard codes → 20 hazard categories"]
+  est["Establishments<br/>exact cleaned name + address + zip + state"]
+  enr["Enrich and roll up<br/>injury rates · licences · marts · red flags"]
+  chk{"24 build checks"}
+  stop["Build stops<br/>live data untouched"]
+  swap[("Pointer swap<br/>new warehouse goes live, old one kept")]
+  rem["scripts.rematch (after rule changes)<br/>decisions move to their new keys"]
+  dl --> scope --> clean --> haz --> est --> enr --> chk
+  chk -- "error" --> stop
+  chk -- "pass" --> swap
+  swap -.-> rem
+```
+
+**Matching a sub** (§3). The rules run as the sub is added; only uncertain records go further. No AI or web answer settles a red-flagged record in either direction: those always go to the GC.
+
+```mermaid
+flowchart TB
+  sub["GC adds a sub<br/>name, city, state (+ trade, licence #)"]
+  clean["Clean the name<br/>the build's own macros"]
+  cand["Candidates<br/>alias · name core · rare words · matched addresses"]
+  rules["Ordered rules<br/>each with a rule_id and a reason"]
+  m["Matched<br/>counted"]
+  u["Uncertain<br/>possible, not counted"]
+  x["Excluded<br/>lookalikes, collapsed"]
+  prof{{"Company profile (optional)<br/>the locations its own site lists"}}
+  adj{{"AI adjudicator<br/>identity evidence only, never safety history"}}
+  jev{{"Jev decides<br/>matched · excluded · possible"}}
+  webc{{"Web check (button, or auto)<br/>whose record is it?"}}
+  gc(["GC yes/no question<br/>the AI's or the web's lean as a suggestion"])
+  store[("app.sub_match in Postgres<br/>the GC's answer always wins")]
+  sub --> clean --> cand --> rules
+  rules --> m & u & x
+  u --> prof
+  prof -- "at a listed site" --> gc
+  prof -- "the rest" --> adj
+  adj -- "no red flag" --> jev
+  adj -- "red flag: DeepSeek's lean" --> gc
+  x -. "undecided" .-> webc
+  jev -. "still possible or excluded" .-> webc
+  webc -- "asks" --> gc
+  webc -. "auto-match on, no red flag" .-> store
+  m --> store
+  jev --> store
+  gc --> store
+```
+
+**Answering** (§4, §5). The scorecard and the foreman's chat run on the same named queries. The model never writes SQL, and code checks every answer before anyone sees it. While a sub has an open red-flag question, its verdict stays at Review and the foreman's tools return `needs_confirmation`.
+
+```mermaid
+flowchart TB
+  keys[("Matched records<br/>Postgres: the sub's establishment keys")]
+  mart[("Warehouse marts<br/>DuckDB: years, hazards, red flags, peers")]
+  q["Named queries<br/>one meaning per term, in both views"]
+  vr["Verdict rules<br/>every flag cites its inspections"]
+  sc["Scorecard<br/>five verdicts, worst first"]
+  ask["Foreman's question<br/>from a phone on site"]
+  fm{{"Foreman model (GLM 5.3)<br/>picks tools, never writes SQL"}}
+  guards["Checks in code<br/>grounding · inspection IDs"]
+  ans["Answer with sources<br/>coverage note added by code, saved to the person's chat"]
+  keys --> q
+  mart --> q
+  q --> vr --> sc
+  ask --> fm
+  fm -- "tool call" --> q
+  q -- "results" --> fm
+  fm -- "draft answer" --> guards
+  guards -- "pass (a failure gets one retry, then an answer built from the tool results)" --> ans
+```
 
 ---
 
