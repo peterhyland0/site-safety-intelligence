@@ -1,6 +1,6 @@
 # Matching rules, one at a time (silver labels from ITA EINs)
 
-2986 searches (general 1500, person 282, shared address 271, joint venture 93, branch or sibling 272, related facility 268, licence 300) on warehouse 20261004T171230Z: 140,473 records decided, 23,424 of them labelled; 7,842 graded after the cap of 3 per search, rule and bucket. 353 s.
+2989 searches (general 1500, person 282, shared address 272, joint venture 93, branch or sibling 274, related facility 268, licence 300) on warehouse 20261004T203138Z: 140,344 records decided, 23,421 of them labelled; 7,832 graded after the cap of 3 per search, rule and bucket. 415 s.
 
 The targeted pools oversample the cases their rules act on, so each share describes a rule where it acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a corporate family's divisions as different companies.
 
@@ -10,11 +10,11 @@ Share same = precision: the rest are records of another company counted in the s
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M1 | Same name, same state (distinctive, or the same city) | 899 | 1544 | 879 (547) | 875 | 4 (3) | 0.995 [0.99–1.0] | 0 of 4 reviewed |
-| M1b | Same distinctive core, differing only by descriptor words | 111 | 177 | 43 (21) | 19 | 24 (9) | 0.442 [0.3–0.59] | 0 of 24 reviewed |
-| M2 | At a matched address, the name differs only by spelling | 225 | 306 | 36 (26) | 24 | 12 (6) | 0.667 [0.5–0.8] | 0 of 12 reviewed |
-| M3 | Same distinctive name in another state | 403 | 3577 | 461 (120) | 359 | 102 (40) | 0.779 [0.74–0.81] | 0 of 102 reviewed |
-| L1 | Linked to the licence number entered | 93 | 126 | 114 (80) | 114 | 0 (0) | 1.0 [0.97–1.0] |  |
+| M1 | Same name, same state (distinctive, or the same city) | 894 | 1537 | 872 (543) | 868 | 4 (3) | 0.995 [0.99–1.0] | 0 of 4 reviewed |
+| M1b | Same distinctive core, differing only by descriptor words | 113 | 180 | 44 (21) | 20 | 24 (9) | 0.455 [0.32–0.6] | 0 of 24 reviewed |
+| M2 | At a matched address, the name differs only by spelling | 224 | 305 | 36 (26) | 24 | 12 (6) | 0.667 [0.5–0.8] | 0 of 12 reviewed |
+| M3 | Same distinctive name in another state | 407 | 3588 | 467 (120) | 365 | 102 (40) | 0.782 [0.74–0.82] | 0 of 102 reviewed |
+| L1 | Linked to the licence number entered | 92 | 125 | 113 (79) | 113 | 0 (0) | 1.0 [0.97–1.0] |  |
 
 ## Rules that exclude
 
@@ -22,9 +22,9 @@ Share same = the share wrongly excluded: the sub's own records hidden.
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| X1 | A different real word in the name | 2320 | 86165 | 3510 (1339) | 20 | 3490 (2939) | 0.006 [0.0–0.01] | 0 of 20 reviewed |
-| X3 | A common name with different words | 709 | 21478 | 1216 (476) | 1 | 1215 (1088) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
-| X4 | A common name in another state | 22 | 94 | 17 (7) | 10 | 7 (7) | 0.588 [0.36–0.78] | 0 of 10 reviewed |
+| X1 | A different real word in the name | 2315 | 86047 | 3494 (1334) | 18 | 3476 (2935) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
+| X3 | A common name with different words | 709 | 21318 | 1209 (473) | 1 | 1208 (1082) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
+| X4 | A common name in another state | 21 | 86 | 16 (6) | 10 | 6 (6) | 0.625 [0.39–0.82] | 0 of 10 reviewed |
 | X5 | A person's name in another city or state | 17 | 23 | 0 (0) | 0 | 0 (0) |  |  |
 
 ## Rules that hold records back
@@ -33,19 +33,20 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 62 | 110 | 24 (15) | 14 | 10 (10) | 0.583 [0.39–0.76] |  |
-| S1 | Differs only by OF <STATE> / AT <project> | 415 | 20424 | 479 (209) | 5 | 474 (455) | 0.01 [0.0–0.02] |  |
-| S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 9 | 51 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
-| S3 | The sub's name plus a real word, at an address the sub uses | 120 | 238 | 50 (30) | 19 | 31 (20) | 0.38 [0.26–0.52] |  |
+| M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 61 | 109 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
+| S1 | Differs only by OF <STATE> / AT <project> | 415 | 20504 | 476 (206) | 5 | 471 (452) | 0.011 [0.0–0.02] |  |
+| S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 10 | 52 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
+| S3 | The sub's name plus a real word, at an address the sub uses | 116 | 204 | 47 (28) | 18 | 29 (20) | 0.383 [0.26–0.53] |  |
+| S4 | The sub's name plus a state, or the record's own city | 43 | 111 | 23 (8) | 3 | 20 (8) | 0.13 [0.05–0.32] |  |
 | P1 | A person's name without a city to tell people apart | 9 | 9 | 2 (2) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
-| P3 | A company named after a person, in another city or state | 54 | 91 | 24 (13) | 24 | 0 (0) | 1.0 [0.86–1.0] |  |
+| P3 | A company named after a person, in another city or state | 53 | 90 | 23 (13) | 23 | 0 (0) | 1.0 [0.86–1.0] |  |
 | J1 | A joint venture at a member's address | 62 | 85 | 0 (0) | 0 | 0 (0) |  |  |
-| U3 | Same family name, a different trade word | 384 | 1087 | 149 (92) | 20 | 129 (100) | 0.134 [0.09–0.2] |  |
-| U2 | A common name with other words, same city | 103 | 151 | 29 (21) | 5 | 24 (23) | 0.172 [0.08–0.35] |  |
+| U3 | Same family name, a different trade word | 384 | 1086 | 147 (91) | 20 | 127 (98) | 0.136 [0.09–0.2] |  |
+| U2 | A common name with other words, same city | 102 | 150 | 29 (21) | 5 | 24 (23) | 0.172 [0.08–0.35] |  |
 | G1 | Initials-only names | 104 | 431 | 61 (31) | 31 | 30 (29) | 0.508 [0.39–0.63] |  |
-| N1 | A related facility (not coded construction), by name | 289 | 800 | 315 (118) | 268 | 47 (21) | 0.851 [0.81–0.89] |  |
-| R1 | A red-flagged record at an address the company uses | 111 | 123 | 51 (29) | 3 | 48 (18) | 0.059 [0.02–0.16] |  |
-| U | Anything else the rules can't settle | 637 | 3383 | 380 (183) | 104 | 276 (213) | 0.274 [0.23–0.32] |  |
+| N1 | A related facility (not coded construction), by name | 290 | 809 | 319 (117) | 272 | 47 (21) | 0.853 [0.81–0.89] |  |
+| R1 | A red-flagged record at an address the company uses | 114 | 126 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
+| U | Anything else the rules can't settle | 638 | 3369 | 375 (182) | 102 | 273 (211) | 0.272 [0.23–0.32] |  |
 
 ## Rules that never fired in these searches
 
@@ -103,7 +104,7 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 | different | 67978 - BRANDSAFWAY INDUSTRIES LLC (INDIANAPOLIS, IN) | BRANDSAFWAY LLC (3674 HWY 51, LA PLACE, LA) |  |
 | different | D.R. HORTON, INC. (MOUNT LAUREL, NJ) | 139010 - D.R. HORTON, INC. (408 MENDENHALL OAKS STE 101, HIGH POINT, NC) |  |
 
-### X1 (excluded): 20
+### X1 (excluded): 18
 
 | Silver | Search (A) | Record (B) | Verdict |
 |---|---|---|---|
@@ -113,8 +114,8 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 | same | LGI HOMES (THE WOODLANDS, TX) | LGI HOMES CORPORATE, LLC (1450 LAKE ROBBINS DR STE 430 ATTN JAMIE SCHILLING, THE WOODLANDS, TX) |  |
 | same | TINDALL CORPORATION-VIRGINIA DIVISION (PETERSBURG, VA) | 75691 - TINDALL CORPORATION (2273 HAYNE ST, SPARTANBURG, SC) |  |
 | same | TK ELEVATOR RICHMOND (ASHLAND, VA) | TK ELEVATOR CORPORATION (788 CIR 75 PKWY SOUTHEAST, ATLANTA, GA) |  |
+| same | TK ELEVATOR RICHMOND (ASHLAND, VA) | TK ELEVATOR (929 EASTWIND DR STE 218, WESTERVILLE, OH) |  |
 | same | TINDALL CORPORATION-VIRGINIA DIVISION (PETERSBURG, VA) | TINDALL CORPORATION (3361 GRANT RD, CONLEY, GA) |  |
-| same | LIMBACH FACILITY SERVICES, LLC (WILMINGTON, MA) | LIMBACH COMPANY (822 CLEVELAND AVE, COLUMBUS, OH) |  |
 
 ### X3 (excluded): 1
 

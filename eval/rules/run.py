@@ -58,6 +58,7 @@ RULES = {
     "S1": "Differs only by OF <STATE> / AT <project>",
     "S2": "The sub's name plus BRANCH / DIVISION / OFFICE",
     "S3": "The sub's name plus a real word, at an address the sub uses",
+    "S4": "The sub's name plus a state, or the record's own city",
     "P1": "A person's name without a city to tell people apart",
     "P2": "Another person's name at a matched address",
     "P3": "A company named after a person, in another city or state",
