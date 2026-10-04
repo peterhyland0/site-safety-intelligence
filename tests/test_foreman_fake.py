@@ -34,8 +34,7 @@ class Fake:
         return [{"role": "user", "content": [{"type": "tool_result", "tool_use_id": c.id, "content": b} for c, b, _ in results]}]
 
 
-@pytest.fixture(scope="module")
-def project():
+def _add_brasfield():
     from ssi.api.app import add_subs, create_project
     from ssi.api.schemas import ProjectCreate, SubInput, SubsCreate
     from ssi.store import pg, warehouse
@@ -45,9 +44,39 @@ def project():
     cards = add_subs(p.project_id, SubsCreate(rows=[SubInput(name="Brasfield & Gorrie", city="Birmingham", state="AL")]))
     with pg.conn() as c:
         proj = c.execute("SELECT * FROM app.project WHERE project_id = %s", [p.project_id]).fetchone()
-    yield proj, cards[0].sub_id
+    return proj, cards[0].sub_id
+
+
+def _drop(proj):
+    from ssi.store import pg
     with pg.conn() as c:
-        c.execute("DELETE FROM app.project WHERE project_id = %s", [p.project_id])
+        c.execute("DELETE FROM app.project WHERE project_id = %s", [proj["project_id"]])
+
+
+@pytest.fixture(scope="module")
+def project():
+    """Brasfield & Gorrie, resolved as the app resolves it (rules only here), with the GC's answer to its red-flag
+    question: until then the foreman holds up any answer about it."""
+    from ssi.matching import adjudicate as ADJ
+    from ssi.store import pg
+    proj, sub_id = _add_brasfield()
+    with pg.conn() as c:
+        sub = c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone()
+    ADJ.adjudicate(sub)
+    with pg.conn() as c:
+        qs = c.execute("SELECT question_id FROM app.match_question WHERE sub_id = %s AND answer IS NULL", [sub_id]).fetchall()
+    for q in qs:
+        ADJ.answer_question(str(q["question_id"]), "no")
+    yield proj, sub_id
+    _drop(proj)
+
+
+@pytest.fixture
+def unresolved():
+    """Brasfield & Gorrie as added: a red-flagged possible record the adjudicator hasn't seen yet."""
+    proj, sub_id = _add_brasfield()
+    yield proj, sub_id
+    _drop(proj)
 
 
 def run(monkeypatch, project, script, question="How is Brasfield doing?", **ids):
@@ -96,3 +125,11 @@ def test_question_log_names_the_chat_and_user(monkeypatch, project):
     with pg.conn() as c:
         row = c.execute("SELECT user_id::text, status FROM app.question_log WHERE chat_id = %s", [chat_id]).fetchone()
     assert row == {"user_id": user_id, "status": "answered"}
+
+
+def test_a_red_flag_the_adjudicator_hasnt_seen_holds_up_the_answer(monkeypatch, unresolved):
+    # it becomes the GC's question whichever way the AI leans, so the foreman doesn't answer as if it weren't there
+    def final(tools):
+        return Reply("Brasfield & Gorrie: no fatalities.", [], {"role": "assistant", "content": "x"}, "end_turn")
+    resp, _ = run(monkeypatch, unresolved, [summary_call(unresolved[1]), final])
+    assert resp.status == "needs_confirmation"

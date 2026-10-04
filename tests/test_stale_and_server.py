@@ -1,11 +1,15 @@
-"""A sub is never shown as clean while a decision on a record a rebuild regrouped hasn't moved onto the new build.
-Runs on the live warehouse and a local Postgres."""
+"""A sub is never shown as clean while something could still add a red flag: a decision on a record a rebuild
+regrouped (not moved yet), or a red-flagged record the adjudicator hasn't turned into a question. Adding subs writes
+all or nothing, and the server resolves new subs itself. Runs on the live warehouse and a local Postgres."""
 import hashlib
+import threading
 import uuid
 
 import pytest
 from conftest import local_db
+from pydantic import ValidationError
 
+from ssi.api import schemas as S
 from ssi.queries import core as Q
 from ssi.store import pg, warehouse
 
@@ -55,3 +59,69 @@ def test_a_decision_on_a_record_this_build_regrouped_is_review_never_no_record(p
     assert d["stale"] == [gone] and d["keys"] == [] and d["verdict"] == "review"
     assert [r.code for r in d["reasons"] if r.code == "R_stale"] == ["R_stale"]
     assert "aren't in this data update" in Q.coverage(d).sentence and "No matching" not in Q.coverage(d).sentence
+
+
+def test_a_red_flagged_record_waiting_for_the_adjudicator_makes_it_review(project):
+    k, nrs = a_fatality()
+    d = Q.compute(sub_with(project, (k, "possible", True, nrs)), project)
+    assert d["verdict"] == "review" and d["facts"].unresolved_red_flags == 1
+    assert Q.card(sub_with(project, (k, "possible", True, nrs)), project).match_status == "needs_adjudication"
+    # once the adjudicator has seen it (a question now, or decided), it's the question's to say
+    assert Q.compute(sub_with(project, (k, "possible", False, nrs)), project)["facts"].unresolved_red_flags == 0
+
+
+def test_adding_subs_writes_all_or_nothing(project, monkeypatch):
+    from ssi.api import app as A
+    real, calls = A.match_and_persist, []
+
+    def flaky(sub, state, c=None):
+        calls.append(sub["entered_name"])
+        if len(calls) == 2:
+            raise RuntimeError("the database went away")
+        return real(sub, state, c)
+    monkeypatch.setattr(A, "match_and_persist", flaky)
+    body = S.SubsCreate(rows=[S.SubInput(name="Brasfield & Gorrie", state="AL"), S.SubInput(name="Barnhart Crane")])
+    with pytest.raises(RuntimeError):
+        A.add_subs(str(project["project_id"]), body)
+    with pg.conn() as c:  # neither sub is left behind without its matches (it would read "No OSHA record")
+        assert c.execute("SELECT count(*) AS n FROM app.project_sub WHERE project_id = %s",
+                         [project["project_id"]]).fetchone()["n"] == 0
+    monkeypatch.setattr(A, "match_and_persist", real)
+    assert [c.entered_name for c in A.add_subs(str(project["project_id"]), body)] == ["Brasfield & Gorrie", "Barnhart Crane"]
+
+
+def test_a_batch_is_capped_on_the_server_too():
+    with pytest.raises(ValidationError):
+        S.SubsCreate(rows=[S.SubInput(name=f"Co {i}") for i in range(51)])
+
+
+def test_the_server_resolves_new_subs_itself_once_each(project, monkeypatch):
+    from ssi import config
+    from ssi.api import app as A
+    seen, release = [], threading.Event()
+
+    def slow(sub_id, p):
+        seen.append(sub_id)
+        release.wait(5)
+    assert A.resolve_later(project, ["s1", "s2"], run=slow) == 2
+    assert A.resolve_later(project, ["s1"], run=slow) == 0  # already queued
+    release.set()
+    A._resolver.submit(lambda: None).result(5)
+    for _ in range(50):
+        if not A._queued:
+            break
+        threading.Event().wait(0.05)
+    assert sorted(seen) == ["s1", "s2"] and not A._queued
+    # opening a project queues its subs still waiting for the adjudicator (left when a server stopped part way)
+    k, nrs = a_fatality()
+    s = sub_with(project, (k, "possible", True, nrs))
+    queued = []
+    monkeypatch.setattr(config, "RESOLVE_ON_SERVER", True)
+    monkeypatch.setattr(A, "resolve", lambda sub_id, p: queued.append(sub_id))
+    A.get_project(str(project["project_id"]))
+    A._resolver.submit(lambda: None).result(5)
+    for _ in range(50):
+        if queued:
+            break
+        threading.Event().wait(0.05)
+    assert queued == [str(s["sub_id"])]

@@ -111,6 +111,8 @@ class Facts:
     pending_other_questions: int = 0
     # matched or asked-about records the data build doesn't have (a rebuild regrouped them; not moved yet)
     stale_records: int = 0
+    # possible records with red flags still waiting for the adjudicator (each becomes a GC question)
+    unresolved_red_flags: int = 0
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -208,6 +210,9 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     if f.pending_questions:  # a red flag is never counted or dropped without the GC's answer
         add("R_questions", f"{f.pending_questions} possible match(es) with red flags need your confirmation", "review",
             count=f.pending_questions)
+    if f.unresolved_red_flags:  # ...including before the adjudicator has turned them into questions
+        add("R_unresolved", f"{f.unresolved_red_flags} possible match(es) with red flags still being checked; you'll be "
+            "asked to confirm them", "review", count=f.unresolved_red_flags)
     if f.stale_records:  # a decision on a record the build doesn't have counts nothing: never shown as clean
         add("R_stale", f"{f.stale_records} OSHA record(s) matched or asked about for this sub aren't in this data "
             "update yet (it regrouped them), so their history isn't counted", "review", count=f.stale_records)

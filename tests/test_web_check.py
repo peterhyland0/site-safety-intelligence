@@ -440,7 +440,7 @@ def test_web_questions_dont_hold_up_the_assistant(clark, no_budget_db):
 
     def ask(*qs):
         tb.cache[sid] = {"scope": {"pending_questions": list(qs)}, "reasons": [],
-                         "facts": SimpleNamespace(**Q.question_facts(list(qs)), stale_records=0)}
+                         "facts": SimpleNamespace(**Q.question_facts(list(qs)), unresolved_red_flags=0, stale_records=0)}
         return tb._precondition(sid)
 
     web = {"kind": "web", "text": "Web pages tie this OSHA record to another company", "establishment_keys": [k["kca"]]}

@@ -45,6 +45,10 @@ RELATED_MIN_CONSTRUCTION_SHARE = 0.2  # related facilities only for firms with >
 # groups get cleared too.
 ADJUDICATE_MAX_CLUSTERS = 50
 QUESTION_GROUP_THRESHOLD = 3  # past this many red-flag questions for a sub, one question per OSHA name
+# The API resolves new subs' uncertain records itself (ssi/api/app.py resolve_later), not only when an open page asks;
+# 0 leaves it to the page (the tests: it calls the adjudicator and the web search)
+RESOLVE_ON_SERVER = os.environ.get("SSI_RESOLVE_ON_SERVER", "1") != "0"
+RESOLVE_WORKERS = 2  # subs resolved at once by one server process
 
 
 def current_warehouse() -> Path | None:

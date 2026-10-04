@@ -164,6 +164,12 @@ def test_a_match_question_makes_review_only_when_a_red_flag_is_at_stake():
     assert v == "review" and [x.code for x in r] == ["R_questions", "I_profile_questions"]
 
 
+def test_red_flags_still_waiting_for_the_adjudicator_are_review():
+    # each becomes a GC question whichever way the AI leans; a sub added and never resolved isn't clean meanwhile
+    v, r = evaluate(facts(unresolved_red_flags=2))
+    assert v == "review" and [x.code for x in r] == ["R_unresolved"] and r[0].figures == {"count": 2}
+
+
 def test_records_the_build_doesnt_have_are_review_never_no_record():
     # a rebuild regrouped the sub's only matched record and its decision hasn't moved: nothing is counted, but that's
     # not "No OSHA record"

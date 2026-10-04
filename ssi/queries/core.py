@@ -352,6 +352,14 @@ def unmoved(sc: dict) -> tuple[list[str], set[str]]:
     return stale, present
 
 
+def unresolved_red_flags(sc: dict) -> int:
+    """Possible records with red flags still waiting for the adjudicator. Each becomes a GC question whichever way the
+    AI leans, so until then the sub is Review, as with an open red-flag question: a sub added and never resolved (the
+    page closed before the adjudicator ran) mustn't read as clean."""
+    waiting = [k for k in sc["possible"] if sc["rows"][k]["needs_adjudication"]]
+    return sum(1 for n in C.red_flag_counts(waiting).values() if n) if waiting else 0
+
+
 def compute(sub: dict, project: dict) -> dict:
     """Everything the card, the detail page and the foreman need for one sub."""
     sc = scope(str(sub["sub_id"]))
@@ -418,7 +426,7 @@ def compute(sub: dict, project: dict) -> dict:
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,
         ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),
         visits_without_inspection=tot["insp_n"] - tot["insp_conducted_n"], ita_deaths=ita_deaths,
-        stale_records=len(stale),
+        stale_records=len(stale), unresolved_red_flags=unresolved_red_flags(sc),
     )
     verdict, reasons = evaluate(facts)
     est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, insp_conducted_n, first_seen, last_seen

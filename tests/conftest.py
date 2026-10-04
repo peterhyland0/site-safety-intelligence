@@ -11,6 +11,9 @@ import pytest
 # that writes skip): SSI_TEST_DATABASE_URL, by default the ssi_test database `make setup` creates. Set before ssi.config
 # is imported, which reads DATABASE_URL once (load_dotenv doesn't override it).
 os.environ["DATABASE_URL"] = os.environ.get("SSI_TEST_DATABASE_URL", "postgresql://localhost:5432/ssi_test")
+# Adding subs doesn't start the adjudicator (model and web-search calls) behind a test's back; tests that need the
+# server's own resolving call it with a fake
+os.environ["SSI_RESOLVE_ON_SERVER"] = "0"
 os.environ["LANGSMITH_TRACING"] = "false"  # the fake models' runs aren't sent to LangSmith (or counted on its plan)
 
 from ssi import config

@@ -64,7 +64,7 @@ class SubInput(BaseModel):
 
 
 class SubsCreate(BaseModel):
-    rows: list[SubInput]
+    rows: list[SubInput] = Field(max_length=50)  # the paste box's limit (web/src/lib/parseSubs.ts MAX_ROWS)
     # look each company up on the web before its uncertain records are resolved (ssi/llm/profile.py); costs web-search
     # credits, so it's the GC's choice per batch. Without it, the sub page offers the lookup later.
     lookup_profiles: bool = False

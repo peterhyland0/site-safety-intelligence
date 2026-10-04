@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
@@ -22,6 +24,7 @@ from ssi.queries import core as Q
 from ssi.store import pg, warehouse
 
 WEB_DIST = config.REPO_ROOT / "web" / "dist"
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -204,7 +207,10 @@ def get_project(project_id: str):
     p = _project(project_id)
     m = warehouse.meta()
     from ssi.llm import web_check as W
-    return S.ProjectDetail(project=_project_model(p), subs=_cards(p), data_as_of=m["data_as_of"],
+    cards = _cards(p)
+    # subs left unresolved (the server stopped before it finished them) are picked up when the project is opened
+    resolve_later(p, [c.sub_id for c in cards if c.match_status == "needs_adjudication"])
+    return S.ProjectDetail(project=_project_model(p), subs=cards, data_as_of=m["data_as_of"],
                            history_since=m.get("history_since"), web_check=W.available())
 
 
@@ -228,11 +234,16 @@ def update_project(project_id: str, body: S.ProjectUpdate):
 
 @app.post("/api/projects/{project_id}/subs", response_model=list[S.SubCard])
 def add_subs(project_id: str, body: S.SubsCreate):
+    """All or nothing: the subs and their rule matches are written in one transaction, so a failure part way never
+    leaves a sub with no matches at all (it would read as "No OSHA record", and adding it again is refused as a
+    repeat); the GC adds the batch again. One batch at a time a project, so two at once can't both add one sub. Their
+    uncertain records are then resolved on the server (resolve_later), whether or not the page stays open."""
     p = _project(project_id)
     rows = [r for r in body.rows if r.name.strip()]
     states = [(r.state or p["state"] or "").strip().upper()[:2] or None for r in rows]
     created = []
     with pg.conn() as c:
+        c.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"add_subs:{project_id}"])
         existing = c.execute("SELECT sub_id, entered_name, entered_state FROM app.project_sub WHERE project_id = %s",
                              [project_id]).fetchall()
         keys = duplicates.name_keys([r.name for r in rows] + [e["entered_name"] for e in existing])
@@ -255,8 +266,9 @@ def add_subs(project_id: str, body: S.SubsCreate):
                           [project_id, row.name.strip(), (row.city or "").strip() or None, state, row.trade, row.licence,
                            start + i + 1, "pending" if body.lookup_profiles else None]).fetchone()
             created.append(s)
-    for s in created:
-        match_and_persist(s, p["state"])
+        for s in created:
+            match_and_persist(s, p["state"], c)
+    resolve_later(p, [str(s["sub_id"]) for s in created])
     return [Q.card(s, p) for s in created]
 
 
@@ -285,12 +297,53 @@ def adjudicate_sub(project_id: str, sub_id: str):
     """A new sub's company is looked up first, so listed locations skip the AI. When another request is already
     resolving this sub, the card comes back as it stands (still needs_adjudication) and the app asks again shortly."""
     p, _ = _project(project_id), _sub(project_id, sub_id)
+    resolve(sub_id, p)
+    return Q.card(_sub(project_id, sub_id), p)
+
+
+# --- resolving subs on the server ------------------------------------------------------------------------------
+def resolve(sub_id: str, project: dict) -> None:
+    """The adjudication step for one sub (ADJ.resolve, under its claim): the company profile, the M3 web check, then
+    the adjudicator. Returns at once when another request is already resolving the sub."""
     from ssi.llm import adjudicator  # imported lazily: optional dependency on the LLM provider
     from ssi.llm import profile as P
-    ADJ.resolve(sub_id, p, llm=adjudicator.decide if adjudicator.available() else None,
+    ADJ.resolve(sub_id, project, llm=adjudicator.decide if adjudicator.available() else None,
                 packet_fn=ADJ.evidence_packet, profile_fn=P.for_sub,
                 m3_fn=(lambda s, prof: ADJ.check_m3(s, prof, P.build)) if P.m3_check_enabled() else None)
-    return Q.card(_sub(project_id, sub_id), p)
+
+
+_resolver = ThreadPoolExecutor(max_workers=config.RESOLVE_WORKERS, thread_name_prefix="resolve")
+_queued: set[str] = set()
+_queued_lock = threading.Lock()
+
+
+def resolve_later(project: dict, sub_ids: list[str], run=None) -> int:
+    """Resolve these subs on the server, a few at a time, instead of only while a page asks for each one: a GC who
+    adds subs and closes the page left them unresolved, and a red flag among their uncertain records never became a
+    question. A sub already queued here isn't queued again; one another request is resolving is left to it (claim).
+    `run` replaces resolve (tests). Returns the subs queued."""
+    if not config.RESOLVE_ON_SERVER and run is None:
+        return 0
+    run = run or resolve
+
+    def one(sub_id: str) -> None:
+        try:
+            run(sub_id, project)
+        except Exception:  # the sub stays unresolved (Review if a red flag waits); queued again next open
+            log.exception("resolving sub %s failed", sub_id)
+        finally:
+            with _queued_lock:
+                _queued.discard(sub_id)
+
+    n = 0
+    for sub_id in sub_ids:
+        with _queued_lock:
+            if sub_id in _queued:
+                continue
+            _queued.add(sub_id)
+        _resolver.submit(one, sub_id)
+        n += 1
+    return n
 
 
 @app.post("/api/projects/{project_id}/subs/{sub_id}/profile", response_model=S.SubCard)
