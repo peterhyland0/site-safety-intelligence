@@ -16,7 +16,7 @@
   "records": 140808,
   "labelled": 23598,
   "graded": 8008,
-  "seconds": 435
+  "seconds": 437
  },
  "rules": [
   {
@@ -55,6 +55,23 @@
     0.6
    ],
    "apparent_errors": 24,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M1s",
+   "bucket": "matched",
+   "searches": 1,
+   "records": 2,
+   "labelled": 0,
+   "firms": 0,
+   "same": 0,
+   "different": 0,
+   "different_local": 0,
+   "share_same": null,
+   "ci": null,
+   "apparent_errors": 0,
    "reviewed": 0,
    "verdicts": {},
    "share_same_after_review": null
@@ -200,7 +217,7 @@
    "rule": "S1",
    "bucket": "uncertain",
    "searches": 415,
-   "records": 20504,
+   "records": 20502,
    "labelled": 476,
    "firms": 206,
    "same": 5,

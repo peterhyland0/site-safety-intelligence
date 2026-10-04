@@ -65,6 +65,13 @@ RECS = [
         "PLUMBING", "ELECTRIC", "CONCRETE", "MASONRY", "PAINTING", "FRAMING", "DRYWALL", "SIDING", "HEATING", "EXCAVATING",
         "STEEL", "GLASS", "STUCCO", "PAVING", "INSULATION", "TILE", "FLOORING", "FENCE", "GUTTERS", "SPRINKLER",
         "DEMOLITION", "WELDING", "SOLAR", "LANDSCAPING", "CABINETS", "WINDOWS"))],
+    # a GC filed only under its OF <PLACE> companies: two of them at its head office, others elsewhere
+    Rec("HOFFMAN CONSTRUCTION CO. OF OREGON", "805 SW Broadway Ste 2100", "Portland", "OR", "97205", n=3, naics="236220"),
+    Rec("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "805 SW Broadway Ste 2100", "Portland", "OR", "97205", n=2,
+        naics="236220"),
+    Rec("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "5500 Meadows Rd", "Lake Oswego", "OR", "97035", naics="236220"),
+    Rec("HOFFMAN CONSTRUCTION COMPANY OF WA", "600 Stewart St Ste 1000", "Seattle", "WA", "98101", n=2, naics="236220"),
+    Rec("SMITH CONSTRUCTION OF OREGON", "805 SW Broadway Ste 2100", "Portland", "OR", "97205"),
     # sister companies at one address: another trade word; and one name with a trade word added
     Rec("EENIGENBURG FRAMING", "2 Calumet Ave", "Dyer", "IN", "46311", n=2),
     Rec("EENIGENBURG ROOFING", "2 Calumet Ave", "Dyer", "IN", "46311"),
@@ -248,6 +255,23 @@ def test_a_common_names_own_records_at_its_shared_head_office_and_its_regional_c
     assert len(mclean) == 1 and mclean[0][3] == "uncertain"
     assert warehouse.one("SELECT insp_n FROM entity.establishment WHERE clean_name = 'CLARK CONSTRUCTION GROUP' "
                          "AND city = 'MCLEAN'")["insp_n"] == 2
+
+
+def test_a_gcs_of_place_companies_at_its_office_in_the_gcs_city_are_its_own():
+    # no record under exactly "Hoffman Construction Company" in Portland: S1 sent its head office's records to the
+    # adjudicator, which excluded them as sister companies, and the sub read "No OSHA record"
+    got, q, _ = outcome("Hoffman Construction Company", "Portland", "OR", "general contractor")
+    assert q.clean == "HOFFMAN CONSTRUCTION" and q.sibling is None
+    assert got[("HOFFMAN CONSTRUCTION CO OF OREGON", "PORTLAND", "OR")] == ("matched", "M1s")
+    assert got[("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "PORTLAND", "OR")] == ("matched", "M1s")
+    # away from that office, still a question: its other offices, or sister companies
+    assert got[("HOFFMAN CONSTRUCTION COMPANY OF AMERICA", "LAKE OSWEGO", "OR")] == ("uncertain", "S1")
+    assert got[("HOFFMAN CONSTRUCTION COMPANY OF WA", "SEATTLE", "WA")] == ("uncertain", "S1")
+    # and another company in the building isn't pulled in
+    assert ("SMITH CONSTRUCTION OF OREGON", "PORTLAND", "OR") not in buckets(got, "matched") | buckets(got, "uncertain")
+    # a GC in another city: nothing ties the head office to its sub
+    got, _, _ = outcome("Hoffman Construction Company", "Lake Oswego", "OR", "general contractor")
+    assert not buckets(got, "matched")
 
 
 def test_a_dba_trade_name_is_judged_as_the_common_name_it_is():

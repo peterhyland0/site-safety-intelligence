@@ -287,6 +287,41 @@ def m3_collides(clean_name: str, naics4: str | None, sub_naics: set[str]) -> boo
             and naics4 not in sub_naics)
 
 
+def home_office(q: Query, cands: list[Candidate], descriptors: frozenset[str] | None = None) -> dict[str, Decision]:
+    """M1s (run.match, over S1's records): the sub's name plus OF <PLACE>, in the GC's city and state, at an address
+    where the same name also files with another OF <PLACE>: the company's own entities at its own office. For
+    "Hoffman Construction Company, Portland" (a medium name, and no record under exactly it in Portland), HOFFMAN
+    CONSTRUCTION CO OF OREGON (8 inspections) and HOFFMAN CONSTRUCTION COMPANY OF AMERICA (4) share Hoffman's head
+    office suite. S1 sent them to the adjudicator, which, told a suffix usually means a sister company and with no
+    matched record to compare, excluded them, and the sub read "No OSHA record". S1 still holds back the rest: on the
+    per-rule eval 1% of its records were the sub's, mostly other local firms under `<word> … OF <PLACE>` names. Only
+    for a GC's name without a suffix of its own that isn't common or a person's, and a record under that name give or
+    take a word like CO or COMPANY. A trade the GC's contradicts, or a facility not coded as construction, stays S1.
+    Returns {establishment_key: decision}."""
+    d = descriptors if descriptors is not None else DESCRIPTORS
+    if q.sibling or q.tier not in ("distinctive", "medium") or not (q.state and q.city):
+        return {}
+    own = {q.clean, *q.aliases} - {""}
+
+    def subs_name(base: str) -> bool:  # the sub's name, or it with a word like CO added or dropped, not swapped
+        return base in own or any(only_descriptor_difference(base, n, d) and (
+            set(tokens(base)) <= set(tokens(n)) or set(tokens(n)) <= set(tokens(base))) for n in own)
+    family = [c for c in cands if (c.sibling_suffix or "").startswith(" OF ") and c.clean_name.endswith(c.sibling_suffix)
+              and c.addr_key and c.zip5 and subs_name(c.clean_name[:-len(c.sibling_suffix)])]
+    suffixes: dict[tuple, set[str]] = {}
+    for c in family:  # the building, as the address expansion compares it: address key and zip3
+        suffixes.setdefault((c.addr_key, c.zip5[:3]), set()).add(c.sibling_suffix)
+    out = {}
+    for c in family:
+        others = sorted(suffixes[(c.addr_key, c.zip5[:3])] - {c.sibling_suffix})
+        if (others and c.state == q.state and norm_city(c.city) == norm_city(q.city)
+                and not trade_conflict(q.trade, c.primary_naics4) and not c.related_only):
+            out[c.establishment_key] = Decision(MATCHED, "M1s", (
+                f"The sub's name plus {c.sibling_suffix.strip()}, in its own city, at an address where its name plus "
+                f"{others[0].strip()} files too: the company's own office, not a sister company"))
+    return out
+
+
 def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozenset[str] | None = None) -> Decision:
     if c.clean_name != q.clean and c.clean_name in q.aliases and c.clean_name in q.alias_queries:
         # the record carries one of the sub's other names: judge it as that name. "QORVANEX HOLDINGS DBA QUALITY

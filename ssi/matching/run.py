@@ -14,6 +14,7 @@ from ssi.matching.rules import (
     Decision,
     Query,
     decide,
+    home_office,
     m3_collides,
     norm_city,
     one_slip,
@@ -176,6 +177,11 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     decided: dict[str, tuple[dict, object]] = {}
     for r in rows:
         decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic, descriptors))
+    # M1s: the sub's own OF <PLACE> companies at its office in the GC's city (rules.home_office), before the address
+    # expansion so that, matched, they pull in its other records there
+    s1 = [_candidate(r) for r, d in decided.values() if d.rule_id == "S1"]
+    for k, d in home_office(q, s1, descriptors).items():
+        decided[k] = (decided[k][0], d)
     # M3 guard, before the address expansion so a doubtful match can't pull in records at its address: a same-name
     # record in another state whose trade code none of the sub's in-state matches have, under a colliding
     # "<word> CONSTRUCTION|ELECTRIC" name, is often another company (rules.m3_collides). It goes to the adjudicator.

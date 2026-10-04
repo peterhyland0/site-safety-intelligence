@@ -265,6 +265,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 |---|---|---|
 | M1 | Same full name, same state, and the name is *distinctive* (or the same city) | Matched |
 | M1b | Same distinctive core, differing only by descriptor words (GENERAL, CONTRACTORS…) | Matched |
+| M1s | The sub's name plus `OF <PLACE>`, in the GC's city, at an address where another `OF <PLACE>` of the name files too: the company's own office. "Hoffman Construction Company, Portland" has no record under exactly that name there; HOFFMAN CONSTRUCTION CO OF OREGON and … COMPANY OF AMERICA share its head office suite, and S1 left them to the adjudicator, which excluded them as sister companies. Not for a common name or a person's, nor for a GC's name with a suffix of its own | Matched |
 | M2 | At an already-matched address, name differs only by spelling (not a JV, a swapped trade word or another person: J1, U3, P2). At a shared office only the sub's own name, or it with a descriptor word (GROUP, CONTRACTORS) added or dropped: Clark's head office houses seven names, five of them Clark's, and its CLARK CONSTRUCTION records are Clark's | Matched |
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
 | M3u | M3's guard: a two-word "<word> CONSTRUCTION / ELECTRIC" name under a trade code none of the sub's in-state matched records have (QUINN CONSTRUCTION of Essington PA vs of Parsons TN) | Uncertain |

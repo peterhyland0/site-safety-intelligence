@@ -551,3 +551,74 @@ def test_m3_guard_only_for_a_colliding_name_under_another_trade():
     assert not m3_collides("ADOLFSON PETERSON CONSTRUCTION", "2389", {"2362"})  # three words
     assert not m3_collides("QUINN CONSTRUCTION", "2389", set())  # no in-state match to compare trades with
     assert not m3_collides("QUINN CONSTRUCTION", None, {"2362"})  # no trade code on the record
+
+
+# --- M1s: the sub's own OF <PLACE> companies at its office in the GC's city --------------------------------
+HQ = ("805 BROADWAY", "97205")
+GEN, DESC = GENERIC | {"CO"}, DESCRIPTORS | {"CO"}  # as the warehouse's lists have it
+
+
+def sib(key, clean, suffix, city="PORTLAND", state="OR", at=HQ, naics4="2362", related=False):
+    core = " ".join(t for t in clean.split() if t not in GEN)
+    return Candidate(establishment_key=key, clean_name=clean, name_core=core, legal_name=clean, dba_name=None,
+                     state=state, city=city, zip5=at[1] if at else None, addr_key=at[0] if at else None,
+                     primary_naics4=naics4, sibling_suffix=suffix, initials_only=False, related_only=related)
+
+
+HOFFMAN = q("HOFFMAN CONSTRUCTION", "HOFFMAN", state="OR", tier="medium", city="Portland", trade="general contractor")
+HOFFMAN_HQ = [sib("oregon", "HOFFMAN CONSTRUCTION CO OF OREGON", " OF OREGON"),
+              sib("america", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA"),
+              sib("oregon2", "HOFFMAN CONSTRUCTION COMPANY OF OREGON", " OF OREGON")]
+
+
+def test_the_subs_of_place_companies_at_its_office_in_the_gcs_city_are_its_own():
+    # "Hoffman Construction Company, Portland": S1 left these to the adjudicator, which excluded them as sister
+    # companies, and with no record under exactly that name in Portland the sub read "No OSHA record"
+    for k in ("oregon", "america", "oregon2"):  # each is S1 on its own...
+        assert decide(HOFFMAN, next(x for x in HOFFMAN_HQ if x.establishment_key == k), GEN).rule_id == "S1"
+    got = rules.home_office(HOFFMAN, HOFFMAN_HQ, DESC)  # ...and the family's office makes them the sub's
+    assert {k: (d.bucket, d.rule_id) for k, d in got.items()} == {k: (MATCHED, "M1s") for k in ("oregon", "america", "oregon2")}
+    assert "OF OREGON" in got["oregon"].reason and "OF AMERICA" in got["oregon"].reason
+    # the GC's city written another way is the same city
+    assert set(rules.home_office(q("HOFFMAN CONSTRUCTION", "HOFFMAN", state="OR", tier="distinctive", city="portland"),
+                                 HOFFMAN_HQ, DESC)) == {"oregon", "america", "oregon2"}
+
+
+@pytest.mark.parametrize("why, query, cands", [
+    ("one suffix at the address is one company's spellings, not a family's office",
+     HOFFMAN, [HOFFMAN_HQ[0], HOFFMAN_HQ[2]]),
+    ("the siblings' office in another city", HOFFMAN,
+     [sib("wa", "HOFFMAN CONSTRUCTION COMPANY OF WA", " OF WA", "SEATTLE", "WA", ("600 STEWART", "98101")),
+      sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", "SEATTLE", "WA", ("600 STEWART", "98101"))]),
+    ("the sub's city, but not the building", HOFFMAN,
+     [HOFFMAN_HQ[0], sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", at=("5500 MEADOWS", "97035"))]),
+    ("the same house number and street under another zip3", HOFFMAN,
+     [HOFFMAN_HQ[0], sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", at=("805 BROADWAY", "97035"))]),
+    ("no address on file", HOFFMAN,
+     [sib("or", "HOFFMAN CONSTRUCTION CO OF OREGON", " OF OREGON", at=None),
+      sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", at=None)]),
+    ("another company's name with the suffixes", HOFFMAN,
+     [sib("or", "SMITH CONSTRUCTION OF OREGON", " OF OREGON"), sib("am", "SMITH CONSTRUCTION OF AMERICA", " OF AMERICA")]),
+    ("the sub's name with a word swapped", HOFFMAN,
+     [sib("or", "HOFFMAN GROUP OF OREGON", " OF OREGON"), sib("am", "HOFFMAN GROUP OF AMERICA", " OF AMERICA")]),
+    ("a project's company (AT), not an OF <PLACE> one", HOFFMAN,
+     [sib("elan", "HOFFMAN CONSTRUCTION AT ELAN", " AT ELAN"), sib("mer", "HOFFMAN CONSTRUCTION AT MERIDIAN", " AT MERIDIAN")]),
+    ("the GC typed a suffix of its own", q("HOFFMAN CONSTRUCTION COMPANY OF WA", "HOFFMAN WA", state="OR", tier="medium",
+                                           city="Portland", sibling=" OF WA"), HOFFMAN_HQ),
+    ("no city to tie it to", q("HOFFMAN CONSTRUCTION", "HOFFMAN", state="OR", tier="medium"), HOFFMAN_HQ),
+    ("a common name", q("ABC CONSTRUCTION", "", state="OR", tier="generic", city="Portland"),
+     [sib("or", "ABC CONSTRUCTION OF OREGON", " OF OREGON"), sib("am", "ABC CONSTRUCTION OF AMERICA", " OF AMERICA")]),
+    ("a person's name", q("JUAN GARCIA", "JUAN GARCIA", state="OR", tier="person", city="Portland"),
+     [sib("or", "JUAN GARCIA OF OREGON", " OF OREGON"), sib("am", "JUAN GARCIA OF AMERICA", " OF AMERICA")]),
+])
+def test_an_of_place_company_is_the_subs_own_only_at_its_office_in_the_gcs_city(why, query, cands):
+    assert rules.home_office(query, cands, DESC) == {}, why
+
+
+def test_a_trade_the_gcs_contradicts_or_a_facility_not_coded_as_construction_stays_a_question():
+    roofer = q("HOFFMAN ROOFING", "HOFFMAN", state="OR", tier="medium", city="Portland", trade="roofing")
+    fam = [sib("or", "HOFFMAN ROOFING OF OREGON", " OF OREGON", naics4="2382"),
+           sib("am", "HOFFMAN ROOFING OF AMERICA", " OF AMERICA", naics4="2381")]
+    assert set(rules.home_office(roofer, fam, DESC)) == {"am"}  # the record OSHA lists as a plumber stays S1
+    fam = [HOFFMAN_HQ[0], sib("am", "HOFFMAN CONSTRUCTION COMPANY OF AMERICA", " OF AMERICA", related=True)]
+    assert set(rules.home_office(HOFFMAN, fam, DESC)) == {"oregon"}  # its sibling still vouches for the office

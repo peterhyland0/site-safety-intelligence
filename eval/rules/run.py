@@ -47,6 +47,7 @@ REVIEW_PER_RULE = 25  # apparent errors written to review.jsonl per rule and buc
 RULES = {
     "M1": "Same name, same state (distinctive, or the same city)",
     "M1b": "Same distinctive core, differing only by descriptor words",
+    "M1s": "The sub's name plus OF <PLACE>, in its city, at an address where another OF <PLACE> of it files",
     "M2": "At a matched address, the name differs only by spelling",
     "M3": "Same distinctive name in another state",
     "M3u": "M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack",
