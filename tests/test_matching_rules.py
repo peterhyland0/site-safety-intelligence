@@ -354,6 +354,26 @@ def test_a_joint_venture_at_the_address_is_never_merged():
     assert (d.bucket, d.rule_id) == (UNCERTAIN, "J1")
 
 
+def test_the_subs_name_plus_a_word_at_its_address_is_a_question_not_another_company():
+    horton = q("DR HORTON", "DR HORTON", state="NC")
+    portland = c("DR HORTON PORTLAND", "DR HORTON PORTLAND", state="TX", at_addr=True)
+    d = decide(horton, portland, GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S3") and "PORTLAND" in d.reason
+    # by name alone, still another company: only the address ties it to the sub
+    portland.at_matched_address = False
+    assert decide(horton, portland, GENERIC).rule_id == "X1"
+    # the added word may come after descriptor words the sub's core drops
+    bg = q("BRASFIELD GORRIE GENERAL CONTRACTORS", "BRASFIELD GORRIE")
+    d = decide(bg, c("BRASFIELD GORRIE DELAWARE", "BRASFIELD GORRIE DELAWARE", at_addr=True), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "S3")
+    # a joint venture named after the sub is still its own company
+    jv = c("DR HORTON PORTLAND JV", "DR HORTON PORTLAND JV", state="TX", at_addr=True)
+    jv.is_jv = True
+    assert decide(horton, jv, GENERIC).rule_id == "J1"
+    # a different word, not an added one, at the address is still another company
+    assert decide(horton, c("DR HAMILTON", "DR HAMILTON", state="NC", at_addr=True), GENERIC).rule_id == "X1"
+
+
 def test_is_jv_name_is_the_macro():
     import duckdb
 

@@ -38,6 +38,16 @@ RECS = [
     # a joint venture at a member's address
     Rec("SAVANNAH MOBILITY CONTRACTORS", "15 River St", "Savannah", "GA", "31401", n=2),
     Rec("SAVANNAH MOBILITY CONTRACTORS (J.V.)", "15 River St", "Savannah", "GA", "31401"),
+    # regional companies filed under the sub's name plus a place word: at a division office, and at the head office,
+    # which houses so many of the group's names that it counts as a shared office
+    Rec("D.R. HORTON, INC.", "8001 Arrowridge Blvd", "Charlotte", "NC", "28273", n=2),
+    Rec("D. R. HORTON, INC", "4008 Mendenhall Oaks Pkwy", "High Point", "NC", "27265", n=2),
+    Rec("D.R. HORTON, INC. - GREENSBORO", "4008 Mendenhall Oaks Pkwy", "High Point", "NC", "27265"),
+    Rec("D R HORTON INC PORTLAND", "4380 SW Macadam Ave", "Portland", "OR", "97239"),
+    Rec("D.R. HORTON, INC.", "1341 Horton Cir", "Arlington", "TX", "76011", n=3),
+    Rec("317729173 - D R HORTON INC PORTLAND", "1341 Horton Cir", "Arlington", "TX", "76011"),
+    *[Rec(n, "1341 Horton Cir", "Arlington", "TX", "76011") for n in
+      ("SSHI LLC", "PACIFIC RIDGE - DRH, LLC", "DHI COMMUNITIES", "LEXINGTON - DRH, LLC", "DHIC NONA WEST, LLC")],
     # sister companies at one address: another trade word; and one name with a trade word added
     Rec("EENIGENBURG FRAMING", "2 Calumet Ave", "Dyer", "IN", "46311", n=2),
     Rec("EENIGENBURG ROOFING", "2 Calumet Ave", "Dyer", "IN", "46311"),
@@ -188,6 +198,18 @@ def test_a_sister_company_at_the_same_address_is_a_question_not_a_match():
     # a trade word added to the same name, at the same address, is the same company
     got, _, _ = outcome("Kovalenko Roofing", "Spokane", "WA")
     assert got[("KOVALENKO ROOFING SIDING", "SPOKANE", "WA")] == ("matched", "M2")
+
+
+def test_the_subs_name_plus_a_place_at_its_own_address_is_a_question():
+    got, _, _ = outcome("D.R. Horton", "Charlotte", "NC")
+    assert got[("DR HORTON", "HIGH POINT", "NC")] == ("matched", "M1")
+    assert got[("DR HORTON INC GREENSBORO", "HIGH POINT", "NC")] == ("uncertain", "S3")
+    # the head office is a shared office: it pulls in the sub's name plus a word, as a question, and nothing else
+    assert got[("DR HORTON", "ARLINGTON", "TX")] == ("matched", "M3")
+    assert got[("DR HORTON INC PORTLAND", "ARLINGTON", "TX")] == ("uncertain", "S3")
+    assert not {n for n, c, _ in got if c == "ARLINGTON"} - {"DR HORTON", "DR HORTON INC PORTLAND"}
+    # the same name away from any address the sub uses: nothing ties it to the sub
+    assert got[("DR HORTON INC PORTLAND", "PORTLAND", "OR")] == ("excluded", "X1")
 
 
 def test_a_dba_trade_name_is_judged_as_the_common_name_it_is():

@@ -160,16 +160,22 @@ def _unit_sql(col: str) -> str:
     return f"regexp_extract(upper(coalesce({col}, '')), '{_UNIT_RE}', 2)"
 
 
-def _at(m_sql: str, params: list, limit: int, order: str = "") -> list[dict]:
+def _at(m_sql: str, params: list, limit: int, order: str = "", extending: list[str] | None = None) -> list[dict]:
     """Establishments at the addresses in CTE m (addr_key, zip3, unit): the same building and zip3 (tolerates zip
-    typos), the same suite or a suite on one side only, never placeholders, never shared offices."""
+    typos), the same suite or a suite on one side only, never placeholders, never shared offices. With `extending`,
+    only the records at shared offices whose name or core is one of those names plus more words."""
+    office = "NOT coalesce(s.is_shared_office, false)"
+    if extending is not None:
+        office = """coalesce(s.is_shared_office, false) AND EXISTS (SELECT 1 FROM unnest(?::VARCHAR[]) AS x(n)
+                    WHERE starts_with(e.clean_name, x.n || ' ') OR starts_with(e.name_core, x.n || ' '))"""
+        params = [*params, extending]
     return warehouse.rows(
         f"""
         WITH m AS ({m_sql})
         SELECT {EST_COLS}, NULL::DOUBLE AS sim, ['address'] AS srcs
         FROM entity.establishment e JOIN m ON e.addr_key = m.addr_key AND left(e.zip5, 3) = m.zip3
         LEFT JOIN entity.address_stats s ON s.addr_key = e.addr_key AND s.zip5 = e.zip5
-        WHERE NOT e.is_placeholder AND NOT coalesce(s.is_shared_office, false)
+        WHERE NOT e.is_placeholder AND {office}
           AND (m.unit = '' OR {_unit_sql('e.address')} IN ('', m.unit))  -- same suite, or a suite on one side only
         QUALIFY row_number() OVER (PARTITION BY e.establishment_key) = 1
         {order}
@@ -179,16 +185,17 @@ def _at(m_sql: str, params: list, limit: int, order: str = "") -> list[dict]:
     )
 
 
-def at_addresses(keys: list[str], exclude: set[str]) -> list[dict]:
+def at_addresses(keys: list[str], exclude: set[str], extending: list[str] | None = None) -> list[dict]:
     """Other establishments at the addresses of matched ones (address key + zip3 tolerates zip typos),
     skipping shared offices, which must never pull records into a match. The address key is the building
     (house number + street), so different suites are different tenants: Brasfield & Gorrie's Jackson office
-    (Ste 208) and Neel-Schaffer (Ste 100) are not "the same address"."""
+    (Ste 208) and Neel-Schaffer (Ste 100) are not "the same address". With `extending` (the sub's names), only
+    the records at shared offices named one of them plus more words: for rule S3, never a match."""
     if not keys:
         return []
     found = _at(f"""SELECT DISTINCT addr_key, left(zip5, 3) AS zip3, {_unit_sql('address')} AS unit FROM entity.establishment
                     WHERE establishment_key IN (SELECT unnest(?::VARCHAR[])) AND addr_key IS NOT NULL AND zip5 IS NOT NULL""",
-                [keys], 500)
+                [keys], 500, extending=extending)
     return [r for r in found if r["establishment_key"] not in exclude]
 
 

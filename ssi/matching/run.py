@@ -206,6 +206,18 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
                 changed = changed or d.bucket == MATCHED
         if not changed:
             break
+    # S3 at a shared office: a building with many companies pulls nothing in, except a record under the sub's own
+    # distinctive name plus a word, and only as a question. D.R. Horton's head office houses ten of its companies'
+    # names (so it counts as shared), among them D R HORTON INC PORTLAND, 17 inspections
+    matched = [k for k, (_, d) in decided.items() if d.bucket == MATCHED] if q.tier == "distinctive" else []
+    for r in C.at_addresses(matched, exclude=set(), extending=sorted({q.clean, q.core, *q.aliases} - {""})):
+        k = r["establishment_key"]
+        prev = decided.get(k)
+        if prev and prev[1].bucket != EXCLUDED:
+            continue
+        d = decide(q, _candidate(r, at_address=True), generic, descriptors)
+        if d.rule_id in ("S3", "J1"):
+            decided[k] = (prev[0] if prev else r, d)
     # Red-flag safety net: a rule may not throw away a red-flagged record at an address this company uses
     # (a branch filed under another name, e.g. Barnhart's Oklahoma City fatality). It goes to the GC instead.
     still_excluded = [k for k in excluded_at_address if k not in decided or decided[k][1].bucket == EXCLUDED]

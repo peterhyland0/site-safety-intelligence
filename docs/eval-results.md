@@ -134,6 +134,7 @@ right on real records is in [§3.6](#36-each-rule-on-its-own).
 | **L1** linked to the GC's licence number | Matched | A GC can pin a sub when the name is ambiguous |
 | **S1** differs only by `OF <STATE>` / `AT <project>` | Uncertain | The code review found Hoffman Construction's OF OREGON records among 48 *excluded*: the place word stayed in the name core, so S1 never fired. Now Hoffman's Oregon, Washington and California companies and 20 regional Pulte records are possible |
 | **S2** the sub's name + BRANCH / DIVISION / OFFICE | Uncertain, never excluded | The pipeline review: a rule excluded Barnhart's own Oklahoma City branch, which carried a fatality |
+| **S3** the sub's name + a real word, at an address the sub uses | Uncertain, never excluded | A GC's "D.R. Horton" excluded `D R HORTON INC PORTLAND`, 17 inspections and 7 red flags at D.R. Horton's head office: 0.88 similar, short of M2's 0.93, so X1 called it another company. The head office holds ten of the group's names, so it counts as a shared office and wasn't searched at all; a shared office now pulls in these records only, for a distinctive name, and never as a match |
 | **P1 / X5** a person's name matches only in the GC's city or at a matched address | Matched / Excluded / Uncertain | The pipeline review: "Juan Garcia, TX" auto-matched **24 records in 13 states**, including another person's cited fatality; "JOSE HERNANDEZ" is 49 records in 17 states. After: 0 auto-matches without a city. The audit then found people the rule missed: ALEX PEREZ (7 establishments, 5 states, rated "distinctive", so M3 matched across states) and J LOPEZ (8 in 7 states). 113 given names and an initial + surname rule added; cores rated person 20,988 → 24,398. Place names (SAN ANTONIO, ST GEORGE: 27 cores) are no longer people, since X5 had excluded a company's own branch. A misspelt city ("heuston") makes a person uncertain, not excluded |
 | **P2** another person's name at a matched address | Uncertain | The audit: 10 of the M2 pairs were different people (`MARIO` / `MAURICIO CONTRERAS`, `SERGIO CAZARES` / `… SR`) |
 | **P3** a company named after a person, in another city or state | Uncertain | The per-rule eval ([§3.6](#36-each-rule-on-its-own)): X5 excluded the company's own records in all 24 labelled cases (13 firms). In the warehouse, 8% of bare person names recur in another city, spread wide (JOSE GARCIA: 36 cities); 3.4% of person names with a trade or company word do, and the widest are real firms (David Weekley Homes, Stanley Martin Homes, Edward Rose & Sons). Bare names with a legal form on every record that recur are firms too (Oscar W. Larson, James N. Gray); common names carry one only sometimes (JOSE MARTINEZ: 2 of 37). So P3 needs a company word on both sides, or a legal form both typed and on the record. Unsure rather than matched: a few such names are several people's (JOSE GARCIA CONSTRUCTION, 3 states) |
@@ -196,7 +197,7 @@ It runs searches the way a GC would, starting from 2,986 establishments that fil
 1,500 drawn at random, and the rest from pools where particular rules act (people's names, shared buildings, joint
 ventures, branch and OF <STATE> names, related facilities, licence numbers). Every record the rules decide is filed
 under the rule that decided it and labelled by tax ID, with at most 3 per search and rule so that one national firm
-can't fill a rule's set. 140,425 records were decided, 23,418 labelled and 7,813 graded, in about 5½ minutes with no
+can't fill a rule's set. 140,473 records were decided, 23,424 labelled and 7,842 graded, in about 6 minutes with no
 model calls. Full table and examples: [eval/rules/results.md](../eval/rules/results.md).
 
 Share of a rule's labelled records that were the same company (firms = distinct tax IDs searched):
@@ -208,7 +209,7 @@ Share of a rule's labelled records that were the same company (firms = distinct 
 | M3 distinctive name, other state | matched | 461 (120) | 0.78 [0.74–0.81] | precision |
 | M2 spelling variant at a matched address | matched | 36 (26) | 0.67 [0.5–0.8] | precision |
 | M1b descriptor words differ | matched | 43 (21) | 0.44 [0.3–0.59] | precision |
-| X1 a different real word | excluded | 3,521 (1,343) | 0.007 [0.01–0.01] | wrongly excluded |
+| X1 a different real word | excluded | 3,510 (1,339) | 0.006 [0.0–0.01] | wrongly excluded |
 | X3 common name, other words | excluded | 1,216 (476) | 0.001 [0.0–0.0] | wrongly excluded |
 | X4 common name, other state | excluded | 17 (7) | 0.59 [0.36–0.78] | wrongly excluded |
 | X5 person's name, other city (before P3) | excluded | 24 (13) | 1.0 [0.86–1.0] | wrongly excluded |
@@ -218,12 +219,20 @@ Share of a rule's labelled records that were the same company (firms = distinct 
 | M3u M3's guard for colliding names | possible | 24 (15) | 0.58 [0.39–0.76] | held back, but the sub's |
 | G1 initials-only | possible | 61 (31) | 0.51 [0.39–0.63] | held back, but the sub's |
 | U anything else | possible | 380 (183) | 0.27 [0.23–0.32] | held back, but the sub's |
-| U2 common name, same city | possible | 30 (21) | 0.20 [0.1–0.37] | held back, but the sub's |
+| S3 the sub's name + a word, at its address | possible | 50 (30) | 0.38 [0.26–0.52] | held back, but the sub's |
+| U2 common name, same city | possible | 29 (21) | 0.17 [0.08–0.35] | held back, but the sub's |
 | U3 trade word differs | possible | 149 (92) | 0.13 [0.09–0.2] | held back, but the sub's |
-| R1 red-flag safety net | possible | 60 (35) | 0.12 [0.06–0.22] | held back, but the sub's |
+| R1 red-flag safety net | possible | 51 (29) | 0.06 [0.02–0.16] | held back, but the sub's |
 | S1 OF <STATE> / AT <project> | possible | 479 (209) | 0.01 [0.0–0.02] | held back, but the sub's |
 
-Too few labels to grade: S2 (2, from one firm), P1 (2), J1 (fired 3 times, none labelled). P2 and X2 never fired.
+Too few labels to grade: S2 (2, from one firm), P1 (2), J1 (85 records, none labelled: a JV files under its own tax
+ID). P2 and X2 never fired.
+
+**S3** (the sub's name plus a word, at an address it uses) holds back records that were the sub's 38% of the time, too
+often to exclude and too seldom to match, which is why it asks. With it J1 went from 3 records to 85: joint ventures
+named after a member at the member's address (GILBANE ANT YAPI JOINT VENTURE at Gilbane's) used to fall through to
+X1. Together they took 244 records from X1 and 24 from R1's red-flag net, and reached 48 at shared offices that no
+search had found before.
 
 What the examples show:
 

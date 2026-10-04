@@ -1,0 +1,268 @@
+{
+  "seed": 7,
+  "held_out": false,
+  "missed": false,
+  "checked": null,
+  "searches": 10,
+  "pool": 120,
+  "pairs": 1190,
+  "model": "jev-latest",
+  "thresholds": {
+    "jev_found": 0.2,
+    "jev_kept": {
+      "same_state": 0.2,
+      "other_state": 0.06
+    },
+    "jev_match": 0.85,
+    "jaro_winkler": 0.8
+  },
+  "groups": {
+    "Same company": {
+      "n": 26,
+      "Rules (the app's search)": 26,
+      "Jaro-Winkler \u2265 0.8": 26,
+      "Jev, the app's cut-offs": 26,
+      "Jev P(same) > 0.2": 25,
+      "Jev P(same) \u2265 0.85": 6
+    },
+    "  same name, same state": {
+      "n": 5,
+      "Rules (the app's search)": 5,
+      "Jaro-Winkler \u2265 0.8": 5,
+      "Jev, the app's cut-offs": 5,
+      "Jev P(same) > 0.2": 5,
+      "Jev P(same) \u2265 0.85": 4
+    },
+    "  same name, other state": {
+      "n": 19,
+      "Rules (the app's search)": 19,
+      "Jaro-Winkler \u2265 0.8": 19,
+      "Jev, the app's cut-offs": 19,
+      "Jev P(same) > 0.2": 18,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  other name, same state": {
+      "n": 2,
+      "Rules (the app's search)": 2,
+      "Jaro-Winkler \u2265 0.8": 2,
+      "Jev, the app's cut-offs": 2,
+      "Jev P(same) > 0.2": 2,
+      "Jev P(same) \u2265 0.85": 2
+    },
+    "Lookalike (same name core, other tax ID)": {
+      "n": 34,
+      "Rules (the app's search)": 5,
+      "Jaro-Winkler \u2265 0.8": 27,
+      "Jev, the app's cut-offs": 3,
+      "Jev P(same) > 0.2": 2,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "Other record": {
+      "n": 1130,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 3,
+      "Jev, the app's cut-offs": 1,
+      "Jev P(same) > 0.2": 0,
+      "Jev P(same) \u2265 0.85": 0
+    }
+  },
+  "jw": {
+    "auc": 1.0,
+    "auc_vs_lookalikes": 0.998,
+    "ranked_first": 0.923
+  },
+  "jev": {
+    "auc": 0.999,
+    "auc_vs_lookalikes": 0.957,
+    "ranked_first": 0.654,
+    "missing": 0,
+    "median_s": 0.242,
+    "tokens": 760582
+  },
+  "errors": [],
+  "seconds": 2,
+  "same_company": [
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO. (Nashville, TN)",
+      "jev": 0.42,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO. (Mclean, VA)",
+      "jev": 0.895,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO (Sacramento, CA)",
+      "jev": 0.45,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO. (Nashville, TN)",
+      "jev": 0.32,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO. (Greeley, CO)",
+      "jev": 0.19,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO. (Greeley, CO)",
+      "jev": 0.39,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO (Kuna, ID)",
+      "jev": 0.315,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO (Los Angeles, CA)",
+      "jev": 0.33,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "WA317949910 - HENSEL PHELPS CONSTRUCTION CO (Greeley, CO)",
+      "jev": 0.435,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HENSEL PHELPS CONSTRUCTION COMPANY (Leesburg, VA)",
+      "record": "HENSEL PHELPS CONSTRUCTION CO (Honolulu, HI)",
+      "jev": 0.35,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HUGH MACDONALD CONSTRUCTION INC. (Thonotosassa, FL)",
+      "record": "HUGH MACDONALD CONSTRUCTION, INC. (Thonotosassa, FL)",
+      "jev": 0.995,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "103264 - EGAN COMPANY (Champlin, MN)",
+      "record": "96430 - EGAN COMPANY (Minneapolis, MN)",
+      "jev": 0.62,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JRC MECHANICAL, LLC (Chesapeake, VA)",
+      "record": "JRC MECHANICAL, LLC (Chesapeake, VA)",
+      "jev": 0.9550000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "jev": 0.435,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Detroit, MI)",
+      "jev": 0.31000000000000005,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Boston, MA)",
+      "jev": 0.335,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "WA317942775 - TURNER CONSTRUCTION COMPANY (Seattle, WA)",
+      "jev": 0.255,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Philadelphia, PA)",
+      "jev": 0.38,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (New York, NY)",
+      "jev": 0.305,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Shelton, CT)",
+      "jev": 0.265,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION (Kansas City, MO)",
+      "jev": 0.275,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Cincinnati, OH)",
+      "jev": 0.28,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "record": "TURNER CONSTRUCTION COMPANY (Chicago, IL)",
+      "jev": 0.33,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MITCHELL CONCRETE (Rancho Cordova, CA)",
+      "record": "MITCHELL CONCRETE (Rancho Cordova, CA)",
+      "jev": 0.9500000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "MITCHELL CONCRETE (Rancho Cordova, CA)",
+      "record": "MITCHELL JONES CONCRETE, INC. (Rancho Cordova, CA)",
+      "jev": 0.9,
+      "jw": 0.913,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MITCHELL CONCRETE (Rancho Cordova, CA)",
+      "record": "MITCHELL JONES CONCRETE, INC. (Rancho Cordova, CA)",
+      "jev": 0.9,
+      "jw": 0.913,
+      "rules": "uncertain"
+    }
+  ]
+}

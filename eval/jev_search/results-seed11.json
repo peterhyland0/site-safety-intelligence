@@ -1,0 +1,1237 @@
+{
+  "seed": 11,
+  "held_out": true,
+  "missed": false,
+  "checked": null,
+  "searches": 60,
+  "pool": 384,
+  "pairs": 22980,
+  "model": "jev-latest",
+  "thresholds": {
+    "jev_found": 0.2,
+    "jev_kept": {
+      "same_state": 0.2,
+      "other_state": 0.06
+    },
+    "jev_match": 0.85,
+    "jaro_winkler": 0.8
+  },
+  "groups": {
+    "Same company": {
+      "n": 161,
+      "Rules (the app's search)": 149,
+      "Jaro-Winkler \u2265 0.8": 154,
+      "Jev, the app's cut-offs": 134,
+      "Jev P(same) > 0.2": 104,
+      "Jev P(same) \u2265 0.85": 25
+    },
+    "  same name, same state": {
+      "n": 36,
+      "Rules (the app's search)": 36,
+      "Jaro-Winkler \u2265 0.8": 36,
+      "Jev, the app's cut-offs": 36,
+      "Jev P(same) > 0.2": 36,
+      "Jev P(same) \u2265 0.85": 25
+    },
+    "  same name, other state": {
+      "n": 102,
+      "Rules (the app's search)": 102,
+      "Jaro-Winkler \u2265 0.8": 102,
+      "Jev, the app's cut-offs": 81,
+      "Jev P(same) > 0.2": 55,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  other name, same state": {
+      "n": 8,
+      "Rules (the app's search)": 6,
+      "Jaro-Winkler \u2265 0.8": 7,
+      "Jev, the app's cut-offs": 8,
+      "Jev P(same) > 0.2": 8,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  other name, other state": {
+      "n": 15,
+      "Rules (the app's search)": 5,
+      "Jaro-Winkler \u2265 0.8": 9,
+      "Jev, the app's cut-offs": 9,
+      "Jev P(same) > 0.2": 5,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  the rules don't find": {
+      "n": 7,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 0,
+      "Jev, the app's cut-offs": 6,
+      "Jev P(same) > 0.2": 6,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  the rules exclude": {
+      "n": 5,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 5,
+      "Jev, the app's cut-offs": 3,
+      "Jev P(same) > 0.2": 1,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "Lookalike (same name core, other tax ID)": {
+      "n": 138,
+      "Rules (the app's search)": 38,
+      "Jaro-Winkler \u2265 0.8": 83,
+      "Jev, the app's cut-offs": 34,
+      "Jev P(same) > 0.2": 28,
+      "Jev P(same) \u2265 0.85": 2
+    },
+    "Other record": {
+      "n": 22681,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 90,
+      "Jev, the app's cut-offs": 14,
+      "Jev P(same) > 0.2": 0,
+      "Jev P(same) \u2265 0.85": 0
+    }
+  },
+  "jw": {
+    "auc": 0.963,
+    "auc_vs_lookalikes": 0.88,
+    "ranked_first": 0.783
+  },
+  "jev": {
+    "auc": 0.995,
+    "auc_vs_lookalikes": 0.844,
+    "ranked_first": 0.745,
+    "missing": 0,
+    "median_s": 0.241,
+    "tokens": 14787065
+  },
+  "errors": [],
+  "seconds": 473,
+  "same_company": [
+    {
+      "search": "ADI CONSTRUCTION, INC (North Springfield, VA)",
+      "record": "ADI CONSTRUCTION OF VIRGINIA LLC (Springfield, VA)",
+      "jev": 0.6799999999999999,
+      "jw": 0.914,
+      "rules": "uncertain"
+    },
+    {
+      "search": "JERRY THOMPSON AND SONS PAINTING, INC. (San Rafael, CA)",
+      "record": "JERRY THOMPSON & SONS PAINTING, INC (San Rafael, CA)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BRUBACHER EXCAVATING,  INC. (Bowmansville, PA)",
+      "record": "BRUBACHER EXCAVATING,  INC. (Bowmansville, PA)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR INC. (Fairfax, VA)",
+      "jev": 0.66,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR, INC. (Columbia, MD)",
+      "jev": 0.265,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR, INC (Springboro, OH)",
+      "jev": 0.24000000000000002,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "136209 - NVR, INC. (Huntersville, NC)",
+      "jev": 0.27,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "146409 - NVR, INC. (Huntersville, NC)",
+      "jev": 0.265,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "137627 - NVR, INC. (Raleigh, NC)",
+      "jev": 0.195,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR, INC. (Beltsville, MD)",
+      "jev": 0.35,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "144691 - NVR, INC. (Charlotte, NC)",
+      "jev": 0.275,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR, INC. (Williamsburg, VA)",
+      "jev": 0.71,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NVR, INC. (Chesapeake, VA)",
+      "record": "NVR (West Chester, PA)",
+      "jev": 0.305,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MAYES AND SONS PLUMBING COMPANY (Garrettsville, OH)",
+      "record": "MAYES & SONS PLUMBING CO. (Garrettsville, OH)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HOLDER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "record": "HOLDER CONSTRUCTION GROUP, LLC (Atlanta, GA)",
+      "jev": 0.6749999999999999,
+      "jw": 0.952,
+      "rules": "matched"
+    },
+    {
+      "search": "HOLDER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "record": "HOLDER CONSTRUCTION (Atlanta, GA)",
+      "jev": 0.995,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "HOLDER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "record": "145511 - HOLDER CONSTRUCTION GROUP, LLC (Atlanta, GA)",
+      "jev": 0.75,
+      "jw": 0.952,
+      "rules": "matched"
+    },
+    {
+      "search": "HOLDER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "record": "HOLDER CONSTRUCTION GROUP, LLC (Atlanta, GA)",
+      "jev": 0.7350000000000001,
+      "jw": 0.952,
+      "rules": "matched"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (Roanoke, VA)",
+      "jev": 0.595,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "107215 - THYSSENKRUPP ELEVATOR CORP (Lombard, IL)",
+      "jev": 0.40499999999999997,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (Fargo, ND)",
+      "jev": 0.41,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (Livonia, MI)",
+      "jev": 0.08,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (New York, NY)",
+      "jev": 0.455,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORP (Omaha, NE)",
+      "jev": 0.38,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORP (Honolulu, HI)",
+      "jev": 0.305,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (King Of Prussia, PA)",
+      "jev": 0.09,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR LAS VEGAS (Las Vegas, NV)",
+      "jev": 0.01,
+      "jw": 0.834,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (Hollins, VA)",
+      "jev": 0.585,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "WA317969555 - TK ELEVATOR CORPORATION (Atlanta, GA)",
+      "jev": 0.05,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON INC. (Henderson, NV)",
+      "jev": 0.435,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "140224 - D. R. HORTON, INC (High Point, NC)",
+      "jev": 0.515,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "133410 - D. R. HORTON, INC (Morrisville, NC)",
+      "jev": 0.395,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON, INC. (Annapolis, MD)",
+      "jev": 0.325,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON, INC (Saint Johns, FL)",
+      "jev": 0.685,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON (Arlington, TX)",
+      "jev": 0.42000000000000004,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON, INC. (Midlothian, VA)",
+      "jev": 0.535,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "152486 - D.R. HORTON, INC. (High Point, NC)",
+      "jev": 0.335,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "133259 - D.R. HORTON, INC. (Charlotte, NC)",
+      "jev": 0.385,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "149547 - D.R. HORTON, INC. (Charlotte, NC)",
+      "jev": 0.425,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "D.R. HORTON INC. (Orlando, FL)",
+      "record": "D.R. HORTON, INC. (Bluffton, SC)",
+      "jev": 0.515,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "317717935 - SOURCE REFRIGERATION & HVAC INC (Anaheim, CA)",
+      "record": "COOLSYS, INC. (Boise, ID)",
+      "jev": 0.0,
+      "jw": 0.405,
+      "rules": "not_found"
+    },
+    {
+      "search": "MID STATE ELECTRIC INC. (Mount Pleasant, MI)",
+      "record": "MID STATE ELECTRIC, INC. (Mount Pleasant, MI)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Channelview, TX)",
+      "jev": 0.24,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Omaha, NE)",
+      "jev": 0.155,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "jev": 0.97,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES (Denver, CO)",
+      "jev": 0.22499999999999998,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Denver, CO)",
+      "jev": 0.26,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Houston, TX)",
+      "jev": 0.29000000000000004,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "MCCARTHY BUILDING COMPANIES, INC. (Atlanta, GA)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Phoenix, AZ)",
+      "jev": 0.22999999999999998,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "NARRAGANSETT IMPROVEMENT COMPANY (Providence, RI)",
+      "record": "NARRAGANSETT IMPROVEMENT COMPANY (Providence, RI)",
+      "jev": 0.9650000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "NARRAGANSETT IMPROVEMENT COMPANY (Providence, RI)",
+      "record": "NARRAGANSETT IMPROVEMENT COMPANY (Providence, RI)",
+      "jev": 0.9650000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (New York, NY)",
+      "jev": 0.325,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING CO. (Cleveland, OH)",
+      "jev": 0.2,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Richmond, VA)",
+      "jev": 0.25,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Arlington, VA)",
+      "jev": 0.315,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Atlanta, GA)",
+      "jev": 0.28,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Chicago, IL)",
+      "jev": 0.335,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Baltimore, MD)",
+      "jev": 0.29,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Glastonbury, CT)",
+      "jev": 0.325,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "GILBANE BUILDING COMPANY (Providence, RI)",
+      "record": "GILBANE BUILDING COMPANY (Chicago, IL)",
+      "jev": 0.31,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "J L KENT & SONS (Fredericksburg, VA)",
+      "record": "J. L. KENT & SONS, INC. (Fredericksburg, VA)",
+      "jev": 0.995,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "153545 - TRI POINTE HOMES HOLDINGS, INC. (Charlotte, NC)",
+      "jev": 0.065,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "158618 - TRI POINTE HOMES HOLDINGS, INC. (Charlotte, NC)",
+      "jev": 0.05,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "TRI POINTE HOMES HOLDINGS, INC. (Irvine, CA)",
+      "jev": 0.495,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "TRI POINTE HOMES, INC. (San Ramon, CA)",
+      "jev": 0.7000000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "154604 - TRI POINTE HOMES HOLDINGS, INC (Charlotte, NC)",
+      "jev": 0.055,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "TRI POINTE HOMES INC. (Irvine, CA)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "TRI POINTE HOMES HOLDINGS, INC. (Irvine, CA)",
+      "jev": 0.495,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "157534 - TRI POINTE HOMES HOLDINGS, INC. (Raleigh, NC)",
+      "jev": 0.065,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "TRI POINTE HOMES, INC. (Irvine, CA)",
+      "record": "151956 - TRI POINTE HOMES HOLDINGS, INC. (Charlotte, NC)",
+      "jev": 0.06,
+      "jw": 0.928,
+      "rules": "matched"
+    },
+    {
+      "search": "101332 - MINDAK COMMERCIAL CONSTRUCTION LLC (Lonsdale, MN)",
+      "record": "103480 - MINDAK COMMERCIAL CONSTRUCTION LLC (Lonsdale, MN)",
+      "jev": 0.92,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "101332 - MINDAK COMMERCIAL CONSTRUCTION LLC (Lonsdale, MN)",
+      "record": "102495 - MINDAK COMMERCIAL CONSTRUCTION LLC (Lonsdale, MN)",
+      "jev": 0.915,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Reno, NV)",
+      "jev": 0.065,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "WA317946191 - PENHALL COMPANY (Anaheim, CA)",
+      "jev": 0.095,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Nashville, TN)",
+      "jev": 0.065,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Aiea, HI)",
+      "jev": 0.975,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Irving, TX)",
+      "jev": 0.06999999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "161974 - PENHALL COMPANY (Greer, SC)",
+      "jev": 0.05,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Charlotte, NC)",
+      "jev": 0.065,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Anaheim, CA)",
+      "jev": 0.085,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PENHALL COMPANY (Aiea, HI)",
+      "record": "PENHALL COMPANY (Irving, TX)",
+      "jev": 0.06999999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Chandler, AZ)",
+      "jev": 0.5449999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Minneapolis, MN)",
+      "jev": 0.5650000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Itasca, IL)",
+      "jev": 0.5700000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Denver, CO)",
+      "jev": 0.53,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Minneapolis, MN)",
+      "jev": 0.6,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M. A. MORTENSON COMPANY (Mojave, CA)",
+      "jev": 0.51,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M. A. MORTENSON COMPANY (Las Vegas, NV)",
+      "jev": 0.525,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M. A. MORTENSON COMPANY (Milwaukee, WI)",
+      "jev": 0.8150000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "M. A. MORTENSON COMPANY (Brookfield, WI)",
+      "record": "M.A. MORTENSON COMPANY (Salt Lake City, UT)",
+      "jev": 0.62,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "317727255 - PERFORMANCE CONTRACTING INC (Portland, OR)",
+      "jev": 0.02,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "110860 - PERFORMANCE CONTRACTING INC (Carmel, IN)",
+      "jev": 0.035,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING INC. (Exton, PA)",
+      "jev": 0.04,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING, INC. (Pasadena, TX)",
+      "jev": 0.015,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING INC. (North Highlands, CA)",
+      "jev": 0.015,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING, INC. (Grandview, MO)",
+      "jev": 0.05,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING, INC. (Lake Zurich, IL)",
+      "jev": 0.04,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING INC. (Las Vegas, NV)",
+      "jev": 0.03,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "URX2023XT3633X0087 - PERFORMANCE CONTRACTING, INC. (Tempe, AZ)",
+      "jev": 0.05,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "66723 - PERFORMANCE CONTRACTING INC (Cincinnati, OH)",
+      "jev": 0.08499999999999999,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "61178 - PERFORMANCE CONTRACTING INC (Calvert City, KY)",
+      "record": "PERFORMANCE CONTRACTING, INC. (Benicia, CA)",
+      "jev": 0.045000000000000005,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "108952 - JE DUNN CONSTRUCTION COMPANY (Minneapolis, MN)",
+      "jev": 0.12000000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "JE DUNN CONSTRUCTION COMPANY (Oklahoma City, OK)",
+      "jev": 0.07,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "JE DUNN CONSTRUCTION (Houston, TX)",
+      "jev": 0.22,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "75502 - JE DUNN CONSTRUCTION (Savannah, GA)",
+      "jev": 0.19,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "J.E. DUNN CONSTRUCTION COMPANY (Nashville, TN)",
+      "jev": 0.375,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "J. E. DUNN CONSTRUCTION COMPANY (Atlanta, GA)",
+      "jev": 0.275,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "J.E. DUNN CONSTRUCTION COMPANY (Kansas City, MO)",
+      "jev": 0.29000000000000004,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "J. E. DUNN CONSTRUCTION COMPANY (Omaha, NE)",
+      "jev": 0.245,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "JE DUNN CONSTRUCTION COMPANY (Williston, ND)",
+      "jev": 0.14,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JE DUNN CONSTRUCTION (Denver, CO)",
+      "record": "JE DUNN CONSTRUCTION (Tempe, AZ)",
+      "jev": 0.135,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "134698 - CLANCY - THEYS CONSTRUCTION CO. (Raleigh, NC)",
+      "record": "155067 - CLANCY - THEYS CONSTRUCTION CO. (Raleigh, NC)",
+      "jev": 0.925,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "134698 - CLANCY - THEYS CONSTRUCTION CO. (Raleigh, NC)",
+      "record": "149147 - CLANCY - THEYS CONSTRUCTION CO. (Wilmington, NC)",
+      "jev": 0.72,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "134698 - CLANCY - THEYS CONSTRUCTION CO. (Raleigh, NC)",
+      "record": "CLANCY & THEYS CONSTRUCTION CO INC (Newport News, VA)",
+      "jev": 0.08499999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "STROBER-WRIGHT ROOFING INC. (Lambertville, NJ)",
+      "record": "STROBER-WRIGHT ROOFING, INC. (Lambertville, NJ)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "STROBER-WRIGHT ROOFING INC. (Lambertville, NJ)",
+      "record": "STROBER-WRIGHT ROOFING, INC. (Lambertville, NJ)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "WAUKEGAN ROOFING COMPANY, INC. (Wheeling, IL)",
+      "record": "WAUKEGAN ROOFING COMPANY, INC. (Mundelein, IL)",
+      "jev": 0.755,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Atlanta, GA)",
+      "jev": 0.34,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Detroit, MI)",
+      "jev": 0.27,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Boston, MA)",
+      "jev": 0.275,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "WA317942775 - TURNER CONSTRUCTION COMPANY (Seattle, WA)",
+      "jev": 0.25,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Philadelphia, PA)",
+      "jev": 0.31,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (New York, NY)",
+      "jev": 0.235,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Shelton, CT)",
+      "jev": 0.28,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Reston, VA)",
+      "jev": 0.42000000000000004,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Albany, NY)",
+      "jev": 0.235,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION (Kansas City, MO)",
+      "jev": 0.28,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Cincinnati, OH)",
+      "jev": 0.275,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "TURNER CONSTRUCTION COMPANY (Dallas, TX)",
+      "record": "TURNER CONSTRUCTION COMPANY (Pittsburgh, PA)",
+      "jev": 0.30500000000000005,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "70691 - RABON ENTERPRISES INC (Ridgeway, SC)",
+      "record": "74389 - RABON ENTERPRISES (Lugoff, SC)",
+      "jev": 0.6799999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "70691 - RABON ENTERPRISES INC (Ridgeway, SC)",
+      "record": "72526 - RABON ENTERPRISES INC (Ridgeway, SC)",
+      "jev": 0.85,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "110819 - J L WALTER - ASSOCIATES (Indianapolis, IN)",
+      "record": "108977 - JL WALTER - ASSOCIATES INC (Indianapolis, IN)",
+      "jev": 0.77,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "SIERRA MOUNTAIN CONSTRUCTION, INC. (Sonora, CA)",
+      "record": "SIERRA MOUNTAIN CONSTRUCTION, INC. (Sonora, CA)",
+      "jev": 0.985,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "SIERRA MOUNTAIN CONSTRUCTION, INC. (Sonora, CA)",
+      "record": "SIERRA MOUNTAIN CONSTRUCTION, INC. (Sonora, CA)",
+      "jev": 1.0,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK (Chelmsford, MA)",
+      "jev": 0.07,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Richmond, VA)",
+      "jev": 0.125,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Franklin, OH)",
+      "jev": 0.05,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (King Of Prussia, PA)",
+      "jev": 0.16999999999999998,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Grimes, IA)",
+      "jev": 0.12,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Tonawanda, NY)",
+      "jev": 0.1,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Canonsburg, PA)",
+      "jev": 0.06,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Westland, MI)",
+      "jev": 0.1,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK (Pompano Beach, FL)",
+      "jev": 0.085,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Elgin, IL)",
+      "jev": 0.11,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "CENTIMARK CORPORATION (Hazelwood, MO)",
+      "record": "CENTIMARK CORPORATION (Stow, OH)",
+      "jev": 0.09000000000000001,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "QC COMMUNICATIONS, INC. (Wabash, IN)",
+      "record": "QC COMMUNICATIONS, INC. (Wabash, IN)",
+      "jev": 0.975,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "WA317942518 - TPC CONSTRUCTION INC (Mill Creek, WA)",
+      "record": "WA317972018 - TPC CONSTRUCTION INC (Snohomish, WA)",
+      "jev": 0.75,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "109192 - GRAYCOR INDUSTRIAL CONSTRUCTORS (Villa Park, IL)",
+      "record": "GRAYCOR INDUSTRIAL CONSTRUCTORS, INC (Oakbrook Terrace, IL)",
+      "jev": 0.79,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "WA317945094 - OMNI CONTRACTING SOLUTIONS LLC (Everett, WA)",
+      "record": "WA317987201 - OMNI CONTRACTING SOLUTIONS LLC (Everett, WA)",
+      "jev": 0.8849999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "THE BOSTON SOLAR COMPANY, LLC (Woburn, MA)",
+      "record": "THE BOSTON SOLAR COMPANY, LLC (Woburn, MA)",
+      "jev": 0.975,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "WEST SHORE HOME (Ocala, FL)",
+      "record": "WEST SHORE HOME (Mechanicsburg, PA)",
+      "jev": 0.005,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "106469 - AB SYSTEMS INC (Rochester, MN)",
+      "record": "99407 - AB SYSTEMS INC (Rochester, MN)",
+      "jev": 0.865,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "ZACHRY CONSTRUCTION CORPORATION (San Antonio, TX)",
+      "record": "ZACHRY CONSTRUCTION CORPORATION (San Antonio, TX)",
+      "jev": 0.98,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Franklin, TN)",
+      "jev": 0.04,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Franklin, TN)",
+      "jev": 0.025,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Midlothian, VA)",
+      "jev": 0.045000000000000005,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY INC. (Greensboro, NC)",
+      "jev": 0.01,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Norcross, GA)",
+      "jev": 0.03,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Bartlett, TN)",
+      "jev": 0.03,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "VENTURE CONSTRUCTION CO. (Overland Park, KS)",
+      "record": "VENTURE CONSTRUCTION COMPANY (Midlothian, VA)",
+      "jev": 0.03,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "158992 - ARISTEO CONSTRUCTION COMPANY (Livonia, MI)",
+      "record": "ARISTEO CONSTRUCTION COMPANY (Livonia, MI)",
+      "jev": 0.995,
+      "jw": 1.0,
+      "rules": "matched"
+    }
+  ]
+}

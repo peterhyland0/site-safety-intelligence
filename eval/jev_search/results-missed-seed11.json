@@ -1,0 +1,859 @@
+{
+  "seed": 11,
+  "held_out": true,
+  "missed": true,
+  "checked": 793,
+  "searches": 30,
+  "pool": 207,
+  "pairs": 6180,
+  "model": "jev-latest",
+  "thresholds": {
+    "jev_found": 0.2,
+    "jev_kept": {
+      "same_state": 0.2,
+      "other_state": 0.06
+    },
+    "jev_match": 0.85,
+    "jaro_winkler": 0.8
+  },
+  "groups": {
+    "Same company": {
+      "n": 107,
+      "Rules (the app's search)": 40,
+      "Jaro-Winkler \u2265 0.8": 64,
+      "Jev, the app's cut-offs": 52,
+      "Jev P(same) > 0.2": 38,
+      "Jev P(same) \u2265 0.85": 8
+    },
+    "  same name, same state": {
+      "n": 8,
+      "Rules (the app's search)": 8,
+      "Jaro-Winkler \u2265 0.8": 8,
+      "Jev, the app's cut-offs": 8,
+      "Jev P(same) > 0.2": 8,
+      "Jev P(same) \u2265 0.85": 4
+    },
+    "  same name, other state": {
+      "n": 40,
+      "Rules (the app's search)": 30,
+      "Jaro-Winkler \u2265 0.8": 40,
+      "Jev, the app's cut-offs": 25,
+      "Jev P(same) > 0.2": 14,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  other name, same state": {
+      "n": 19,
+      "Rules (the app's search)": 2,
+      "Jaro-Winkler \u2265 0.8": 8,
+      "Jev, the app's cut-offs": 11,
+      "Jev P(same) > 0.2": 11,
+      "Jev P(same) \u2265 0.85": 4
+    },
+    "  other name, other state": {
+      "n": 40,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 8,
+      "Jev, the app's cut-offs": 8,
+      "Jev P(same) > 0.2": 5,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "  the rules don't find": {
+      "n": 45,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 3,
+      "Jev, the app's cut-offs": 11,
+      "Jev P(same) > 0.2": 10,
+      "Jev P(same) \u2265 0.85": 1
+    },
+    "  the rules exclude": {
+      "n": 22,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 22,
+      "Jev, the app's cut-offs": 7,
+      "Jev P(same) > 0.2": 4,
+      "Jev P(same) \u2265 0.85": 2
+    },
+    "Lookalike (same name core, other tax ID)": {
+      "n": 20,
+      "Rules (the app's search)": 6,
+      "Jaro-Winkler \u2265 0.8": 12,
+      "Jev, the app's cut-offs": 5,
+      "Jev P(same) > 0.2": 2,
+      "Jev P(same) \u2265 0.85": 0
+    },
+    "Other record": {
+      "n": 6053,
+      "Rules (the app's search)": 0,
+      "Jaro-Winkler \u2265 0.8": 14,
+      "Jev, the app's cut-offs": 22,
+      "Jev P(same) > 0.2": 4,
+      "Jev P(same) \u2265 0.85": 0
+    }
+  },
+  "jw": {
+    "auc": 0.827,
+    "auc_vs_lookalikes": 0.58,
+    "ranked_first": 0.523
+  },
+  "jev": {
+    "auc": 0.859,
+    "auc_vs_lookalikes": 0.599,
+    "ranked_first": 0.477,
+    "missing": 0,
+    "median_s": 0.24,
+    "tokens": 3929115
+  },
+  "errors": [],
+  "seconds": 242,
+  "same_company": [
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (Roanoke, VA)",
+      "jev": 0.595,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "107215 - THYSSENKRUPP ELEVATOR CORP (Lombard, IL)",
+      "jev": 0.40499999999999997,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (Fargo, ND)",
+      "jev": 0.41,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (Livonia, MI)",
+      "jev": 0.08,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORPORATION (New York, NY)",
+      "jev": 0.455,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORP (Omaha, NE)",
+      "jev": 0.38,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "THYSSENKRUPP ELEVATOR CORP (Honolulu, HI)",
+      "jev": 0.305,
+      "jw": 0.469,
+      "rules": "not_found"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (King Of Prussia, PA)",
+      "jev": 0.09,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR LAS VEGAS (Las Vegas, NV)",
+      "jev": 0.01,
+      "jw": 0.834,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "TK ELEVATOR CORPORATION (Hollins, VA)",
+      "jev": 0.585,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "TK ELEVATOR RICHMOND (Ashland, VA)",
+      "record": "WA317969555 - TK ELEVATOR CORPORATION (Atlanta, GA)",
+      "jev": 0.05,
+      "jw": 0.91,
+      "rules": "excluded"
+    },
+    {
+      "search": "317717935 - SOURCE REFRIGERATION & HVAC INC (Anaheim, CA)",
+      "record": "COOLSYS, INC. (Boise, ID)",
+      "jev": 0.0,
+      "jw": 0.405,
+      "rules": "not_found"
+    },
+    {
+      "search": "TECTA AMERICA LLC (Rosemont, IL)",
+      "record": "EAGLE CORNICE CO., INC. (Cranston, RI)",
+      "jev": 0.0,
+      "jw": 0.702,
+      "rules": "not_found"
+    },
+    {
+      "search": "TECTA AMERICA LLC (Rosemont, IL)",
+      "record": "PRO-TEC ROOFING, INC. (Watertown, SD)",
+      "jev": 0.005,
+      "jw": 0.509,
+      "rules": "not_found"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION, LLC. (Overland Park, KS)",
+      "jev": 0.08499999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION, L.L.C. (Tampa, FL)",
+      "jev": 0.035,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION (Olathe, KS)",
+      "jev": 0.05,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION (Boca Raton, FL)",
+      "jev": 0.09,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "WA317956367 - CECO CONCRETE CONSTRUCTION LLC (Kent, WA)",
+      "jev": 0.185,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION (Metairie, LA)",
+      "jev": 0.035,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "TRIBCO CONSTRUCTION SERVICES, LLC (Chicago, IL)",
+      "jev": 0.0,
+      "jw": 0.678,
+      "rules": "not_found"
+    },
+    {
+      "search": "105887 - CECO CONCRETE CONSTRUCTION LLC (Andover, MN)",
+      "record": "CECO CONCRETE CONSTRUCTION, L.L.C. (Tampa, FL)",
+      "jev": 0.07,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TESLA INC. (Draper, UT)",
+      "record": "TESLA, INC. (Sparks, NV)",
+      "jev": 0.20500000000000002,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TESLA INC. (Draper, UT)",
+      "record": "TESLA, INC. (Elk Grove Village, IL)",
+      "jev": 0.385,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TESLA INC. (Draper, UT)",
+      "record": "TESLA, INC. (Fremont, CA)",
+      "jev": 0.395,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TESLA INC. (Draper, UT)",
+      "record": "TESLA, INC. (Santa Maria, CA)",
+      "jev": 0.53,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "TESLA INC. (Draper, UT)",
+      "record": "SOLARCITY CORPORATION (Norwell, MA)",
+      "jev": 0.0,
+      "jw": 0.644,
+      "rules": "not_found"
+    },
+    {
+      "search": "BLUE SKY CONTROLS (Pittsburgh, PA)",
+      "record": "HATZEL & BUEHLER INC (Livonia, MI)",
+      "jev": 0.0,
+      "jw": 0.494,
+      "rules": "not_found"
+    },
+    {
+      "search": "BLUE SKY CONTROLS (Pittsburgh, PA)",
+      "record": "HATZEL & BUEHLER, INC. (Pittsburgh, PA)",
+      "jev": 0.035,
+      "jw": 0.494,
+      "rules": "not_found"
+    },
+    {
+      "search": "BLUE SKY CONTROLS (Pittsburgh, PA)",
+      "record": "HATZEL & BUEHLER, INC. (Philadelphia, PA)",
+      "jev": 0.005,
+      "jw": 0.494,
+      "rules": "not_found"
+    },
+    {
+      "search": "BLUE SKY CONTROLS (Pittsburgh, PA)",
+      "record": "HATZEL & BUEHLER, INC. (Philadelphia, PA)",
+      "jev": 0.005,
+      "jw": 0.494,
+      "rules": "not_found"
+    },
+    {
+      "search": "BLUE SKY CONTROLS (Pittsburgh, PA)",
+      "record": "HATZEL & BUEHLER INC (Beltsville, MD)",
+      "jev": 0.0,
+      "jw": 0.494,
+      "rules": "not_found"
+    },
+    {
+      "search": "LENNAR-SOUTHWEST FLORIDA (Fort Myers, FL)",
+      "record": "LENNAR COLORADO LLC (Englewood, CO)",
+      "jev": 0.0,
+      "jw": 0.866,
+      "rules": "excluded"
+    },
+    {
+      "search": "LENNAR-SOUTHWEST FLORIDA (Fort Myers, FL)",
+      "record": "LENNAR - IDAHO BOISE (Eagle, ID)",
+      "jev": 0.0,
+      "jw": 0.829,
+      "rules": "excluded"
+    },
+    {
+      "search": "LENNAR-SOUTHWEST FLORIDA (Fort Myers, FL)",
+      "record": "LENNAR RENO, LLC (Reno, NV)",
+      "jev": 0.0,
+      "jw": 0.694,
+      "rules": "not_found"
+    },
+    {
+      "search": "LENNAR-SOUTHWEST FLORIDA (Fort Myers, FL)",
+      "record": "LENNAR RENO LLC (Reno, NV)",
+      "jev": 0.005,
+      "jw": 0.694,
+      "rules": "not_found"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING LLC (Colorado Springs, CO)",
+      "jev": 0.01,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING COMPANY LLC (Denver, CO)",
+      "jev": 0.005,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING COMPANY (Omaha, NE)",
+      "jev": 0.025,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING LLC (Denver, CO)",
+      "jev": 0.015,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING, LLC (Kansas City, MO)",
+      "jev": 0.215,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "PREMIER ROOFING COMPANY (Saint Louis, MO)",
+      "record": "PREMIER ROOFING COMPANY (Fort Collins, CO)",
+      "jev": 0.02,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "FAIRFAX WATER (Fairfax, VA)",
+      "record": "FAIRFAX COUNTY WATER AUTHORITY (Fairfax, VA)",
+      "jev": 0.915,
+      "jw": 0.871,
+      "rules": "uncertain"
+    },
+    {
+      "search": "FAIRFAX WATER (Fairfax, VA)",
+      "record": "FAIRFAX COUNTY WATER AUTHORITY (Fairfax, VA)",
+      "jev": 0.915,
+      "jw": 0.871,
+      "rules": "excluded"
+    },
+    {
+      "search": "PRECISION WALLS, INC. (La Vergne, TN)",
+      "record": "PRECISION WALLS INC (Wilmington, NC)",
+      "jev": 0.065,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PRECISION WALLS, INC. (La Vergne, TN)",
+      "record": "ADVANCED EXTERIOR SYSTEMS, LLC (Raleigh, NC)",
+      "jev": 0.0,
+      "jw": 0.493,
+      "rules": "not_found"
+    },
+    {
+      "search": "PRECISION WALLS, INC. (La Vergne, TN)",
+      "record": "72436 - PRECISION WALLS INC (North Charleston, SC)",
+      "jev": 0.06999999999999999,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "PRECISION WALLS, INC. (La Vergne, TN)",
+      "record": "PRECISION WALLS, INC. (Cary, NC)",
+      "jev": 0.075,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "BALFOUR BEATTY INFRASTRUCTURE (La Verne, CA)",
+      "jev": 0.24000000000000002,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "PEGASUS LINK CONSTRUCTORS (Dallas, TX)",
+      "jev": 0.0,
+      "jw": 0.585,
+      "rules": "not_found"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "BALFOUR BEATTY INFRASTRUCTURE, INC. (Somerville, MA)",
+      "jev": 0.16,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "BALFOUR BEATTY INFRASTRUCTURE, INC. (Wilmington, NC)",
+      "jev": 0.225,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "BALFOUR BEATTY INFRASTRUCTURE, INC. (San Mateo, CA)",
+      "jev": 0.21500000000000002,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "BALFOUR BEATTY INFRASTRUCTURE INC. (Suffolk, VA)",
+      "record": "BALFOUR BEATTY INFRASTRUCTURE, INC. (Wilmington, NC)",
+      "jev": 0.225,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "WA317946986 - QUADRANT CORPORATION (Bellevue, WA)",
+      "record": "WA317964786 - TRI POINTE HOMES WASHINGTON INC (Bellevue, WA)",
+      "jev": 0.015,
+      "jw": 0.384,
+      "rules": "not_found"
+    },
+    {
+      "search": "J.T. VAUGHN CONSTRUCTION, LLC (Houston, TX)",
+      "record": "JT VAUGHN CONSTRUCTION, LLC (Houston, TX)",
+      "jev": 0.985,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "J.T. VAUGHN CONSTRUCTION, LLC (Houston, TX)",
+      "record": "VAUGHN CONSTRUCTION (Houston, TX)",
+      "jev": 0.865,
+      "jw": 0.814,
+      "rules": "excluded"
+    },
+    {
+      "search": "70555 - THOMPSON TURNER CONSTRUCTION (Sumter, SC)",
+      "record": "71009 - THOMPSON TURNER CONSTRUCTION CO (Sumter, SC)",
+      "jev": 0.925,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "70555 - THOMPSON TURNER CONSTRUCTION (Sumter, SC)",
+      "record": "74135 - THOMPSON CONSTRUCTION GROUP INC (Georgetown, SC)",
+      "jev": 0.105,
+      "jw": 0.891,
+      "rules": "excluded"
+    },
+    {
+      "search": "BUILDERS SERVICES GROUP, INC. (North Las Vegas, NV)",
+      "record": "BUILDERS SERVICES GROUP, INC. (Houston, TX)",
+      "jev": 0.1,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Carlsbad, CA)",
+      "jev": 0.23,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Indio, CA)",
+      "jev": 0.28500000000000003,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Sacramento, CA)",
+      "jev": 0.335,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Carlsbad, CA)",
+      "jev": 0.23,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Carlsbad, CA)",
+      "jev": 0.23,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Salt Lake City, UT)",
+      "jev": 0.14,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "GRANITE CONSTRUCTION COMPANY (Anchorage, AK)",
+      "jev": 0.195,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "GRANITE CONSTRUCTION COMPANY (Sparks, NV)",
+      "record": "KENNY CONSTRUCTION COMPANY (Northbrook, IL)",
+      "jev": 0.0,
+      "jw": 0.772,
+      "rules": "not_found"
+    },
+    {
+      "search": "POWER HOME SOLAR LLC (Chesterfield, MI)",
+      "record": "POWERHOME SOLAR (Mooresville, NC)",
+      "jev": 0.08499999999999999,
+      "jw": 0.961,
+      "rules": "not_found"
+    },
+    {
+      "search": "POWER HOME SOLAR LLC (Chesterfield, MI)",
+      "record": "POWER HOME SOLAR LLC (Kentwood, MI)",
+      "jev": 0.5700000000000001,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "POWER HOME SOLAR LLC (Chesterfield, MI)",
+      "record": "POWER HOME SOLAR LLC (Mooresville, NC)",
+      "jev": 0.055,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "POWER HOME SOLAR LLC (Chesterfield, MI)",
+      "record": "POWER HOME SOLAR LLC (Concord, NC)",
+      "jev": 0.025,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "LIBERTY CONSTRUCTION SERVICES, LLC (Boston, MA)",
+      "record": "FUSE BUILDS LLC (Boston, MA)",
+      "jev": 0.095,
+      "jw": 0.543,
+      "rules": "not_found"
+    },
+    {
+      "search": "LIBERTY CONSTRUCTION SERVICES, LLC (Boston, MA)",
+      "record": "LIBERTY CONSTRUCTION SERVICES LLC (Braintree, MA)",
+      "jev": 0.73,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "JACOBS FIELD SERVICES NORTH AMERICA, INC. (Pasadena, TX)",
+      "record": "JACOBS FIELD SERVICES, NORTH AMERICA (Columbus, NE)",
+      "jev": 0.22999999999999998,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "JACOBS FIELD SERVICES NORTH AMERICA, INC. (Pasadena, TX)",
+      "record": "WORLEY (Anchorage, AK)",
+      "jev": 0.005,
+      "jw": 0.51,
+      "rules": "not_found"
+    },
+    {
+      "search": "JACOBS FIELD SERVICES NORTH AMERICA, INC. (Pasadena, TX)",
+      "record": "WORLEY (Commerce City, CO)",
+      "jev": 0.005,
+      "jw": 0.51,
+      "rules": "not_found"
+    },
+    {
+      "search": "JRCRUZ CORP. (Aberdeen, NJ)",
+      "record": "JR CRUZ CORP. (Holmdel, NJ)",
+      "jev": 0.76,
+      "jw": 0.962,
+      "rules": "not_found"
+    },
+    {
+      "search": "SILA SERVICES LLC. (Beltsville, MD)",
+      "record": "AA SERVICE COMPANY (Northbrook, IL)",
+      "jev": 0.0,
+      "jw": 0.827,
+      "rules": "not_found"
+    },
+    {
+      "search": "SILA SERVICES LLC. (Beltsville, MD)",
+      "record": "BURNS & MCBRIDE, INC. (New Castle, DE)",
+      "jev": 0.0,
+      "jw": 0.53,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES INC (Newport Beach, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES INC (Roseville, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (San Francisco, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES, INC. (Santa Clara, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES INC. (Roseville, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "CASTLE CONTRACTING (Webster Groves, MO)",
+      "record": "MCCARTHY BUILDING COMPANIES INC (Newport Beach, CA)",
+      "jev": 0.0,
+      "jw": 0.623,
+      "rules": "not_found"
+    },
+    {
+      "search": "ROOFER'S EDGE INC (Mount Joy, PA)",
+      "record": "PROGRESSIVE SERVICES INCORPORATED (Tucson, AZ)",
+      "jev": 0.0,
+      "jw": 0.659,
+      "rules": "not_found"
+    },
+    {
+      "search": "ROOFER'S EDGE INC (Mount Joy, PA)",
+      "record": "PROGRESSIVE ROOFING, LLC (Phoenix, AZ)",
+      "jev": 0.0,
+      "jw": 0.613,
+      "rules": "not_found"
+    },
+    {
+      "search": "ROOFER'S EDGE INC (Mount Joy, PA)",
+      "record": "ROOFER'S EDGE INC (Mount Joy, PA)",
+      "jev": 0.975,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "NORTH STAR LOGISTICS (Watford City, ND)",
+      "record": "NORTH STAR LOGISTICS, LLC (Watertown, SD)",
+      "jev": 0.02,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "NORTH STAR LOGISTICS (Watford City, ND)",
+      "record": "SENTRY, LLC (Watertown, SD)",
+      "jev": 0.0,
+      "jw": 0.539,
+      "rules": "not_found"
+    },
+    {
+      "search": "NORTH STAR LOGISTICS (Watford City, ND)",
+      "record": "NORTH STAR LOGISTICS, L.L.C. (Watertown, SD)",
+      "jev": 0.035,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "NORTH & SOUTH CONSTRUCTION SERVICES (Newington, NH)",
+      "record": "S.J. CANTWELL, INC. (Newington, NH)",
+      "jev": 0.06999999999999999,
+      "jw": 0.402,
+      "rules": "not_found"
+    },
+    {
+      "search": "EDC (Midlothian, VA)",
+      "record": "76387 - EDC (Midlothian, VA)",
+      "jev": 0.81,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "EDC (Midlothian, VA)",
+      "record": "EILERSON DEVELOPMENT CORPORATION (Midlothian, VA)",
+      "jev": 0.9500000000000001,
+      "jw": 0.589,
+      "rules": "not_found"
+    },
+    {
+      "search": "EDC (Midlothian, VA)",
+      "record": "EDC (Midlothian, VA)",
+      "jev": 0.865,
+      "jw": 1.0,
+      "rules": "matched"
+    },
+    {
+      "search": "STURGEON ELECTRIC COMPANY, INC. (Topeka, KS)",
+      "record": "STURGEON ELECTRIC (Anchorage, AK)",
+      "jev": 0.02,
+      "jw": 1.0,
+      "rules": "uncertain"
+    },
+    {
+      "search": "STURGEON ELECTRIC COMPANY, INC. (Topeka, KS)",
+      "record": "LE MYERS CO, THE (Marshalltown, IA)",
+      "jev": 0.0,
+      "jw": 0.506,
+      "rules": "not_found"
+    },
+    {
+      "search": "STURGEON ELECTRIC COMPANY, INC. (Topeka, KS)",
+      "record": "THE L.E. MYERS CO. (Sorrento, FL)",
+      "jev": 0.0,
+      "jw": 0.506,
+      "rules": "not_found"
+    },
+    {
+      "search": "STURGEON ELECTRIC COMPANY, INC. (Topeka, KS)",
+      "record": "THE L.E. MYERS CO. (Marshalltown, IA)",
+      "jev": 0.0,
+      "jw": 0.506,
+      "rules": "not_found"
+    },
+    {
+      "search": "UTILITY SERVICE CO INC (Madison, NC)",
+      "record": "UTILITY SERVICE CO. INC (Perry, GA)",
+      "jev": 0.015,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "UTILITY SERVICE CO INC (Madison, NC)",
+      "record": "58542 - UTILITY SERVICE CO INC (Perry, GA)",
+      "jev": 0.01,
+      "jw": 1.0,
+      "rules": "excluded"
+    },
+    {
+      "search": "J. ROSS PAINTING & DRYWALL (Kingsport, TN)",
+      "record": "J ROSS CONGLOMERATE, LLC (Blountville, TN)",
+      "jev": 0.295,
+      "jw": 0.673,
+      "rules": "not_found"
+    },
+    {
+      "search": "J. ROSS PAINTING & DRYWALL (Kingsport, TN)",
+      "record": "J ROSS CONGLOMERATE, LLC (Kingsport, TN)",
+      "jev": 0.45,
+      "jw": 0.673,
+      "rules": "uncertain"
+    },
+    {
+      "search": "J. ROSS PAINTING & DRYWALL (Kingsport, TN)",
+      "record": "J ROSS CONGLOMERATE, LLC (Kingsport, TN)",
+      "jev": 0.45,
+      "jw": 0.673,
+      "rules": "not_found"
+    },
+    {
+      "search": "LEWIS CRANE & HOIST, INC. (Mansfield, TX)",
+      "record": "SUN CRANE AND HOIST INC. (Mansfield, TX)",
+      "jev": 0.25,
+      "jw": 0.851,
+      "rules": "excluded"
+    },
+    {
+      "search": "LEWIS CRANE & HOIST, INC. (Mansfield, TX)",
+      "record": "SUN CRANE & HOIST, INC. (Mansfield, TX)",
+      "jev": 0.155,
+      "jw": 0.851,
+      "rules": "excluded"
+    }
+  ]
+}

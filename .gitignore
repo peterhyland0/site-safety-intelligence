@@ -10,6 +10,7 @@ data/
 
 # eval: the rules' cases, rebuilt from the warehouse (the answer cache is kept)
 eval/adjudication/.cases-*.json
+eval/jev_search/.missed-*.json
 
 # python
 .venv/

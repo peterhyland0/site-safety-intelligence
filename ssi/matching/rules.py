@@ -188,6 +188,12 @@ def only_descriptor_difference(a: str, b: str, descriptors: frozenset[str] | Non
     return all(t in d for t in diff)
 
 
+def added_words(name: str, bases: set[str]) -> list[str]:
+    """The words a name adds after one of the sub's names (PORTLAND in DR HORTON PORTLAND, after DR HORTON); []
+    when it doesn't start with one."""
+    return next((name[len(b):].split() for b in bases if b and name.startswith(b + " ")), [])
+
+
 def without_suffix(core: str, suffix: str | None, generic: frozenset[str]) -> str:
     """The core without its sibling suffix's place or project words (HOFFMAN OREGON + " OF OREGON" -> HOFFMAN):
     OF and AT are generic, but the place word stays in the core."""
@@ -236,8 +242,7 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
             return Decision(UNCERTAIN, "S1", "Names differ only by a location/project suffix, which usually means a sibling company")
 
     # S2: the sub's full name plus a branch/division suffix: likely the same company, never "different"
-    rest = next((c.clean_name[len(a):].split() for a in {q.clean, *q.aliases}
-                 if a and c.clean_name.startswith(a + " ")), [])
+    rest = added_words(c.clean_name, {q.clean, *q.aliases})
     if rest and BRANCH_WORDS & set(rest):
         return Decision(UNCERTAIN, "S2", "Looks like a branch or division of the same company (" + " ".join(rest[:4]) + ")")
 
@@ -269,6 +274,15 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
                 return Decision(UNCERTAIN, "P2", "Same address as a matched record but another person's name "
                                 f"({c.clean_name.title()}): a relative, or the same person?")
         return matched("M2", "Same address as a matched record; name differs only by spelling")
+    # S3: the sub's name plus a real word, at an address the sub uses. D R HORTON INC PORTLAND (17 inspections at
+    # D.R. Horton's head office) scored 0.88 against DR HORTON, short of M2's 0.93, and X1 excluded it as another
+    # company. The address says it's this company or a sister: a question, never "different"
+    added = [t for t in rest or added_words(c.name_core, {q.core}) if t not in generic]
+    if c.at_matched_address and added:
+        if is_jv_name(q.clean) != c.is_jv:
+            return Decision(UNCERTAIN, "J1", "A joint venture at an address this company uses; a JV is its own company")
+        return Decision(UNCERTAIN, "S3", "Same address as a matched record, under the sub's name plus "
+                        + " ".join(added[:4]) + ": a division or a sister company")
     # P1 / X5: a person's name (a sole proprietor) is usually many different people; only a place ties it
     if q.tier == "person" and (same_full or core_equal):
         other_state = bool(q.state and c.state and not same_state)

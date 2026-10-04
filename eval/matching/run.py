@@ -36,10 +36,8 @@ from ssi.store import warehouse
 
 OUT = Path(__file__).parent
 
-
-def build_pairs(n: int, seed: int = 7, cross_state: int = 0) -> list[dict]:
-    warehouse.open_warehouse()
-    base = """
+# The silver-labelled establishments, as CTE e: each links exactly (name + zip) to injury filings under one tax ID
+SILVER = """
       WITH linked AS (
         SELECT DISTINCT k.establishment_key, y.ein
         FROM entity.ref_link k JOIN ref_ext.ita_establishment_year y ON y.establishment_id = k.ref_id
@@ -49,6 +47,11 @@ def build_pairs(n: int, seed: int = 7, cross_state: int = 0) -> list[dict]:
             WHERE NOT x.is_placeholder AND x.city IS NOT NULL AND x.insp_n >= 1
               AND NOT coalesce(x.related_only, false))  -- construction records only: related facilities are never auto-matched
     """
+
+
+def build_pairs(n: int, seed: int = 7, cross_state: int = 0) -> list[dict]:
+    warehouse.open_warehouse()
+    base = SILVER
     pos = warehouse.rows(base + """
       SELECT a.establishment_key AS a_key, b.establishment_key AS b_key, 1 AS label,
              CASE WHEN a.clean_name = b.clean_name THEN 'same_name_other_address' ELSE 'different_name' END AS kind
