@@ -5,12 +5,16 @@ lean as a suggestion) and is not counted until answered; past a few, questions a
 
 With a company profile (ssi/llm/profile.py), records at a location the company lists skip the AI and go to the
 GC in one question, with the page that lists them; so do records found at those addresses under another name.
-They're written with method 'profile' (possible until answered), which a re-match keeps."""
+They're written with method 'profile' (possible until answered), which a re-match keeps.
+
+One request at a time resolves a sub (claim()), and a record the GC moves while the AI is working keeps the GC's
+bucket."""
 from __future__ import annotations
 
 import json
 from collections import defaultdict
 from collections.abc import Callable
+from contextlib import contextmanager
 
 from ssi import config
 from ssi.matching import candidates as C
@@ -19,6 +23,41 @@ from ssi.store import pg, warehouse
 
 # llm(packet) -> {"decision": same|different|unsure, "confidence": float, "rationale": str} or None
 LLMFn = Callable[[dict], dict | None]
+
+CLAIM_STALE_MINUTES = 15  # a claim older than this was abandoned (the request died); the next request takes over
+
+
+@contextmanager
+def claim(sub_id: str):
+    """One lookup-and-adjudication per sub at a time. Yields the sub's row, read as the claim is taken, or None when
+    another request is already at it. Two at once looked the company up twice, asked the GC the same question twice,
+    and let the second adjudicate every record before the first one's profile arrived, so the profile was never used."""
+    with pg.conn() as c:
+        sub = c.execute(f"""UPDATE app.project_sub SET adjudicating_since = now()
+                            WHERE sub_id = %s AND (adjudicating_since IS NULL
+                              OR adjudicating_since < now() - interval '{CLAIM_STALE_MINUTES} minutes')
+                            RETURNING *""", [sub_id]).fetchone()
+    if sub is None:
+        yield None
+        return
+    try:
+        yield sub
+    finally:
+        with pg.conn() as c:  # only this request's claim: a newer request may have taken over a stale one
+            c.execute("UPDATE app.project_sub SET adjudicating_since = NULL WHERE sub_id = %s AND adjudicating_since = %s",
+                      [sub_id, sub["adjudicating_since"]])
+
+
+def resolve(sub_id: str, project: dict, llm: LLMFn | None = None,
+            packet_fn: Callable[[dict, list[dict]], dict] | None = None,
+            profile_fn: Callable[[dict, dict], dict | None] | None = None) -> dict | None:
+    """The adjudication step for a sub, under its claim: look the company up (profile_fn), then adjudicate. None when
+    another request is already resolving the sub; its answer lands when that request finishes."""
+    with claim(sub_id) as sub:
+        if sub is None:
+            return None
+        profile = profile_fn(sub, project) if profile_fn else None
+        return adjudicate(sub, llm=llm, packet_fn=packet_fn, profile=profile)
 
 
 def _clusters(rows: list[dict]) -> dict[tuple, list[dict]]:
@@ -307,17 +346,24 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
             red.append((crow, decision, rationale if decision else None, n_flags))
         decided_by = (decision or {}).get("decided_by") or (_ai_label() if method.startswith("llm") else "rules")
         updates.append((bucket, method, conf, rationale, keys, decided_by))
-    questions = questions_for(sub, red)
     with pg.conn() as c:
         for bucket, method, conf, rationale, keys, decided_by in updates:
+            # only records still waiting: the GC may have moved one while the AI was working, and the GC's call stands
             c.execute("""UPDATE app.sub_match SET bucket = %s, method = %s, confidence = %s, rationale = %s,
                                 needs_adjudication = false, decided_by = %s, decided_at = now()
-                         WHERE sub_id = %s AND establishment_key = ANY(%s)""",
+                         WHERE sub_id = %s AND establishment_key = ANY(%s) AND needs_adjudication AND method <> 'gc'""",
                       [bucket, method, conf, rationale, decided_by, sub_id, keys])
+        # ... and a record the GC has decided isn't asked about
+        gc = {r["establishment_key"] for r in c.execute(
+            "SELECT establishment_key FROM app.sub_match WHERE sub_id = %s AND method = 'gc'", [sub_id]).fetchall()}
+        red = [(rest, d, why, sum(flags.get(r["establishment_key"], 0) for r in rest))
+               for crow, d, why, _ in red if (rest := [r for r in crow if r["establishment_key"] not in gc])]
+        questions = questions_for(sub, red)
         open_keys = {k for q in _open_questions(c, sub_id) for k in q["establishment_keys"]}
         if held:
             _write_holds(c, sub, profile, held, query)
-            fresh = {k: h for k, h in held.items() if k not in open_keys}  # the question text names only what it asks
+            # the question text names only what it asks
+            fresh = {k: h for k, h in held.items() if k not in open_keys and k not in gc}
             stats["questions"] += _ask(c, sub_id, profile_questions(sub, profile, fresh, flags), open_keys)
         for text, keys, suggestion, rationale in questions:
             if set(keys) <= open_keys:

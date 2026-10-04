@@ -150,6 +150,8 @@ CREATE INDEX IF NOT EXISTS company_profile_key ON app.company_profile (profile_k
 -- NULL for subs added before profiles (a button builds one), else pending | done | skipped | error
 ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_status text;
 ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_id uuid;
+-- set while a request looks the sub's company up and adjudicates its records, so only one does at a time
+ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS adjudicating_since timestamptz;
 -- 'profile' questions come from a company profile and carry the pages they quote
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'red_flag';
 ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS sources jsonb;

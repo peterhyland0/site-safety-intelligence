@@ -87,12 +87,16 @@ def main() -> None:
             if retry:
                 print(f"    {retry} record(s) whose AI answer was rejected will be re-checked")
             if a.apply:
-                match_and_persist(s, p["state"])
-                if retry:
-                    with pg.conn() as c:
-                        c.execute("UPDATE app.sub_match SET needs_adjudication = true WHERE sub_id = %s AND method = 'llm_rejected'",
-                                  [s["sub_id"]])
-                stats = ADJ.adjudicate(s, llm=llm, packet_fn=ADJ.evidence_packet)
+                with ADJ.claim(str(s["sub_id"])) as claimed:  # not while the app is resolving this sub
+                    if claimed is None:
+                        print("    skipped: the app is resolving this sub right now; run again in a few minutes")
+                        continue
+                    match_and_persist(claimed, p["state"])
+                    if retry:
+                        with pg.conn() as c:
+                            c.execute("UPDATE app.sub_match SET needs_adjudication = true WHERE sub_id = %s AND method = 'llm_rejected'",
+                                      [s["sub_id"]])
+                    stats = ADJ.adjudicate(claimed, llm=llm, packet_fn=ADJ.evidence_packet)
                 print(f"    applied; adjudicated {stats['clusters']} uncertain group(s), {stats['questions']} new GC question(s)")
 
 

@@ -266,12 +266,13 @@ def sub_inspections(project_id: str, sub_id: str, offset: int = 0, limit: int = 
 
 @app.post("/api/projects/{project_id}/subs/{sub_id}/adjudicate", response_model=S.SubCard)
 def adjudicate_sub(project_id: str, sub_id: str):
-    p, s = _project(project_id), _sub(project_id, sub_id)
+    """A new sub's company is looked up first, so listed locations skip the AI. When another request is already
+    resolving this sub, the card comes back as it stands (still needs_adjudication) and the app asks again shortly."""
+    p, _ = _project(project_id), _sub(project_id, sub_id)
     from ssi.llm import adjudicator  # imported lazily: optional dependency on the LLM provider
     from ssi.llm import profile as P
-    prof = P.for_sub(s, p)  # a new sub's company is looked up first, so listed locations skip the AI
-    ADJ.adjudicate(s, llm=adjudicator.decide if adjudicator.available() else None, packet_fn=ADJ.evidence_packet,
-                   profile=prof)
+    ADJ.resolve(sub_id, p, llm=adjudicator.decide if adjudicator.available() else None,
+                packet_fn=ADJ.evidence_packet, profile_fn=P.for_sub)
     return Q.card(_sub(project_id, sub_id), p)
 
 
@@ -279,11 +280,14 @@ def adjudicate_sub(project_id: str, sub_id: str):
 def lookup_profile(project_id: str, sub_id: str):
     """The "Look up this company" button, for subs added before profiles: build (or reuse) the profile and ask
     about the undecided records at the locations it lists."""
-    p, s = _project(project_id), _sub(project_id, sub_id)
+    p, _ = _project(project_id), _sub(project_id, sub_id)
     from ssi.llm import profile as P
-    prof = P.for_sub(s, p, force=True)
-    if prof:
-        ADJ.apply_profile(s, prof)
+    with ADJ.claim(sub_id) as s:
+        if s is None:
+            raise HTTPException(409, "This sub's records are being resolved right now. Try again in a minute.")
+        prof = P.for_sub(s, p, force=True)
+        if prof:
+            ADJ.apply_profile(s, prof)
     return Q.card(_sub(project_id, sub_id), p)
 
 

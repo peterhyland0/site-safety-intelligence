@@ -94,3 +94,17 @@ def test_facility_wording_only_for_records_linked_by_the_subs_name():
                                                      "address": "4450 OLD CANTON RD STE 100", "years": ["2021-01-01", "2024-01-01"],
                                                      "inspections": 2, "related_only": True, "naics4": "5413", "rule": "R1"}}]
     assert "plant, yard or shop" not in question_text({"entered_name": "Brasfield & Gorrie"}, rows)
+
+
+def test_a_failed_llm_call_leaves_the_cluster_possible_instead_of_failing_the_sub(monkeypatch):
+    # a Modal timeout on one red-flagged cluster used to escape adjudicate() and lose every decision on the sub
+    from ssi.llm import adjudicator
+    from ssi.llm import client as llm
+
+    def timeout(packet):
+        raise TimeoutError("adjudicator endpoint timed out")
+
+    monkeypatch.setattr(llm, "available", lambda role="foreman": True)
+    monkeypatch.setattr(adjudicator, "use_jev", lambda: False)
+    monkeypatch.setattr(adjudicator, "decide_llm", timeout)
+    assert adjudicator.decide({**PACKET, "red_flagged": True}) is None

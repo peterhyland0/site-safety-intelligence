@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import re
+import time
 from urllib.parse import urlsplit
 
 from ssi import config
@@ -30,6 +31,7 @@ DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"  # as ssi/llm/anthropic_provider.py
 TTL_DAYS = 90
 BUILDING_STALE_MINUTES = 10  # a 'building' row older than this was abandoned
+BUILDING_POLL_SECONDS = 3  # how often a request checks on another one building the same profile
 MAX_ROUNDS = 5  # the first request, up to 3 pause_turn resumes, and one nudge to report
 
 SYSTEM = """You identify a construction subcontractor from what a general contractor (GC) typed, and list the \
@@ -306,25 +308,31 @@ def _row(r: dict) -> dict:
 
 
 def build(ctx: dict, http=None) -> dict | None:
-    """The cached profile for this context, or a new one. None when another request is building it, the daily
-    limit is reached, or the search failed (the caller goes on without)."""
+    """The cached profile for this context, or a new one. When another request is building the same profile, waits
+    for its result (until it finishes, fails, or is abandoned) rather than going on without one. None when the daily
+    limit is reached or the search failed (the caller goes on without)."""
     m = model()
     key = profile_key(ctx, m)
-    with pg.conn() as c:
-        c.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [key])  # one builder per company at a time
-        hit = c.execute(f"""SELECT * FROM app.company_profile WHERE profile_key = %s AND (
-                              (status IN ('found', 'not_found') AND created_at > now() - interval '{TTL_DAYS} days')
-                              OR (status = 'building' AND created_at > now() - interval '{BUILDING_STALE_MINUTES} minutes'))
-                            ORDER BY created_at DESC LIMIT 1""", [key]).fetchone()
-        if hit:
-            return _row(hit) if hit["status"] != "building" else None
-        today = c.execute("SELECT count(*) AS n FROM app.company_profile WHERE created_at >= current_date").fetchone()["n"]
-        if today >= daily_limit():
-            log.warning("company profile limit reached (%s today)", today)
-            return None
-        pid = c.execute("""INSERT INTO app.company_profile (profile_key, query, status, model)
-                           VALUES (%s, %s, 'building', %s) RETURNING profile_id""",
-                        [key, json.dumps(ctx, default=str), m]).fetchone()["profile_id"]
+    while True:
+        with pg.conn() as c:
+            c.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [key])  # one builder per company at a time
+            hit = c.execute(f"""SELECT * FROM app.company_profile WHERE profile_key = %s AND (
+                                  (status IN ('found', 'not_found') AND created_at > now() - interval '{TTL_DAYS} days')
+                                  OR (status = 'building' AND created_at > now() - interval '{BUILDING_STALE_MINUTES} minutes'))
+                                ORDER BY created_at DESC LIMIT 1""", [key]).fetchone()
+            if hit and hit["status"] != "building":
+                return _row(hit)
+            if not hit:
+                today = c.execute("SELECT count(*) AS n FROM app.company_profile WHERE created_at >= current_date"
+                                  ).fetchone()["n"]
+                if today >= daily_limit():
+                    log.warning("company profile limit reached (%s today)", today)
+                    return None
+                pid = c.execute("""INSERT INTO app.company_profile (profile_key, query, status, model)
+                                   VALUES (%s, %s, 'building', %s) RETURNING profile_id""",
+                                [key, json.dumps(ctx, default=str), m]).fetchone()["profile_id"]
+                break
+        time.sleep(BUILDING_POLL_SECONDS)  # the same company from another sub: use that search, don't pay twice
     try:
         res = research(ctx, http)
         prof = check(res["report"], res["texts"], res["titles"]) if not res["error"] else None

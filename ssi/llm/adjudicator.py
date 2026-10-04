@@ -4,7 +4,8 @@ decide() routes each cluster. A red-flagged cluster becomes a question to the GC
 it goes to the LLM, whose written reason is checked below. The rest go to Jev (ssi/llm/jev.py) when a Jev key is
 set: it was more accurate than the LLM on held-out silver pairs, about 3.5x faster, and writes no text, so its
 reason line is written in code from the evidence (docs/adjudicator.md). SSI_ADJUDICATOR=llm sends everything to
-the LLM; a failed Jev call falls back to it.
+the LLM; a failed Jev call falls back to it. A failed LLM call leaves that one cluster possible (a red-flagged one
+still becomes a GC question), so one timeout doesn't lose the decisions on the sub's other clusters.
 
 Either way the adjudicator sees identity evidence only (names, addresses, years, trade codes, the GC's input)
 and never the safety history, so a fatality can't bias whether a record is judged "the same company". The LLM's
@@ -69,14 +70,21 @@ def available() -> bool:
 
 
 def decide(packet: dict) -> dict | None:
-    """The answer for one cluster from whichever adjudicator handles it (see the module docstring), or None."""
+    """The answer for one cluster from whichever adjudicator handles it (see the module docstring), or None (the
+    cluster stays possible)."""
     has_llm = llm.available("adjudicator")
     if use_jev() and not (packet.get("red_flagged") and has_llm):
         try:
             return decide_jev(packet)
         except Exception as e:  # noqa: BLE001 - any failure: the LLM, or leave the cluster possible
             log.warning("Jev failed (%s: %s); %s", type(e).__name__, e, "using the LLM" if has_llm else "left possible")
-    return decide_llm(packet) if has_llm else None
+    if not has_llm:
+        return None
+    try:
+        return decide_llm(packet)
+    except Exception as e:  # noqa: BLE001 - a timeout or 5xx on one cluster: leave it possible, go on with the rest
+        log.warning("LLM adjudicator failed (%s: %s); left possible", type(e).__name__, e)
+        return None
 
 
 def decide_jev(packet: dict) -> dict | None:
