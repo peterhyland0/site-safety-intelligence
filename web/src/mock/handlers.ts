@@ -119,7 +119,34 @@ function subFromInput(row: SubInput, project: FxProject): FxSub {
   base.entered_state = row.state ?? project.state ?? null;
   base.trade = row.trade ?? base.trade;
   base.questions = base.questions.map((q) => ({ ...q, question_id: newId("q") }));
+  base.profile_status = "pending"; // the adjudication step looks the company up first, as the API does
+  base.profile = null;
   return base;
+}
+
+/** A profile lookup (mock of ssi/llm/profile.py + adjudicate.apply_profile): records at listed locations are held for
+ * the GC and asked about in one question. Returns the held keys. Idempotent. */
+function applyProfile(s: FxSub): Set<string> {
+  const lookup = s.profile_lookup;
+  s.profile_status = "done";
+  if (!lookup) {
+    s.profile = { status: "not_found", name: null, website: null, summary: null, note: "Nothing turned up for this name.",
+      locations: [], built_at: DATA_AS_OF };
+    return new Set();
+  }
+  s.profile = lookup.profile;
+  const held = new Set<string>();
+  for (const h of lookup.holds) {
+    const e = s.establishments.find((x) => x.key === h.key);
+    if (!e || e.method === "gc" || e.bucket === "matched") continue; // as the API: only undecided possible/excluded records
+    Object.assign(e, { bucket: "possible", method: "profile", confidence: null, rationale: h.rationale, rule_id: null });
+    held.add(h.key);
+  }
+  const keys = lookup.question.establishment_keys.filter((k) => held.has(k));
+  if (keys.length && !s.questions.some((q) => q.kind === "profile")) {
+    s.questions.push({ ...lookup.question, establishment_keys: keys, question_id: newId("q") });
+  }
+  return held;
 }
 
 function csvFor(p: FxProject): string {
@@ -263,12 +290,25 @@ const routes: Route[] = [
     run: async (m) => {
       const p = findProject(decodeURIComponent(m[1]));
       const s = findSub(p, decodeURIComponent(m[2]));
-      await sleep(2200); // the adjudicator is an LLM call per uncertain candidate
-      for (const a of s.adjudication) {
+      const lookingUp = s.profile_status === "pending";
+      await sleep(lookingUp ? 3800 : 2200); // a web search for a new sub, then an AI call per uncertain group
+      const held = lookingUp ? applyProfile(s) : new Set<string>();
+      for (const a of s.adjudication.filter((x) => !held.has(x.key))) { // listed records skip the AI
         const e = s.establishments.find((x) => x.key === a.key);
         if (e) Object.assign(e, { bucket: a.bucket, method: a.method, confidence: a.confidence, rationale: a.rationale, rule_id: null });
       }
       s.needs_adjudication = false;
+      return toCard(s, p.lookback_years);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/projects\/([^/]+)\/subs\/([^/]+)\/profile$/,
+    run: async (m) => {
+      const p = findProject(decodeURIComponent(m[1]));
+      const s = findSub(p, decodeURIComponent(m[2]));
+      await sleep(1800); // the "Look up this company" button: one web search
+      applyProfile(s);
       return toCard(s, p.lookback_years);
     },
   },

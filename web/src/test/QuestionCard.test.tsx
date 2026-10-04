@@ -57,4 +57,25 @@ describe("Match question", () => {
     expect(screen.getByRole("button", { name: "Yes, same company" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mine" })).not.toBeInTheDocument();
   });
+
+  it("shows a profile question's pages and says the suggestion comes from the company's site", () => {
+    render(
+      <QuestionCard
+        question={{
+          ...question(["a"]),
+          kind: "profile",
+          ai_suggestion: "same",
+          ai_rationale: "Listed on tindallcorp.com: “Georgia Division 3361 Grant Road Conley, GA 30288”",
+          sources: [{ url: "https://tindallcorp.com/contact/", title: "Contact", quote: "Georgia Division 3361 Grant Road" }],
+        }}
+        establishments={[est("a", "CONLEY")]}
+        onAnswer={vi.fn()}
+        busy={false}
+      />,
+    );
+    expect(screen.getByText(/The company's website lists this address/)).toBeInTheDocument();
+    expect(screen.queryByText(/AI read/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "https://tindallcorp.com/contact/");
+    expect(screen.getByText(/aren't counted until you answer/)).toBeInTheDocument();
+  });
 });

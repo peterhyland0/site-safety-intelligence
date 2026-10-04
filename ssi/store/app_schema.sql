@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS app.sub_match (
   sub_id             uuid NOT NULL REFERENCES app.project_sub ON DELETE CASCADE,
   establishment_key  text NOT NULL,
   bucket             text NOT NULL CHECK (bucket IN ('matched', 'possible', 'excluded')),
-  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected')),
+  method             text NOT NULL CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile')),
   rule_id            text,
   confidence         real,
   rationale          text,
@@ -132,3 +132,33 @@ CREATE INDEX IF NOT EXISTS chat_message_chat ON app.chat_message (chat_id, messa
 -- No foreign keys: the log outlives deleted chats and users.
 ALTER TABLE app.question_log ADD COLUMN IF NOT EXISTS chat_id uuid;
 ALTER TABLE app.question_log ADD COLUMN IF NOT EXISTS user_id uuid;
+
+-- Company profiles (ssi/llm/profile.py): who a sub is and where it works, from the web, with a quoted source per
+-- location. Rows are immutable versions: a newer one replaces an old one after 90 days, and project_sub points at
+-- the version its question was built from. 'building' marks a search in flight.
+CREATE TABLE IF NOT EXISTS app.company_profile (
+  profile_id  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_key text NOT NULL,   -- hash of everything in the prompt, the prompt version and the model
+  query       jsonb NOT NULL,
+  status      text NOT NULL CHECK (status IN ('building', 'found', 'not_found', 'error')),
+  profile     jsonb,
+  model       text NOT NULL,
+  searches    integer NOT NULL DEFAULT 0,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS company_profile_key ON app.company_profile (profile_key, created_at DESC);
+-- NULL for subs added before profiles (a button builds one), else pending | done | skipped | error
+ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_status text;
+ALTER TABLE app.project_sub ADD COLUMN IF NOT EXISTS profile_id uuid;
+-- 'profile' questions come from a company profile and carry the pages they quote
+ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'red_flag';
+ALTER TABLE app.match_question ADD COLUMN IF NOT EXISTS sources jsonb;
+-- method 'profile': records a company profile routes to the GC; kept on re-match, like AI and GC rows
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sub_match_method_check'
+                 AND pg_get_constraintdef(oid) LIKE '%profile%') THEN
+    ALTER TABLE app.sub_match DROP CONSTRAINT IF EXISTS sub_match_method_check;
+    ALTER TABLE app.sub_match ADD CONSTRAINT sub_match_method_check
+      CHECK (method IN ('rule', 'llm', 'gc', 'llm_rejected', 'profile'));
+  END IF;
+END $$;

@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 Verdict = Literal["high", "review", "no_record", "no_recent", "no_flags"]
 Bucket = Literal["matched", "possible", "excluded"]
-Method = Literal["rule", "llm", "gc", "llm_rejected"]
+Method = Literal["rule", "llm", "gc", "llm_rejected", "profile"]  # profile: held for the GC by a company profile
 Severity = Literal["high", "review", "info"]
 MatchStatus = Literal["resolved", "needs_adjudication", "questions_pending"]
 FatalityStatus = Literal["fatality_cited", "fatality_inspected_not_cited", "fatality_pending", "fatcat_cited",
@@ -101,6 +101,8 @@ class SubCard(BaseModel):
     licence_status: str | None = None
     # other subs on this project matched to the same OSHA record: probably the same company entered twice
     same_records_as: list[SubRef] = []
+    # company profile lookup: None (added before profiles: a button looks it up) | pending | done | skipped | error
+    profile_status: str | None = None
 
 
 class ProjectDetail(BaseModel):
@@ -133,12 +135,42 @@ class MatchedEstablishment(BaseModel):
     industry_code: str | None = None
 
 
+class ProfileSource(BaseModel):
+    url: str
+    title: str | None = None
+    quote: str
+
+
 class MatchQuestion(BaseModel):
     question_id: str
     text: str
     establishment_keys: list[str]
     ai_suggestion: Literal["same", "different", "unsure"] | None
     ai_rationale: str | None
+    kind: Literal["red_flag", "profile"] = "red_flag"  # profile: from the locations a company profile lists
+    sources: list[ProfileSource] = []
+
+
+class ProfileLocation(BaseModel):
+    address: str | None
+    city: str
+    state: str
+    zip: str | None
+    kind: str
+    source_url: str
+    quote: str
+    own_site: bool
+
+
+class CompanyProfile(BaseModel):
+    """Who the sub is and where it works, from the web (ssi/llm/profile.py); every location quotes its page."""
+    status: Literal["found", "not_found"]
+    name: str | None
+    website: str | None
+    summary: str | None
+    note: str | None
+    locations: list[ProfileLocation]
+    built_at: str | None
 
 
 class MatchOverride(BaseModel):
@@ -293,6 +325,7 @@ class SubDetail(BaseModel):
     injury_rates: list[ItaYear]
     licences: list[Licence]
     dq_warnings: list[str]
+    profile: CompanyProfile | None = None
 
 
 # --- accounts ------------------------------------------------------------------------------------

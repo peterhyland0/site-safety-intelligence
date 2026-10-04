@@ -411,6 +411,7 @@ def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
         trir_latest=next((r.trir for r in reversed(d["rates"]) if r.trir is not None), None),
         licence_status=(f"{d['licences'][0].source}: {d['licences'][0].status}" if d["licences"] else None),
         same_records_as=[S.SubRef(**r) for r in d["scope"]["same_records_as"]],
+        profile_status=sub.get("profile_status"),
     )
 
 

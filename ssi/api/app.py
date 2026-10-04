@@ -139,12 +139,25 @@ def _detail(sub: dict, project: dict) -> S.SubDetail:
     return S.SubDetail(
         card=Q.card(sub, project, d), reasons=d["reasons"], coverage=Q.coverage(d),
         questions=[S.MatchQuestion(question_id=str(q["question_id"]), text=q["text"], establishment_keys=q["establishment_keys"],
-                                   ai_suggestion=q["ai_suggestion"], ai_rationale=q["ai_rationale"])
+                                   ai_suggestion=q["ai_suggestion"], ai_rationale=q["ai_rationale"],
+                                   kind=q.get("kind") or "red_flag", sources=q.get("sources") or [])
                    for q in sc["pending_questions"]],
         matched=_bucket_rows(d, "matched"), possible=_bucket_rows(d, "possible"), excluded=_bucket_rows(d, "excluded"),
         red_flags=d["flags"][:100], trend=Q.trend(keys), hazards=d["hazards"],
         open_cases=Q.inspections(keys, limit=50, provisional_only=True), inspections=Q.inspections(keys, limit=25),
-        injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq)
+        injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq, profile=_profile(sub))
+
+
+def _profile(sub: dict) -> S.CompanyProfile | None:
+    from ssi.llm import profile as P
+    prof = P.load(sub.get("profile_id"))
+    if not prof or prof.get("status") not in ("found", "not_found"):
+        return None
+    return S.CompanyProfile(
+        status=prof["status"], name=prof.get("name"), website=prof.get("website"), summary=prof.get("summary"),
+        note=prof.get("note"), built_at=prof.get("built_at"),
+        locations=[S.ProfileLocation(**{k: loc.get(k) for k in S.ProfileLocation.model_fields})
+                   for loc in prof.get("locations") or []])
 
 
 # --- routes ----------------------------------------------------------------------------------------
@@ -218,8 +231,10 @@ def add_subs(project_id: str, body: S.SubsCreate):
         start = c.execute("SELECT coalesce(max(position), 0) AS m FROM app.project_sub WHERE project_id = %s",
                           [project_id]).fetchone()["m"]
         for i, (row, state) in enumerate(zip(rows, states)):
-            s = c.execute("""INSERT INTO app.project_sub (project_id, entered_name, entered_city, entered_state, trade, licence, position)
-                             VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+            # profile_status 'pending': the adjudication step looks the company up first (ssi/llm/profile.py)
+            s = c.execute("""INSERT INTO app.project_sub (project_id, entered_name, entered_city, entered_state, trade, licence,
+                                                          position, profile_status)
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending') RETURNING *""",
                           [project_id, row.name.strip(), (row.city or "").strip() or None, state, row.trade, row.licence,
                            start + i + 1]).fetchone()
             created.append(s)
@@ -252,8 +267,23 @@ def sub_inspections(project_id: str, sub_id: str, offset: int = 0, limit: int = 
 def adjudicate_sub(project_id: str, sub_id: str):
     p, s = _project(project_id), _sub(project_id, sub_id)
     from ssi.llm import adjudicator  # imported lazily: optional dependency on the LLM provider
-    ADJ.adjudicate(s, llm=adjudicator.decide if adjudicator.available() else None, packet_fn=ADJ.evidence_packet)
-    return Q.card(s, p)
+    from ssi.llm import profile as P
+    prof = P.for_sub(s, p)  # a new sub's company is looked up first, so listed locations skip the AI
+    ADJ.adjudicate(s, llm=adjudicator.decide if adjudicator.available() else None, packet_fn=ADJ.evidence_packet,
+                   profile=prof)
+    return Q.card(_sub(project_id, sub_id), p)
+
+
+@app.post("/api/projects/{project_id}/subs/{sub_id}/profile", response_model=S.SubCard)
+def lookup_profile(project_id: str, sub_id: str):
+    """The "Look up this company" button, for subs added before profiles: build (or reuse) the profile and ask
+    about the undecided records at the locations it lists."""
+    p, s = _project(project_id), _sub(project_id, sub_id)
+    from ssi.llm import profile as P
+    prof = P.for_sub(s, p, force=True)
+    if prof:
+        ADJ.apply_profile(s, prof)
+    return Q.card(_sub(project_id, sub_id), p)
 
 
 @app.post("/api/projects/{project_id}/subs/{sub_id}/matches/{establishment_key}", response_model=S.SubCard)

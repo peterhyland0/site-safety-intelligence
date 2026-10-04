@@ -380,6 +380,7 @@ export function toCard(sub: FxSub, lookback: number): SubCard {
     last_year: years.length ? Math.max(...years) : null,
     trir_latest: sub.injury_rates.find((r) => !r.flagged)?.trir ?? null,
     licence_status: sub.licence_status,
+    profile_status: sub.profile_status ?? null,
   };
 }
 
@@ -434,6 +435,7 @@ export function toDetail(sub: FxSub, lookback: number): SubDetail {
     injury_rates: sub.injury_rates,
     licences: sub.licences,
     dq_warnings: sub.dq_warnings,
+    profile: sub.profile ?? null,
   };
 }
 

@@ -198,6 +198,9 @@ export const api = {
   /** Runs the LLM adjudicator on the sub's uncertain candidates; returns the re-scored SubCard. */
   adjudicate: (projectId: string, subId: string) =>
     request<SubCard>("POST", `/api/projects/${enc(projectId)}/subs/${enc(subId)}/adjudicate`),
+  /** "Look up this company": builds the sub's company profile and asks about records at its locations. */
+  lookupProfile: (projectId: string, subId: string) =>
+    request<SubCard>("POST", `/api/projects/${enc(projectId)}/subs/${enc(subId)}/profile`),
   /** GC moves an establishment between buckets; returns the re-scored SubCard. */
   overrideMatch: (projectId: string, subId: string, establishmentKey: string, bucket: Bucket) =>
     request<SubCard>(

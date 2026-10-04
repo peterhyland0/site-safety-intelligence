@@ -84,9 +84,8 @@ export function SubCard({
       ) : adjudicating ? (
         <p role="status" className="mt-3 flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">
           <IconSpinner size={16} />
-          {card.possible_inspections > 0
-            ? `Resolving ${plural(card.possible_inspections, "uncertain record")}…`
-            : "Resolving uncertain records…"}
+          {card.profile_status === "pending" ? "Looking up the company, then resolving " : "Resolving "}
+          {card.possible_inspections > 0 ? `${plural(card.possible_inspections, "uncertain record")}…` : "uncertain records…"}
         </p>
       ) : null}
 

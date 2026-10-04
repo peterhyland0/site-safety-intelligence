@@ -25,4 +25,13 @@ describe("Sub card", () => {
     );
     expect(screen.queryByText(/Same OSHA record/)).not.toBeInTheDocument();
   });
+
+  it("says it's looking the company up while a new sub resolves", () => {
+    render(
+      <MemoryRouter>
+        <SubCard card={{ ...card(), match_status: "needs_adjudication", profile_status: "pending", possible_inspections: 7 }} projectId="p1" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Looking up the company, then resolving 7 uncertain records…");
+  });
 });

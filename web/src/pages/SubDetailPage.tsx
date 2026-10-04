@@ -4,6 +4,7 @@ import { api, errorMessage } from "../api/client";
 import type { Bucket, SubDetail } from "../api/types";
 import { useApi } from "../api/useApi";
 import { AskForemanButton } from "../components/AskForemanButton";
+import { CompanyProfileSection } from "../components/CompanyProfile";
 import { HazardBreakdown, InjuryRates, LicenceCard, QuestionCard, RedFlagsTable } from "../components/EvidenceSections";
 import { IconInfo, IconSpinner, IconTrash, IconTriangleAlert } from "../components/Icons";
 import { InspectionBadges, InspectionList } from "../components/InspectionList";
@@ -23,6 +24,7 @@ export function SubDetailPage() {
   const detail = useApi((signal) => api.getSub(projectId, subId, signal), [projectId, subId]);
   const [busyQuestion, setBusyQuestion] = useState<string | null>(null);
   const [busyEst, setBusyEst] = useState<string | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const location = useLocation();
   useTitle(detail.data?.card.entered_name ?? "Sub");
@@ -70,6 +72,19 @@ export function SubDetailPage() {
     }
   }
 
+  async function lookUp() {
+    setLookingUp(true);
+    setActionError(null);
+    try {
+      await api.lookupProfile(projectId, subId);
+      await detail.reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
   async function move(key: string, bucket: Bucket) {
     setBusyEst(key);
     setActionError(null);
@@ -87,6 +102,13 @@ export function SubDetailPage() {
   const cmp = rateComparison(c);
   const asOfYear = Number(d.coverage.as_of.slice(0, 4)) || new Date().getFullYear();
   const hasHistory = c.matched_inspections > 0;
+  // subs added before profiles (or whose lookup failed) can be looked up, once they're resolved and have records to ask about
+  const canLookUp =
+    (c.profile_status == null || c.profile_status === "error") &&
+    c.match_status !== "needs_adjudication" &&
+    d.possible.length + d.excluded.length > 0;
+  const showProfile = !!d.profile || canLookUp;
+  const fromProfile = d.questions.some((q) => q.kind === "profile");
   const nav = [
     d.questions.length ? ["questions", "Questions"] : null,
     ["reasons", "Why"],
@@ -94,6 +116,7 @@ export function SubDetailPage() {
     hasHistory ? ["trend", "Trend"] : null,
     hasHistory ? ["hazards", "Hazards"] : null,
     d.injury_rates.length || d.licences.length ? ["rates", "Rates & licence"] : null,
+    showProfile ? ["profile", "Company"] : null,
     ["matches", "Matches"],
     hasHistory ? ["inspections", "Inspections"] : null,
   ].filter((x): x is string[] => !!x);
@@ -151,7 +174,9 @@ export function SubDetailPage() {
           </div>
         ) : (
           <p role="status" className="card flex items-center gap-2 p-3 text-sm text-ink-2">
-            <IconSpinner size={16} /> Resolving uncertain records… The verdict may change when this finishes.
+            <IconSpinner size={16} />{" "}
+            {c.profile_status === "pending" ? "Looking up the company on the web, then resolving" : "Resolving"} uncertain
+            records… The verdict may change when this finishes.
           </p>
         )
       ) : null}
@@ -173,7 +198,9 @@ export function SubDetailPage() {
       {d.questions.length ? (
         <Section id="questions" title={`${plural(d.questions.length, "question")} about matching`} className="scroll-mt-20">
           <p className="mb-3 text-sm text-ink-2">
-            These records might belong to this sub and carry red flags. Your answer decides whether they count.
+            {fromProfile
+              ? "These records might belong to this sub. Your answer decides whether they count."
+              : "These records might belong to this sub and carry red flags. Your answer decides whether they count."}
           </p>
           <ul className="space-y-3">
             {d.questions.map((q) => (
@@ -312,6 +339,12 @@ export function SubDetailPage() {
               </div>
             ) : null}
           </div>
+        </Section>
+      ) : null}
+
+      {showProfile ? (
+        <Section id="profile" title="Company profile" className="scroll-mt-20">
+          <CompanyProfileSection profile={d.profile} canLookUp={canLookUp} busy={lookingUp} onLookUp={() => void lookUp()} />
         </Section>
       ) : null}
 

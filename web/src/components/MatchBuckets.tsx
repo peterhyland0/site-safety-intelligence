@@ -8,6 +8,7 @@ const METHOD_LABEL: Record<Method, string> = {
   llm: "AI review",
   gc: "Your decision",
   llm_rejected: "Undecided",
+  profile: "Company's website",
 };
 
 // The GC's own decision is shown in plain words; the AI's old confidence and rule codes don't apply to it.
@@ -22,6 +23,7 @@ const METHOD_HINT: Record<Method, string> = {
   llm: "Decided by the AI adjudicator from identity evidence only (it never sees safety history)",
   gc: "Decided by you (the GC). Your decision always wins, including after data refreshes",
   llm_rejected: "The AI's answer failed its checks, so the record stays possible until someone decides",
+  profile: "Held for your answer: the company's own website lists this location (see the question above)",
 };
 
 const BUCKET_LABEL: Record<Bucket, string> = {

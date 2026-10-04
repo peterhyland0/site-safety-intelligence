@@ -9,7 +9,8 @@
 
 export type Verdict = "high" | "review" | "no_record" | "no_recent" | "no_flags";
 export type Bucket = "matched" | "possible" | "excluded";
-export type Method = "rule" | "llm" | "gc" | "llm_rejected";
+/** profile: held for the GC because the company's own website lists the record's location */
+export type Method = "rule" | "llm" | "gc" | "llm_rejected" | "profile";
 export type Severity = "high" | "review" | "info";
 export type MatchStatus = "resolved" | "needs_adjudication" | "questions_pending";
 export type FatalityStatus =
@@ -143,7 +144,11 @@ export interface SubCard {
   licence_status: string | null;
   /** other subs on this project matched to the same OSHA record: probably the same company entered twice */
   same_records_as?: SubRef[];
+  /** company profile lookup: null (added before profiles: a button looks it up), pending, done, skipped, error */
+  profile_status?: ProfileStatus | null;
 }
+
+export type ProfileStatus = "pending" | "done" | "skipped" | "error";
 
 export interface SubRef {
   sub_id: string;
@@ -189,6 +194,37 @@ export interface MatchQuestion {
   establishment_keys: string[];
   ai_suggestion: "same" | "different" | "unsure" | null;
   ai_rationale: string | null;
+  /** profile: asked from the locations a company profile lists (sources are its pages) */
+  kind?: "red_flag" | "profile";
+  sources?: ProfileSource[];
+}
+
+export interface ProfileSource {
+  url: string;
+  title: string | null;
+  quote: string;
+}
+
+export interface ProfileLocation {
+  address: string | null;
+  city: string;
+  state: string;
+  zip: string | null;
+  kind: string;
+  source_url: string;
+  quote: string;
+  own_site: boolean;
+}
+
+/** Who the sub is and where it works, from the web; every location quotes its page. */
+export interface CompanyProfile {
+  status: "found" | "not_found";
+  name: string | null;
+  website: string | null;
+  summary: string | null;
+  note: string | null;
+  locations: ProfileLocation[];
+  built_at: string | null;
 }
 
 export interface MatchOverride {
@@ -357,6 +393,7 @@ export interface SubDetail {
   injury_rates: ItaYear[];
   licences: Licence[];
   dq_warnings: string[];
+  profile?: CompanyProfile | null;
 }
 
 // --- accounts ------------------------------------------------------------------------------------

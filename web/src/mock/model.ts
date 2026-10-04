@@ -6,10 +6,12 @@
 import type {
   AccidentInfo,
   Bucket,
+  CompanyProfile,
   FatalityStatus,
   ItaYear,
   Licence,
   MatchQuestion,
+  ProfileStatus,
   Method,
 } from "../api/types";
 
@@ -103,6 +105,14 @@ export interface FxAdjudication {
   rationale: string;
 }
 
+/** What a company-profile lookup finds when /adjudicate (a new sub) or /profile (the button) runs. */
+export interface FxProfileLookup {
+  profile: CompanyProfile;
+  /** establishments at locations it lists: held for the GC (possible, method "profile") and asked about */
+  holds: { key: string; rationale: string }[];
+  question: Omit<MatchQuestion, "question_id">;
+}
+
 export interface FxSub {
   sub_id: string;
   entered_name: string;
@@ -122,6 +132,10 @@ export interface FxSub {
   injury_rates: ItaYear[];
   licences: Licence[];
   dq_warnings: string[];
+  /** null/undefined: added before profiles (the sub page offers a button); new subs start "pending" */
+  profile_status?: ProfileStatus | null;
+  profile?: CompanyProfile | null;
+  profile_lookup?: FxProfileLookup;
 }
 
 export interface FxProject {

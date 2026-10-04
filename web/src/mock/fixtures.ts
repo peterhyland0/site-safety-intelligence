@@ -365,6 +365,29 @@ const abcDrywall: FxSub = {
   injury_rates: [],
   licences: [],
   dq_warnings: [],
+  // a company-profile lookup (the sub page's button here; automatic for a newly added copy): the company lists its
+  // Hammerly Blvd yard, so that record is held for the GC instead of being matched by the AI
+  profile_lookup: {
+    profile: {
+      status: "found", name: "ABC Drywall LLC", website: "abcdrywall.example", summary: "Commercial drywall and framing",
+      note: null, built_at: DATA_AS_OF,
+      locations: [
+        { address: "6120 Westview Dr", city: "Houston", state: "TX", zip: "77055", kind: "headquarters",
+          source_url: "https://abcdrywall.example/contact", quote: "Office: 6120 Westview Dr, Houston, TX 77055", own_site: true },
+        { address: "10450 Hammerly Blvd", city: "Houston", state: "TX", zip: "77043", kind: "yard",
+          source_url: "https://abcdrywall.example/contact", quote: "Yard: 10450 Hammerly Blvd, Houston, TX 77043", own_site: true },
+      ],
+    },
+    holds: [{ key: "e-abc-hou2", rationale: "At an address ABC Drywall LLC lists on abcdrywall.example (10450 Hammerly Blvd, Houston TX); waiting for your answer" }],
+    question: {
+      text: "ABC Drywall LLC lists this address on abcdrywall.example, and OSHA has records there: 'ABC DRYWALL' at 10450 HAMMERLY BLVD, HOUSTON TX (1 inspection). Is this the same company as your sub 'ABC Drywall'?",
+      establishment_keys: ["e-abc-hou2"],
+      ai_suggestion: "same",
+      ai_rationale: "Listed on abcdrywall.example: “Yard: 10450 Hammerly Blvd, Houston, TX 77043”",
+      kind: "profile",
+      sources: [{ url: "https://abcdrywall.example/contact", title: "Contact", quote: "Yard: 10450 Hammerly Blvd, Houston, TX 77043" }],
+    },
+  },
 };
 
 // --- 7. WA state-plan sub with licence -------------------------------------------------------------------

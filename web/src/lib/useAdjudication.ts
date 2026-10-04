@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage, isSubCard } from "../api/client";
 import type { SubCard } from "../api/types";
 
-const CONCURRENCY = 2;
+const CONCURRENCY = 4;
 
 /**
  * Runs POST /adjudicate once for every card whose match_status is "needs_adjudication".
- * Calls are queued (max 2 at a time, since each is an LLM call server-side). When the server
+ * Calls are queued (max 4 at a time: each is AI calls server-side, and a new sub's company is looked up on the web
+ * first, so a call can take ~30 s). When the server
  * returns the refreshed SubCard it is applied immediately; once the queue drains, onDone()
  * lets the page refetch so ordering and summary counts are right.
  */

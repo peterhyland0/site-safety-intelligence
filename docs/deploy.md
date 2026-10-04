@@ -19,6 +19,7 @@ forwards `/api/*` to Modal, so the browser sees one site. The GC's decisions liv
        SSI_LLM_MODAL_KEY='wk-...' SSI_LLM_MODAL_SECRET='ws-...'
    uv run modal secret create ssi-langsmith LANGSMITH_API_KEY='...' LANGSMITH_PROJECT=site-safety-intelligence LANGSMITH_TRACING=true
    uv run modal secret create ssi-jev JEV_API_KEY='...'   # from console.typesafe.ai/keys
+   uv run modal secret create ssi-anthropic ANTHROPIC_API_KEY='...'   # company profiles (Claude + web search)
    ```
    With `ssi-jev`, Jev adjudicates uncertain matches without red flags and DeepSeek the red-flagged ones
    ([why](adjudicator.md)). Use TypeSafe's own API (`api.typesafe.ai`, the default): lookalike sites resell
@@ -43,7 +44,7 @@ uv run modal run modal_app.py::refresh
 
 ## Deploy the API (and the nightly refresh)
 ```bash
-SSI_WITH_GLM=1 SSI_WITH_LANGSMITH=1 SSI_WITH_JEV=1 uv run modal deploy modal_app.py
+SSI_WITH_GLM=1 SSI_WITH_LANGSMITH=1 SSI_WITH_JEV=1 SSI_WITH_ANTHROPIC=1 uv run modal deploy modal_app.py
 uv run modal run modal_app.py::seed_demo        # demo project against the deployed data
 ```
 `modal deploy` prints the API URL, e.g. `https://<workspace>--site-safety-intelligence-web.modal.run`.

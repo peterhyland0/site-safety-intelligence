@@ -237,6 +237,7 @@ Both are served from Modal as OpenAI-compatible APIs.
 - **What it sees:** identity evidence only (names, addresses, years, trade codes, the GC's input). **Never safety history**, so a fatality can't bias whether a record is judged "the same company".
 - **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence, each fact for or against the same company ("Against: Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records. For: same trade code (2371).").
 - **Mapping:** LLM "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible. Jev's P(same) ≥0.85 → matched; ≤0.20 → excluded (≤0.06 for a record outside the sub's state, where a national firm's own branches are); otherwise possible.
+- **Company profile first** ([docs/company-profile.md](docs/company-profile.md)): for a new sub with uncertain records, Claude looks the company up on the web (the locations it lists, each quoted from its page). Records at those locations skip the AI and go to the GC in one question with the page, along with records found at those addresses under other names. Nothing is matched from the web without the GC's answer.
 - **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
 ---
@@ -281,7 +282,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 282 test cases:
+**Tests:** `uv run pytest`, 297 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -291,7 +292,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - sign-in, sessions and lockout, and that chats stay private to their user and use the stored history, not the browser's
 - the adjudicator eval's thresholds, packets and Jev client
 
-The web front end has 51 more (`npm test`).
+The web front end has 56 more (`npm test`).
 
 **Matching**, on a silver-labelled set ([eval/matching/](eval/matching/)):
 - **Positives:** OSHA records that link to the same tax ID in the injury filings.
@@ -460,6 +461,7 @@ Without them, enrichment is just empty.
 
   Check both endpoints with `uv run python -m scripts.check_llm`: one plain call, one JSON call and one tool call per role.
 - `LANGSMITH_API_KEY` (optional): traces and eval experiments.
+- `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` (optional): company profiles, Claude with web search ([docs/company-profile.md](docs/company-profile.md)). `SSI_PROFILE=off` switches them off; `SSI_DAILY_PROFILE_LIMIT` (default 100) caps them; `SSI_PROFILE_MODEL` (default `claude-opus-5-5`). The foreman and adjudicator keep using `SSI_LLM_PROVIDER`.
 - `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`.
 
 **Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).
@@ -500,12 +502,12 @@ ssi/matching/      candidate search, ordered rules, adjudication flow
 ssi/queries/       named queries shared by the GC view and the foreman
 ssi/scoring/       verdict rules
 ssi/agent/         foreman tools, grounding, loop
-ssi/llm/           provider switch (Anthropic / OpenAI-compatible), adjudicator (Jev + LLM)
+ssi/llm/           provider switch (Anthropic / OpenAI-compatible), adjudicator (Jev + LLM), company profiles
 ssi/api/           FastAPI app + API contract, sign-in and sessions, chats
 ssi/store/         DuckDB reader, Postgres pool, app schema
 web/               React SPA
 eval/              matching (silver labels), adjudicator (LLM vs Jev) and foreman evaluations
 scripts/           demo seed, account management (add_user)
-docs/              decision log, data profile, glossary, why the adjudicator uses Jev
+docs/              decision log, data profile, glossary, why the adjudicator uses Jev, company profiles
 modal_app.py       nightly build + web deployment
 ```

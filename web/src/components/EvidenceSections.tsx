@@ -10,6 +10,14 @@ const SUGGESTION: Record<NonNullable<MatchQuestion["ai_suggestion"]>, string> = 
   unsure: "AI read: unsure",
 };
 
+// a question built from a company profile: the suggestion comes from the company's own pages, not the AI's read
+function profileSuggestion(s: NonNullable<MatchQuestion["ai_suggestion"]>, several: boolean): string {
+  const these = several ? "these addresses" : "this address";
+  if (s === "same") return `The company's website lists ${these}`;
+  if (s === "different") return `The company's website doesn't list ${these}`;
+  return `The company lists the city, but not ${these}`;
+}
+
 export function QuestionCard({
   question,
   establishments,
@@ -26,6 +34,8 @@ export function QuestionCard({
 }) {
   const ests = establishments.filter((e) => question.establishment_keys.includes(e.establishment_key));
   const grouped = ests.length > 1;
+  const fromProfile = question.kind === "profile";
+  const sources = question.sources ?? [];
   return (
     <li className="rounded-xl border-2 border-accent/40 bg-accent-soft p-4">
       <p className="text-[17px] leading-snug font-semibold text-ink">{question.text}</p>
@@ -72,13 +82,32 @@ export function QuestionCard({
       ) : null}
       {question.ai_suggestion || question.ai_rationale ? (
         <p className="mt-2 text-sm text-ink-2">
-          {question.ai_suggestion ? <span className="font-medium">{SUGGESTION[question.ai_suggestion]}. </span> : null}
+          {question.ai_suggestion ? (
+            <span className="font-medium">
+              {fromProfile || sources.length
+                ? profileSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
+                : SUGGESTION[question.ai_suggestion]}
+              .{" "}
+            </span>
+          ) : null}
           {question.ai_rationale}
         </p>
       ) : null}
+      {sources.length ? (
+        <ul className="mt-2 space-y-1 text-sm" aria-label="Sources">
+          {sources.map((s) => (
+            <li key={s.url} className="min-w-0 text-ink-2">
+              <a href={s.url} target="_blank" rel="noreferrer" className="font-medium break-all text-ink underline underline-offset-2">
+                {s.title || s.url.replace(/^https?:\/\/(www\.)?/, "")}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <p className="mt-2 text-xs text-muted">
-        Records with red flags are never counted or dropped without your answer. The AI only sees names, addresses, trades
-        and years, not safety history.
+        {fromProfile
+          ? "These records aren't counted until you answer. The locations come from the company's own pages, quoted above."
+          : "Records with red flags are never counted or dropped without your answer. The AI only sees names, addresses, trades and years, not safety history."}
       </p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <button
