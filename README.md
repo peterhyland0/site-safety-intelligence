@@ -262,7 +262,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
 | M3u | M3's guard: a two-word "<word> CONSTRUCTION / ELECTRIC" name under a trade code none of the sub's in-state matched records have (QUINN CONSTRUCTION of Essington PA vs of Parsons TN) | Uncertain |
 | M3w | M3's web check, when the sub has a company profile: the record's own company has another website | Uncertain |
-| M4 | The sub's own name at an address the company lists on its own website (a company profile), with no red flags: the name and the company's page agree (Clark's McLean, El Paso and Houston offices) | Matched |
+| M4 | The sub's own name at an address the company lists on its own website (a company profile), with no red flags: the name and the company's page agree (Clark's McLean, El Paso and Houston offices). Only when the site lists the company in the sub's state (and city, for a name that isn't distinctive), so a profile of another company with the same name matches nothing; never a record the rules excluded | Matched |
 | L1 | Linked to the licence number the GC entered | Matched |
 | S1 | Differs only by `OF <STATE>` / `AT <project>` (HOFFMAN CONSTRUCTION vs HOFFMAN CONSTRUCTION CO OF OREGON): usually a sibling company. A common name only in the same state | Uncertain |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
@@ -276,7 +276,7 @@ GC enters: name, city, state (+ optional trade, licence #)
 | X1–X4 | Different real name word; different common name; common name in another state | Excluded |
 | R1 | Safety net: a red-flagged record at an address this company uses is never excluded by a rule; it goes to the GC | Uncertain |
 | N1 | A related facility (in scope by company name, not coded as construction) is never counted on the name alone; at an address the company uses it counts like any record | Uncertain |
-| C1 | One company name, one answer: a question about a record under another company's distinctive name (GUY F ATKINSON CONSTRUCTION, a Clark affiliate) covers that name's other records, and the GC's yes or no carries to them. Not the sub's own name (an answer there is about a place) or a common one | As the GC answers |
+| C1 | One company name, one answer: a question about a record under another company's distinctive name (GUY F ATKINSON CONSTRUCTION, a Clark affiliate) covers that name's other records, and the GC's yes or no carries to them. Not the sub's own name, as entered or as its matched records go by (an answer there is about a place), or a common one. An answer never carries to a matched record or a red-flagged one the GC hasn't seen, and a yes only within the states it was about | As the GC answers |
 
 **Name distinctiveness** is measured from the data, not hand-listed: how many distinct full names share the name's core.
 - `BRASFIELD GORRIE` has 3, so it's distinctive.

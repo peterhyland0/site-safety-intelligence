@@ -12,7 +12,10 @@ adjudicator and go to the GC in one question:
 
 Nothing else is matched from the web on its own: the GC's answer decides, and a Yes is a GC decision that survives
 data refreshes. The exception is a record under the sub's own name at an address on the company's own site, with no
-red flags (rule M4): the name and the company's page agree, so it's matched, not asked. Clark Construction Group's
+red flags (rule M4): the name and the company's page agree, so it's matched, not asked. The website is the model's
+pick, so M4 needs the site to list the company in the sub's state (and in its city, for a name that isn't distinctive):
+a Denver QUALITY ROOFING found for a Nashville sub matches nothing. A record the rules excluded is asked, not matched.
+Clark Construction Group's
 profile question had asked about 'CLARK CONSTRUCTION GROUP' at each office on clarkconstruction.com (McLean, El Paso,
 Houston, Chicago, Kansas City, Richmond). Code: [ssi/llm/profile.py](../ssi/llm/profile.py) (the search and the checks),
 [ssi/matching/adjudicate.py](../ssi/matching/adjudicate.py) (`listed_records`, `profile_questions`, `apply_profile`),
@@ -51,6 +54,10 @@ GC adds sub ─► rules (instant): the scorecard appears; uncertain records wai
   affiliate the site lists, like Guy F. Atkinson on clarkconstruction.com) covers that name's other records too: they
   join the question, red flags and all, and the GC's yes or no carries to them. Clark's question had named Atkinson's
   Costa Mesa office only, leaving out its 23 inspections at Clark's own head office and a 2018 cited fatality in Irvine.
+  An answer (or a record moved by hand) carries only to records the GC hasn't decided and the sub hasn't matched, never
+  to a red-flagged record that wasn't in the question, and a yes only within the states it was about. A name the sub's
+  matched records go by is the sub's own (WHITING TURNER CONTRACTING for "Whiting-Turner"): excluding one of its
+  records is about that place, and carries nowhere.
 - **Saved profiles follow cleaning changes.** A location's address key is worked out again from its address each time
   it's used, so a profile saved before a rule change (7900 WESTPARK, now 7900 PARK) still finds its records.
 

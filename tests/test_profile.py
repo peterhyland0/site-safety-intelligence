@@ -151,6 +151,10 @@ PROFILE = {"name": "Tindall Corporation", "domain": "tindallcorp.com", "model": 
      "kind": "plant", "source_url": URL, "quote": "Virginia Division\n5400 Olgers Road  Petersburg, VA 23803", "own_site": True},
     {"address": None, "addr_key": None, "city": "San Antonio", "state": "TX", "zip": None, "kind": "plant",
      "source_url": URL, "quote": "Texas Division San Antonio, TX", "own_site": True}]}
+# ...and its head office in the sub's own city, which M4 needs: the site places the company where the GC's sub is
+PROFILE_HQ = {**PROFILE, "locations": PROFILE["locations"] + [
+    {"address": None, "addr_key": None, "city": "Spartanburg", "state": "SC", "zip": None, "kind": "headquarters",
+     "source_url": URL, "quote": "Headquarters Spartanburg, SC", "own_site": True}]}
 
 
 def est(key, name="TINDALL", address="5400 OLGERS RD", city="PETERSBURG", state="VA", zip5="23803", addr_key="5400 OLGERS", n=10):
@@ -327,7 +331,7 @@ def test_the_subs_own_name_at_an_address_on_its_own_site_is_matched_not_asked(su
     for k in ("own", "own_red", "own_city"):
         _add(sub, k, "TINDELL")
     q = _ask(sub, ["own", "a"])  # asked before M4 existed
-    stats = ADJ.apply_profile(sub, PROFILE)
+    stats = ADJ.apply_profile(sub, PROFILE_HQ)
     r, qs = _state(sub["sub_id"])
     assert stats["matched"] == 1
     assert (r["own"]["bucket"], r["own"]["method"], r["own"]["rule_id"]) == ("matched", "profile", "M4")
@@ -347,9 +351,35 @@ def test_the_subs_own_name_at_an_address_on_its_own_site_is_matched_not_asked(su
     _ask(sub, ["own2"])
     rows["own2"] = {**est("own2", name="TINDELL"), "related_only": False}
     _add(sub, "own2", "TINDELL")
-    ADJ.apply_profile(sub, PROFILE)
+    ADJ.apply_profile(sub, PROFILE_HQ)
     r, qs = _state(sub["sub_id"])
     assert r["own2"]["bucket"] == "matched" and all("own2" not in x["establishment_keys"] for x in qs)
+
+
+@local_db
+def test_m4_matches_nothing_when_the_site_doesnt_place_the_company_where_the_sub_is(sub, warehouse_stub):
+    # the website is the model's pick: Tindall's VA and TX divisions alone don't say it's the Spartanburg SC sub (a
+    # Denver QUALITY ROOFING found for a Nashville one), so the record at the listed address is asked, not matched
+    warehouse_stub["own"] = {**est("own", name="TINDELL", n=4), "related_only": False}
+    _add(sub, "own", "TINDELL")
+    stats = ADJ.apply_profile(sub, PROFILE)
+    r, qs = _state(sub["sub_id"])
+    assert stats["matched"] == 0 and (r["own"]["bucket"], r["own"]["method"]) == ("possible", "profile")
+    assert any("own" in q["establishment_keys"] for q in qs)
+    # a name that isn't distinctive needs the sub's city on the site; another SC city isn't enough
+    other_city = {**PROFILE, "locations": PROFILE["locations"] + [{**PROFILE_HQ["locations"][-1], "city": "Columbia"}]}
+    assert not ADJ.vouches_for(sub, other_city) and ADJ.vouches_for(sub, PROFILE_HQ)
+
+
+@local_db
+def test_m4_never_matches_a_record_the_rules_excluded(sub, warehouse_stub):
+    warehouse_stub["own_x"] = {**est("own_x", name="TINDELL", n=4), "related_only": False}
+    _add(sub, "own_x", "TINDELL", bucket="excluded", rule="X5")
+    for _ in range(2):  # pressed twice: the hold made it possible, but it's still the rules' exclusion
+        stats = ADJ.apply_profile(sub, PROFILE_HQ)
+        r, qs = _state(sub["sub_id"])
+        assert stats["matched"] == 0 and (r["own_x"]["bucket"], r["own_x"]["method"]) == ("possible", "profile")
+    assert any("own_x" in q["establishment_keys"] for q in qs)
 
 
 @local_db
@@ -404,20 +434,26 @@ def test_a_question_about_another_companys_name_covers_all_its_records(sub, atki
 
 
 @local_db
-def test_an_answer_about_a_company_name_carries_to_its_other_records(sub, atkinson):
+def test_an_answer_about_a_company_name_carries_to_its_other_records(sub, atkinson, warehouse_stub, monkeypatch):
+    from ssi.matching import candidates as C
     from ssi.store import pg
+    rows = warehouse_stub
+    rows["atk4"] = {**est("atk4", name=ATKINSON, city="IRVINE", state="CA"), "related_only": False}
+    monkeypatch.setattr(C, "named", lambda names, limit: [rows[k] for k in ("atk3", "atk1", "atk2", "atk4") if ATKINSON in names])
     ADJ.override(str(sub["sub_id"]), "atk1", "matched")  # the GC answers one record: Atkinson is the sub's company
     r, (q,) = _state(sub["sub_id"])
     assert (r["atk1"]["method"], r["atk1"]["rule_id"]) == ("gc", None)
-    assert {k: (r[k]["bucket"], r[k]["method"], r[k]["rule_id"]) for k in ("atk2", "atk3")} == {
-        "atk2": ("matched", "gc", "C1"), "atk3": ("matched", "gc", "C1")}  # atk2: a row the sub didn't have
-    assert r["atk2"]["rationale"] == "Carried from your answer about 'GUY F ATKINSON CONSTRUCTION' (Costa Mesa, CA): the same company name"
+    # atk4: the same state, no red flags, a row the sub didn't have
+    assert (r["atk4"]["bucket"], r["atk4"]["method"], r["atk4"]["rule_id"]) == ("matched", "gc", "C1")
+    assert r["atk4"]["rationale"] == "Carried from your answer about 'GUY F ATKINSON CONSTRUCTION' (Costa Mesa, CA): the same company name"
+    # never carried: red flags the GC hasn't seen (atk2), or a yes into another state (atk3 in MD: often another company)
+    assert "atk2" not in r and (r["atk3"]["bucket"], r["atk3"]["method"], r["atk3"]["rule_id"]) == ("excluded", "rule", "X1")
     assert q["answer"] == "yes"  # its question is settled
     # the GC's own decision on a record isn't overwritten by a later answer about another record under the name
     ADJ.override(str(sub["sub_id"]), "atk3", "excluded")
     ADJ.override(str(sub["sub_id"]), "atk1", "excluded")
     r, _ = _state(sub["sub_id"])
-    assert (r["atk3"]["bucket"], r["atk3"]["rule_id"]) == ("excluded", None) and r["atk2"]["bucket"] == "matched"
+    assert (r["atk3"]["bucket"], r["atk3"]["rule_id"]) == ("excluded", None) and r["atk4"]["bucket"] == "matched"
     # "possible" says nothing about the company; the sub's own name and a common name are never carried
     with pg.conn() as c:
         assert ADJ.carry(c, str(sub["sub_id"]), ["atk1"], "possible") == []
@@ -447,8 +483,27 @@ def test_a_record_covered_by_company_name_waits_through_a_rematch(sub, atkinson,
 def test_a_question_answered_no_carries_to_the_names_records_outside_it(sub, atkinson):
     ADJ.answer_question(str(atkinson["question_id"]), "no")
     r, _ = _state(sub["sub_id"])
-    assert {k: (r[k]["bucket"], r[k]["method"]) for k in ("atk1", "atk2", "atk3")} == {
-        "atk1": ("excluded", "gc"), "atk2": ("excluded", "gc"), "atk3": ("excluded", "gc")}
+    # a no carries into other states (atk3, MD); the red-flagged atk2 wasn't in the question, so it isn't dropped
+    assert {k: (r[k]["bucket"], r[k]["method"]) for k in ("atk1", "atk3")} == {"atk1": ("excluded", "gc"), "atk3": ("excluded", "gc")}
+    assert "atk2" not in r
+
+
+@local_db
+def test_excluding_one_record_under_a_name_the_sub_is_matched_under_carries_nowhere(sub, atkinson):
+    # the sub's matched records go by the name (WHITING TURNER CONTRACTING for "Whiting-Turner"): moving one of its
+    # records to Excluded is about that place. The name's other records stay as they were, matched or asked
+    from ssi.store import pg
+    with pg.conn() as c:
+        c.execute("UPDATE app.sub_match SET bucket = 'matched', rule_id = 'M3' WHERE sub_id = %s AND establishment_key = 'atk3'",
+                  [sub["sub_id"]])
+    _add(sub, "atk2", ATKINSON)
+    red = _ask(sub, ["atk2"], kind="red_flag", text="red flags in Irvine")
+    ADJ.override(str(sub["sub_id"]), "atk1", "excluded")
+    r, qs = _state(sub["sub_id"])
+    assert (r["atk1"]["bucket"], r["atk1"]["method"]) == ("excluded", "gc")
+    assert (r["atk3"]["bucket"], r["atk3"]["method"]) == ("matched", "rule")
+    assert (r["atk2"]["bucket"], r["atk2"]["method"]) == ("possible", "rule")
+    assert next(q for q in qs if q["question_id"] == red["question_id"])["answer"] is None  # still the GC's to answer
 
 
 @local_db
@@ -659,6 +714,22 @@ def test_m3_records_whose_company_has_another_website_go_back_to_the_adjudicator
         assert (rows[k]["bucket"], rows[k]["rule_id"], rows[k]["needs_adjudication"]) == ("matched", "M3", False)
     assert "lists KS" in rows["u_ks"]["rationale"]
     assert (rows["u_az"]["bucket"], rows["u_az"]["rule_id"], rows["u_az"]["needs_adjudication"]) == ("possible", "M3w", True)
+
+
+@local_db
+def test_m3_check_never_restores_a_red_flagged_record(m3_sub, monkeypatch):
+    # Quinn Construction's TN office on its own site doesn't settle the fatality under QUINN CONSTRUCTION in TN
+    from ssi.matching import candidates as C
+    monkeypatch.setattr(C, "red_flag_counts", lambda keys: {k: 1 for k in keys if k in ("u_ks", "u_nv")})
+    _, build = lookups({"NV": "gonpl.com", "AZ": "azpipeline.com", "TX": "buildzoom.com"})
+    stats = ADJ.check_m3(m3_sub, NPL, build)
+    rows, _ = _state(m3_sub["sub_id"])
+    assert stats["confirmed"] == 2  # nv1 and nv2; not u_ks (KS listed) or u_nv (NV is the sub's site): red flags
+    for k in ("u_ks", "u_nv"):  # still waiting for the adjudicator...
+        assert (rows[k]["bucket"], rows[k]["rule_id"], rows[k]["needs_adjudication"]) == ("possible", "M3u", True)
+    ADJ.adjudicate(m3_sub)  # ...which makes them the GC's question
+    _, qs = _state(m3_sub["sub_id"])
+    assert {k for q in qs for k in q["establishment_keys"]} >= {"u_ks", "u_nv"}
 
 
 @local_db

@@ -75,7 +75,8 @@ def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | 
         the sub's own website                ->  matched, the reason says so (M3u restored)
         another company's website            ->  possible, rule M3w, for the adjudicator (needs_adjudication)
         no website of its own                ->  as it was (a short or missing profile isn't evidence)
-    M3u records (rules.m3_collides) are the guard's doubtful ones, already waiting for the adjudicator. Returns
+    M3u records (rules.m3_collides) are the guard's doubtful ones, already waiting for the adjudicator. A red-flagged
+    M3u record is never restored: it stays uncertain, so adjudicate makes it the GC's question. Returns
     {checked, moved, confirmed}: lookups made, records sent back, records confirmed or restored."""
     # imported here: the matching package doesn't otherwise need the profile module
     from ssi.llm.profile import company_domain
@@ -95,9 +96,12 @@ def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | 
         if ev.get("state") and (ev["state"] not in listed or r["rule_id"] == "M3u"):
             groups[(ev.get("name"), ev["state"])].append(r)
     order = sorted(groups.items(), key=lambda kv: -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1]))
+    flags = C.red_flag_counts([r["establishment_key"] for r in rows if r["rule_id"] == "M3u"])
 
     def confirm(c, grp: list[dict], why: str) -> None:
         for r in grp:
+            if flags.get(r["establishment_key"]):
+                continue  # no machine settles a red flag, the web check included
             reason = ((r["evidence"] or {}).get("reason") or "Same distinctive name, another state").rstrip(".")
             if r["rule_id"] == "M3u":
                 reason = f"Same distinctive name, another state ({(r['evidence'] or {}).get('state')})"
@@ -105,7 +109,7 @@ def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | 
                                 evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('rule', 'M3', 'reason', %s::text)
                          WHERE sub_id = %s AND establishment_key = %s AND method = 'rule' AND rule_id IN ('M3', 'M3u')""",
                       [f"{reason}; {why}", reason, sub_id, r["establishment_key"]])
-        stats["confirmed"] += len(grp)
+            stats["confirmed"] += 1
 
     for (name, state), grp in order[:M3_CHECK_LIMIT]:
         if state in listed:  # only M3u records get here: the profile itself lists the state
@@ -350,16 +354,33 @@ def own_names(sub: dict) -> set[str]:
     return {n for n in (d.get("clean"), d.get("legal"), d.get("dba")) if n}
 
 
-def own_name_matches(sub: dict, held: dict[str, dict], flags: dict[str, int]) -> dict[str, dict]:
+def vouches_for(sub: dict, profile: dict) -> bool:
+    """Whether the company's own website places it where the GC's sub is: an address or city on its own site in the
+    sub's state, and in the sub's city too when the name isn't distinctive. The website is the model's pick, so a
+    Denver QUALITY ROOFING found for a Nashville sub mustn't match its records to the sub (M4)."""
+    state = (sub.get("entered_state") or "").strip().upper()
+    own = [loc for loc in profile.get("locations") or [] if loc.get("own_site") and loc.get("state") == state]
+    if not state or not own:
+        return False
+    d = C.describe_query(sub["entered_name"]) or {}
+    if C.core_tier(d.get("core") or "", bool(d.get("initials_only"))) == "distinctive":
+        return True
+    city = norm_city(sub.get("entered_city") or "")
+    return bool(city) and any(norm_city(loc.get("city") or "") == city for loc in own)
+
+
+def own_name_matches(sub: dict, profile: dict, held: dict[str, dict], flags: dict[str, int],
+                     excluded: set[str] | frozenset[str] = frozenset()) -> dict[str, dict]:
     """M4: held records under the sub's own name at an address on the company's own website, with no red flags. The
     name and the company's own page agree, so they're matched, not asked (Clark's McLean, El Paso and Houston
-    offices). A red-flagged one is still asked: no machine settles a red flag."""
-    if not held:
+    offices). Only when the site vouches for the sub (vouches_for), and never a record the rules excluded (`excluded`):
+    those are asked. A red-flagged one is still asked: no machine settles a red flag."""
+    if not held or not vouches_for(sub, profile):
         return {}
     own = own_names(sub)
     return {k: h for k, h in held.items()
             if h["loc"]["level"] == "address" and h["loc"].get("own_site") and h["est"].get("clean_name") in own
-            and not flags.get(k) and not h["est"].get("related_only")}
+            and not flags.get(k) and not h["est"].get("related_only") and k not in excluded}
 
 
 def _write_matches(c, sub: dict, profile: dict, found: dict[str, dict], query: dict | None) -> None:
@@ -389,16 +410,26 @@ def _write_matches(c, sub: dict, profile: dict, found: dict[str, dict], query: d
 CARRY_LIMIT = 20  # records under one company name that a question or an answer brings in
 
 
-def company_names(sub: dict, ests: list[dict]) -> set[str]:
+def matched_names(c, sub_id: str, besides: list[str] | tuple[str, ...] = ()) -> set[str]:
+    """The names the sub's matched records go by (other than the records in `besides`): the sub's own names in OSHA's
+    data, whatever the GC typed (WHITING TURNER CONTRACTING for "Whiting-Turner", BRASFIELD GORRIE for a misspelling)."""
+    keys = [r["establishment_key"] for r in c.execute(
+        "SELECT establishment_key FROM app.sub_match WHERE sub_id = %s AND bucket = 'matched'", [sub_id]).fetchall()
+        if r["establishment_key"] not in besides]
+    return {e["clean_name"] for e in C.establishments(keys) if e.get("clean_name")}
+
+
+def company_names(sub: dict, ests: list[dict], matched: set[str] | frozenset[str] = frozenset()) -> set[str]:
     """The names among these records that are another company's distinctive name (GUY F ATKINSON CONSTRUCTION,
     SHIRLEY CONTRACTING): a question or an answer about one record under such a name is about that company, so it
-    covers the name's other records. Not the sub's own names (an answer about one of those records is about a place),
-    nor a common name (CLARK CONCRETE CONTRACTORS may be several companies), nor a person's."""
+    covers the name's other records. Not the sub's own names: as entered, or a name its matched records go by
+    (`matched`, from matched_names): an answer about one of those records is about a place, not the company. Nor a
+    common name (CLARK CONCRETE CONTRACTORS may be several companies), nor a person's."""
     names = {e["clean_name"] for e in ests if e.get("clean_name")}
     if not names:
         return set()
     out = set()
-    for n in names - own_names(sub):
+    for n in names - own_names(sub) - set(matched):
         d = C.describe_clean(n)
         if C.core_tier(d["core"] or "", bool(d["initials_only"])) == "distinctive":
             out.add(n)
@@ -435,7 +466,7 @@ def cover_company_names(c, sub: dict) -> int:
     if not qs:
         return 0
     ests = {e["establishment_key"]: e for e in C.establishments(sorted({k for q in qs for k in q["establishment_keys"]}))}
-    names = company_names(sub, list(ests.values()))
+    names = company_names(sub, list(ests.values()), matched_names(c, sub_id))
     if not names:
         return 0
     rows = {r["establishment_key"]: r for r in c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()}
@@ -484,18 +515,31 @@ def carry(c, sub_id: str, keys: list[str], bucket: str) -> list[str]:
     """The GC's answer about a record under another company's distinctive name is an answer about that company: the
     name's other records the GC hasn't decided take the same bucket (method 'gc', rule C1), whether the sub has a row
     for them or not, and their open questions are settled. "Possible" says nothing about the company and isn't
-    carried. Returns the records carried to."""
+    carried. Never carried to:
+      - a record the sub has matched: an answer never unmatches one the GC wasn't asked about;
+      - a red-flagged record: the GC hasn't seen it, and no red flag is counted or dropped without the GC's answer
+        (one a question asks about stays in it);
+      - for a yes, a record in another state: the same distinctive name in another state is often another company
+        (eval/m3_audit).
+    Returns the records carried to."""
     if bucket not in ("matched", "excluded"):
         return []
     sub = c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone()
-    src = {e["clean_name"]: e for e in C.establishments(keys)}
-    names = company_names(sub, list(src.values()))
+    answered = C.establishments(keys)
+    src = {e["clean_name"]: e for e in answered}
+    states: dict[str, set] = defaultdict(set)
+    for e in answered:
+        states[e["clean_name"]].add(e["state"])
+    names = company_names(sub, answered, matched_names(c, sub_id, keys))
     if not names:
         return []
     rows = {r["establishment_key"]: r for r in c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()}
-    targets = [e for e in C.named(sorted(names), CARRY_LIMIT)
-               if e["establishment_key"] not in keys and not (
-                   (r := rows.get(e["establishment_key"])) and r["method"] in ("gc", "remap"))]
+    found = [e for e in C.named(sorted(names), CARRY_LIMIT)
+             if e["establishment_key"] not in keys
+             and not ((r := rows.get(e["establishment_key"])) and (r["method"] in ("gc", "remap") or r["bucket"] == "matched"))
+             and (bucket == "excluded" or e["state"] in states[e["clean_name"]])]
+    flags = C.red_flag_counts([e["establishment_key"] for e in found])
+    targets = [e for e in found if not flags.get(e["establishment_key"])]
     query = next(((r["evidence"] or {}).get("query") for r in rows.values() if (r["evidence"] or {}).get("query")), None)
     nrs = C.members([e["establishment_key"] for e in targets if e["establishment_key"] not in rows])
     build_id = warehouse.meta()["build_id"] if targets else None
@@ -665,7 +709,10 @@ def apply_profile(sub: dict, profile: dict) -> dict:
             cover_company_names(c, sub)
         return stats
     flags = C.red_flag_counts(list(held))
-    auto = own_name_matches(sub, held, flags)
+    # excluded by the rules, now or before a profile held it (a hold keeps the rule's evidence): asked, never M4
+    excluded = {r["establishment_key"] for r in rows
+                if r["bucket"] == "excluded" or str((r["evidence"] or {}).get("rule") or "").startswith("X")}
+    auto = own_name_matches(sub, profile, held, flags, excluded)
     held = {k: h for k, h in held.items() if k not in auto}
     query = next(((r["evidence"] or {}).get("query") for r in rows if (r["evidence"] or {}).get("query")), None)
     with pg.conn() as c:
@@ -703,7 +750,7 @@ def adjudicate(sub: dict, llm: LLMFn | None = None, packet_fn: Callable[[dict, l
         return {"clusters": 0, "questions": 0, "llm_calls": 0}
     held = _holds(sub_id, profile, rows) if profile and profile.get("locations") else {}
     flags = C.red_flag_counts([r["establishment_key"] for r in rows] + [k for k, h in held.items() if h["new"]])
-    auto = own_name_matches(sub, held, flags)  # M4: matched, not asked
+    auto = own_name_matches(sub, profile, held, flags) if held else {}  # M4: matched, not asked
     held = {k: h for k, h in held.items() if k not in auto}
     query = next(((r["evidence"] or {}).get("query") for r in rows if (r["evidence"] or {}).get("query")), None)
     rows = [r for r in rows if r["establishment_key"] not in held and r["establishment_key"] not in auto]  # listed records skip the AI
