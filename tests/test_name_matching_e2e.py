@@ -125,6 +125,16 @@ RECS = [
     Rec("QUINN CONSTRUCTION", "300 Main St", "Parsons", "TN", "38363", naics="238910"),
     Rec("HELIX ELECTRIC INC", "6 Harbor Way", "Oakland", "CA", "94607", n=2, naics="238210"),
     Rec("HELIX ELECTRIC", "9 Wellington Rd", "Manassas", "VA", "20109", naics="238210"),
+    # ... and the same name at another company's office: OSHA's misspelling of a bigger builder's name, and a roofer's
+    # name cut short, each beside the company's own records
+    Rec("BRINKMAN CONSTRUCTION, INC.", "3528 Precision Dr Ste 100", "Fort Collins", "CO", "80528", n=3, naics="236220"),
+    Rec("BRINKMAN CONSTRUCTION", "3550 Clear Creek Dr Ste 300", "Wheat Ridge", "CO", "80033", naics="236220"),
+    Rec("BRINKMANN CONSTRUCTORS", "16650 Chesterfield Grove Rd Ste 100", "Chesterfield", "MO", "63005", n=6,
+        naics="236220"),
+    Rec("BRINKMAN CONSTRUCTORS", "16650 Chesterfield Grove Rd", "Chesterfield", "MO", "63005", n=2, naics="236220"),
+    Rec("ABOVE BOARD CONTRACTING LLC", "192 Sakonnet Rd", "Portsmouth", "RI", "02871", n=2),
+    Rec("ABOVE BOARD CONSTRUCTION & ROOFING INC", "1440 Hartnell Ave", "Redding", "CA", "96002", n=4),
+    Rec("ABOVE BOARD CONSTRUCTION", "1440 Hartnell Ave", "Redding", "CA", "96002"),
 ]
 
 
@@ -401,3 +411,16 @@ def test_without_a_record_in_the_subs_state_the_guard_has_no_trade_to_compare():
     got, _, _ = outcome("Quinn Construction", "Columbus", "OH")
     assert {k: v for k, v in got.items() if k[0] == "QUINN CONSTRUCTION"} == {
         ("QUINN CONSTRUCTION", "ESSINGTON", "PA"): ("matched", "M3"), ("QUINN CONSTRUCTION", "PARSONS", "TN"): ("matched", "M3")}
+
+
+def test_the_same_name_at_another_companys_office_is_left_for_the_adjudicator():
+    got, _, note = outcome("Brinkmman Construction", "Wheat Ridge", "CO")
+    assert "BRINKMAN" in note
+    assert got[("BRINKMAN CONSTRUCTION", "WHEAT RIDGE", "CO")] == ("matched", "M1")
+    assert got[("BRINKMAN CONSTRUCTION", "FORT COLLINS", "CO")] == ("matched", "M1")
+    assert got[("BRINKMAN CONSTRUCTORS", "CHESTERFIELD", "MO")] == ("uncertain", "M3a")
+    assert got[("BRINKMANN CONSTRUCTORS", "CHESTERFIELD", "MO")] == ("uncertain", "U")
+    got, _, _ = outcome("Aboe Board Contracting", "Portsmouth", "RI")
+    assert got[("ABOVE BOARD CONTRACTING", "PORTSMOUTH", "RI")] == ("matched", "M1")
+    assert got[("ABOVE BOARD CONSTRUCTION", "REDDING", "CA")] == ("uncertain", "M3a")
+    assert got[("ABOVE BOARD CONSTRUCTION ROOFING", "REDDING", "CA")] == ("uncertain", "U3")

@@ -141,12 +141,26 @@ def context(sub: dict, search_state: str | None, rows: list[dict]) -> dict:
     with_ev = [(r, r["evidence"]) for r in rows if r.get("evidence")]
     query = next((e["query"] for _, e in with_ev if e.get("query")), None) or {}
     matched = sorted((e for r, e in with_ev if r["bucket"] == "matched"), key=lambda e: -(e.get("inspections") or 0))[:5]
+    spelling = printed(query.get("clean"), [r["establishment_key"] for r, _ in with_ev if r["bucket"] == "matched"])
     return {
         "name": sub["entered_name"], "city": sub.get("entered_city"), "state": search_state,
-        "trade": sub.get("trade"), "osha_spelling": query.get("clean"), "tier": query.get("tier"),
+        "trade": sub.get("trade"), "osha_spelling": spelling, "tier": query.get("tier"),
         "matched_at": [", ".join(x for x in (e.get("address"), e.get("city"), e.get("state"), e.get("zip")) if x)
                        for e in matched],
     }
+
+
+def printed(clean: str | None, keys: list[str]) -> str | None:
+    """OSHA's spelling with the apostrophes its records (`keys`) print: MCKENNEY'S for MCKENNEYS. Cleaning drops
+    them, and a web search for MCKENNEYS finds nothing."""
+    if not clean or not keys:
+        return clean
+    marked: dict[str, str] = {}
+    for r in warehouse.rows("SELECT display_name FROM entity.establishment "
+                            "WHERE establishment_key IN (SELECT unnest(?::VARCHAR[]))", [keys]):
+        for w in re.findall(r"[A-Z0-9]+(?:['’][A-Z0-9]+)+", (r["display_name"] or "").upper()):
+            marked.setdefault(_plain(w), w.replace("’", "'"))
+    return " ".join(marked.get(w, w) for w in clean.split())
 
 
 def user_prompt(ctx: dict) -> str:
@@ -259,9 +273,11 @@ def research(ctx: dict, http=None) -> dict:
 # the rest are cut to PAGE_CHARS. The adjudicator LLM writes report_profile's report from them, and check() holds
 # it to exactly the text it was shown, as it does Claude's.
 TAVILY_URL = "https://api.tavily.com"
-TAVILY_VERSION = 2  # in the cache key: the query, the page selection and trimming, EXTRACT_SYSTEM
+TAVILY_VERSION = 3  # in the cache key: the query, the page selection and trimming, EXTRACT_SYSTEM
 # 2: search the cleaned spelling, unquoted; a page needs only the name's first word (v1 dropped "317727255 - …"
 #    names and pages that say "Sunrun" for SUNRUN INSTALLATION SERVICES)
+# 3: apostrophes don't count, and the first two words may be run together (v2 dropped every page about McKenney's
+#    and Aboveboard Contracting, and kept their not-found profiles)
 PAGE_CHARS = 5000  # per page; long pages are mostly menus and footers
 LEGAL_WORDS = {"INC", "LLC", "CO", "CORP", "CORPORATION", "COMPANY", "LTD", "LP", "LLP", "PLLC", "PC", "THE", "AND",
                "OF", "DBA"}
@@ -322,16 +338,31 @@ def tavily_search(query: str, http: httpx.Client | None = None, exclude: tuple[s
     raise AssertionError("unreachable")
 
 
+def _plain(s: str | None) -> str:
+    """Upper case without apostrophes: McKenney's is MCKENNEYS, as the warehouse spells it."""
+    return re.sub(r"['’‘`]", "", (s or "").upper())
+
+
+def names_company(name: str) -> re.Pattern | None:
+    """What a page must have to be about the company (in _plain text): the name's first word (SUNRUN, HOEKSTRA,
+    NPL), or its first two words run together. MCKENNEYS is on McKenney's pages, ABOVE BOARD on Aboveboard
+    Contracting's. None for a name without words."""
+    words = name_words(_plain(name))
+    if not words:
+        return None
+    alts = sorted({words[0], "".join(words[:2])}, key=len, reverse=True)
+    return re.compile(r"\b(" + "|".join(map(re.escape, alts)) + r")\b")
+
+
 def pages(resp: dict, name: str) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """(texts, titles, urls) keyed by normalised URL, for the results with the name's first word (SUNRUN, HOEKSTRA,
-    NPL); texts cut to PAGE_CHARS. Whether a page is really the company is for the LLM and check()."""
-    want = name_words(name)[:1]
+    """(texts, titles, urls) keyed by normalised URL, for the results that name the company (names_company); texts
+    cut to PAGE_CHARS. Whether a page is really the company is for the LLM and check()."""
+    want = names_company(name)
     texts, titles, urls = {}, {}, {}
     for r in resp.get("results") or []:
         text = re.sub(r"\s+", " ", r.get("raw_content") or r.get("content") or "").strip()[:PAGE_CHARS]
         title = (r.get("title") or "").strip()
-        hay = f"{title} {text}".upper()
-        if not (r.get("url") and text) or not all(re.search(rf"\b{re.escape(w)}\b", hay) for w in want):
+        if not (r.get("url") and text) or (want and not want.search(_plain(f"{title} {text}"))):
             continue
         k = _norm_url(r["url"])
         texts[k], titles[k], urls[k] = text, title, r["url"]

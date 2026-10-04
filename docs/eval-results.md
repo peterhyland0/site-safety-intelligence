@@ -30,6 +30,8 @@ to them. Figures are from the 10-year warehouse unless a section says otherwise 
 | Generic words split into *descriptors* (GENERAL, CONTRACTORS) and *trade words* (ROOFING, TILE) | First matching eval: trade-word auto-matches were the real error; precision 0.87 → 0.90 (all years) | [3.2](#32-what-the-first-run-taught) |
 | People's names need a city or address to match | "Juan Garcia, TX" auto-matched 24 records in 13 states, including another person's fatality | [3.3](#33-why-each-rule-exists) |
 | M2 no longer merges JVs, swapped trade words or different people at one address (J1, U3, P2) | 1,990 differently named pairs in one building: 7 JVs, 9 sister companies, 10 different people among the typos | [3.3](#33-why-each-rule-exists) |
+| An M3 match at another company's office is held back (M3a); the M3 web check looks up matched records first | Demo: "Brinkmman Construction" (Wheat Ridge CO) auto-matched OSHA's misspelt BRINKMAN CONSTRUCTORS at Brinkmann's St. Louis office, and "Aboe Board Contracting" (RI) a Redding roofer's shortened name; Ames of Ephrata PA kept the Minnesota Ames's Aurora CO record unchecked. Per-rule eval: M3a holds back 2 of 3,593 M3 records, M3 precision unchanged (0.78) | [3.3](#33-why-each-rule-exists), [3.6](#36-each-rule-on-its-own) |
+| Company profiles search OSHA's printed spelling and keep pages that write the name another way | Demo: McKenney's (searched as MCKENNEYS) and Aboveboard Contracting came back "not found", every page dropped by the filter; both found from their own sites after | [7.4](#74-claude-vs-tavily-backends) |
 | Spelling correction tries the GC's city first, and changes only the misspelt word | BRINKMMAN matched St. Louis's BRINKMANN; "Aboe Board" matched a California roofer. After: a slip gets the right spelling's matches 356 of 383, and never extra ones | [3.4](#34-a-gcs-typos) |
 | A company named after a person keeps its other offices as uncertain, not excluded (P3) | Per-rule eval: X5 excluded the company's own records in all 24 labelled cases (David E. Harvey Builders, Robert J. Devereaux Corp.); after P3, 24 of 24 are held for review and X5 keeps only bare names | [3.3](#33-why-each-rule-exists) |
 | Red-flagged uncertain records always go to the GC, never decided by the AI | A confident AI "different" hid a lookalike's red flags from Barnhart's GC on the demo | [3.3](#33-why-each-rule-exists) |
@@ -131,6 +133,7 @@ right on real records is in [§3.6](#36-each-rule-on-its-own).
 | **M1b** differs only by descriptor words | Matched | The first eval run (above): descriptors may differ, trade words may not |
 | **M2** at a matched address, name differs by spelling | Matched | Typos at the company's own address (`GORIE`, `VAUGN`). The [name-matching audit](name-matching-audit.md) collected all 1,990 differently named pairs sharing a non-shared building: mostly real typos, but also the cases J1, U3 and P2 now carve out |
 | **M3** same distinctive name, another state | Matched | "Also operates in…". The adjudicator eval's cross-state pairs showed its cost: it auto-matched **51 of 1,600** pairs of different local firms (development) and 60 of 1,333 (held out), e.g. Quinn Construction PA/TN, Straub Construction CA/KS. An audit on web evidence is written but not yet run ([§11](#11-not-evaluated-yet-or-still-open)) |
+| **M3a** M3 at another company's address | Uncertain | The demo's "Difficult cases": "Brinkmman Construction, Wheat Ridge CO" (BRINKMAN after spelling correction) auto-matched BRINKMAN CONSTRUCTORS, 2 inspections at 16650 Chesterfield Grove Rd, Chesterfield MO: Brinkmann Constructors' office, where OSHA's BRINKMANN CONSTRUCTORS has 22. "Aboe Board Contracting, Portsmouth RI" auto-matched ABOVE BOARD CONSTRUCTION, 1 inspection beside ABOVE BOARD CONSTRUCTION & ROOFING's 9 at a Redding CA roofer's address, and that inspection made one of the sub's review reasons. Now an M3 record waits for the adjudicator when, at its address, records under its name spelt another way, or its whole name plus a trade word, outnumber the sub's own in inspections. A first version took any near name the rules don't match (U, U3) as a rival: on the per-rule eval it held back 18 records, 7 of the 8 labelled ones the sub's own (SUNRUN, TUTOR PERINI and MASTEC SERVICES at those companies' own offices) |
 | **L1** linked to the GC's licence number | Matched | A GC can pin a sub when the name is ambiguous |
 | **S1** differs only by `OF <STATE>` / `AT <project>` | Uncertain | The code review found Hoffman Construction's OF OREGON records among 48 *excluded*: the place word stayed in the name core, so S1 never fired. Now Hoffman's Oregon, Washington and California companies and 20 regional Pulte records are possible |
 | **M1s** the sub's name + `OF <PLACE>`, in the GC's city, at an address where another `OF <PLACE>` of it files | Matched | The live demo: "Hoffman Construction Company, Portland" read *No OSHA record*. No record carries exactly that name in Portland, so nothing matched and M2 had no address to start from; HOFFMAN CONSTRUCTION CO OF OREGON (8 inspections) and … COMPANY OF AMERICA (4) share Hoffman's head office suite, and S1 sent them to the adjudicator. Jev put the chance they were Hoffman at 6–14% and excluded them (it reads the suffix as a sister company, as its guidance says, and still did for Hoffman's other companies with the head office's records shown to it as matched). S1's other records stay uncertain: 1% of them were the sub's |
@@ -229,8 +232,8 @@ Share of a rule's labelled records that were the same company (firms = distinct 
 | S1 OF <STATE> / AT <project> | possible | 479 (209) | 0.01 [0.0–0.02] | held back, but the sub's |
 
 Too few labels to grade: S2 (2, from one firm), P1 (2), J1 (85 records, none labelled: a JV files under its own tax
-ID), M1s (2 records from one search, none labelled; S1 and every other rule unchanged). P2 and X2 never fired. M1s can
-fire at only 123 buildings in the warehouse, where one name files under two or more `OF <PLACE>` suffixes; the
+ID), M1s (2 records from one search, none labelled; S1 and every other rule unchanged), M3a (2 records from two
+searches, none labelled; see below). P2 and X2 never fired. M1s can fire at only 123 buildings in the warehouse, where one name files under two or more `OF <PLACE>` suffixes; the
 government agencies among them (CITY OF …, TOWN OF …) have common names, which it skips, and the companies are their
 own entities at their own offices (Richmond American Homes OF MARYLAND, OF OREGON and OF COLORADO at its Denver head
 office; Meritage Homes in Scottsdale; Hoffman in Portland).
@@ -268,6 +271,10 @@ What the examples show:
   cautious than it needs to be.
 - **M3u**: of the 24 records it held back, 14 shared the sub's tax ID; the other 10 were all local firms, the
   reliable negatives.
+- **M3a** is narrow: it holds back 2 of the 3,593 M3 records in these searches, neither labelled (CALVARY LLC in
+  Brooklyn beside CAVALRY, WEATHER SHIELD ROOFING SYSTEMS in Aledo TX beside WEATHERSHIELD ROOFING), and M3's share
+  is unchanged. The searches start from firms that file injury reports, which rarely include the demo's small firms
+  with misspelt or shortened records, so the eval shows only that M3a costs none of the sub's labelled records.
 
 **Silver labels can't grade every rule.** A tax ID needs an injury filing (about 9% of establishments, mostly firms
 with 20+ employees), so the rules for small firms and people (P1, P2, X5, J1, S2) get few or biased labels; those need
@@ -573,6 +580,12 @@ On the same 43 companies:
 | Cost a profile / median time | $0.20 / 32 s | $0.01 / 3 s |
 | Jev with the profile: same matched, wrong exclusions, wrong merges, lookalikes excluded | 3, 0, 0, 24 | 2, 1, 1, 25 |
 | Question approach: same-company records asked about, misleading "same" suggestions | 3, 4 | 6, 3 |
+
+Since this comparison (Tavily backend v3) a page counts as naming the company without apostrophes and with the
+name's first two words run together, and the search keeps OSHA's apostrophes. On the demo, McKenney's (searched as
+MCKENNEYS: no results at all; MCKENNEY'S finds its locations pages) and Aboveboard Contracting (ABOVE BOARD: all five
+pages dropped, its own site among them) were "not found", so no listed office or M3 web check could use them; both
+are found from their own sites now. The 43-company comparison hasn't been re-run.
 
 Close on a small sample. Tavily's extra wrong exclusion is NPL Construction (its profile gave the parent's site and
 only two cities, and Jev read the short list as evidence against Las Vegas). Its wrong merge is Big-D Construction,

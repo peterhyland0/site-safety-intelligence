@@ -87,10 +87,11 @@ Profiles are cached for 90 days per company (rows in `app.company_profile` are i
 ## The M3 web check
 
 Rule M3 matches the same distinctive name in another state. With a profile, an M3 record in a state the profile
-doesn't list has its own company looked up (`adjudicate.check_m3`, up to 5 a sub, cached like any profile): another
-company's website sends it back to the adjudicator (rule M3w), the sub's own website confirms it, no website leaves
-it as it was. Records the rules' M3 guard held back (M3u) are restored when the profile lists their state or the
-lookup finds the sub's website. Why: [eval/m3_audit/review.md](../eval/m3_audit/review.md). On by default with the
+doesn't list has its own company looked up (`adjudicate.check_m3`, up to 5 a sub, matched records before the guard's,
+cached like any profile): another company's website sends it back to the adjudicator (rule M3w), the sub's own
+website confirms it, no website leaves it as it was. Records the rules' M3 guard held back (M3u) are restored when
+the profile lists their state or the lookup finds the sub's website. Records the address check held back (M3a:
+another company's office) aren't looked up; they wait for the adjudicator. Why: [eval/m3_audit/review.md](../eval/m3_audit/review.md). On by default with the
 Tavily backend; with Claude (twenty cents a lookup) only with `SSI_M3_WEB_CHECK=on`.
 
 ## Two backends
@@ -99,9 +100,12 @@ Tavily backend; with Claude (twenty cents a lookup) only with `SSI_M3_WEB_CHECK=
 
 - **claude** (the default): Claude with web search and web fetch, as described above.
 - **tavily**: one basic Tavily search (5 results, page text cut to 5,000 characters, `osha.gov` excluded, results
-  without the name's first word dropped), then the adjudicator LLM (DeepSeek V4.1 Flash) writes the same
-  `report_profile` report from those pages, and the checks hold it to exactly the text it was shown. It searches the
-  warehouse's cleaned spelling when known (record numbers and legal words gone), unquoted. Needs `TAVILY_API_KEY`.
+  without the name's first word dropped, apostrophes aside or with its first two words run together), then the
+  adjudicator LLM (DeepSeek V4.1 Flash) writes the same `report_profile` report from those pages, and the checks hold
+  it to exactly the text it was shown. It searches the warehouse's cleaned spelling when known (record numbers and
+  legal words gone, OSHA's apostrophes kept: MCKENNEY'S, since a search for MCKENNEYS finds nothing), unquoted. A GC's
+  slip is searched as the spelling correction fixed it ("Aboe Board" as ABOVE BOARD CONTRACTING). Needs
+  `TAVILY_API_KEY`.
 
 Compared on the same 43 companies (eval/profile, seed 7; [Claude](../eval/profile/results-seed7-cached.md),
 [Tavily](../eval/profile/results-seed7-tavily.md)):

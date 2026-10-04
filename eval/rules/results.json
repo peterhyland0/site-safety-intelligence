@@ -13,10 +13,10 @@
    "common name": 273,
    "licence": 300
   },
-  "records": 140766,
+  "records": 140764,
   "labelled": 23612,
   "graded": 8020,
-  "seconds": 477
+  "seconds": 456
  },
  "rules": [
   {
@@ -99,8 +99,8 @@
   {
    "rule": "M3",
    "bucket": "matched",
-   "searches": 409,
-   "records": 3593,
+   "searches": 408,
+   "records": 3591,
    "labelled": 469,
    "firms": 120,
    "same": 366,
@@ -208,6 +208,23 @@
     0.37,
     0.74
    ],
+   "apparent_errors": 0,
+   "reviewed": 0,
+   "verdicts": {},
+   "share_same_after_review": null
+  },
+  {
+   "rule": "M3a",
+   "bucket": "uncertain",
+   "searches": 2,
+   "records": 2,
+   "labelled": 0,
+   "firms": 0,
+   "same": 0,
+   "different": 0,
+   "different_local": 0,
+   "share_same": null,
+   "ci": null,
    "apparent_errors": 0,
    "reviewed": 0,
    "verdicts": {},
@@ -473,8 +490,8 @@
   {
    "rule": "U",
    "bucket": "uncertain",
-   "searches": 671,
-   "records": 3417,
+   "searches": 670,
+   "records": 3415,
    "labelled": 404,
    "firms": 195,
    "same": 127,

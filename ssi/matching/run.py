@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from dataclasses import asdict, replace
 
 from ssi.matching import adjudicate as ADJ
@@ -152,6 +153,43 @@ def licence_links(licence: str | None) -> tuple[set[str], set[str]]:
     return names, keys
 
 
+def _rival(r: dict, own: list[dict], trade: frozenset[str]) -> bool:
+    """Whether a record is under one of the `own` records' names spelt another way, or with a trade word more."""
+    core, words = r["name_core"] or "", set(tokens(r["clean_name"]))
+    return bool(core) and any((core != o["name_core"] and typo_equal(core, o["name_core"]))
+                              or (core == o["name_core"] and set(tokens(o["clean_name"])) < words
+                                  and bool((words - set(tokens(o["clean_name"]))) & trade)) for o in own)
+
+
+def m3_rivals(q: Query, m3: dict[str, dict], generic: frozenset[str],
+              descriptors: frozenset[str]) -> dict[str, tuple[str, int]]:
+    """{key: (the other company's name, its inspections there)} for the M3 records (`m3`: key -> row) at another
+    company's address. That's an address where records the rules don't tie to the sub (not matched, as at a matched
+    address) outnumber the sub's own in inspections, under the M3 record's name spelt another way (BRINKMANN for
+    BRINKMAN) or with a trade word more (ABOVE BOARD CONSTRUCTION ROOFING for ABOVE BOARD CONSTRUCTION). The M3
+    record is most likely that company's name misspelt or cut short: BRINKMAN CONSTRUCTORS (2 inspections) at
+    Brinkmann Constructors' St. Louis office, beside BRINKMANN CONSTRUCTORS (22); ABOVE BOARD CONSTRUCTION (1) beside
+    ABOVE BOARD CONSTRUCTION & ROOFING (9), a Redding roofer. A company's other names at its own office are not
+    rivals: SUNRUN, TUTOR PERINI and MASTEC SERVICES beside the sub's longer names were the sub's own in the per-rule
+    eval. A shared office says nothing (C.at_addresses skips them)."""
+    trade = generic - descriptors
+    here: dict[tuple, list[dict]] = defaultdict(list)
+    for r in C.at_addresses(list(m3), exclude=set()):
+        here[(r["addr_key"], (r["zip5"] or "")[:3])].append(r)
+    out = {}
+    for rs in here.values():
+        own = [r for r in rs if r["establishment_key"] in m3]
+        others = [(r, decide(q, _candidate(r, at_address=True), generic, descriptors))
+                  for r in rs if r["establishment_key"] not in m3]
+        rivals = [r for r, d in others if d.bucket != MATCHED and _rival(r, own, trade)]
+        ours = sum(r["insp_n"] or 0 for r in own) + sum(r["insp_n"] or 0 for r, d in others if d.bucket == MATCHED)
+        theirs = sum(r["insp_n"] or 0 for r in rivals)
+        if own and theirs > ours:
+            top = max(rivals, key=lambda r: r["insp_n"] or 0)
+            out |= {r["establishment_key"]: (top["clean_name"].title(), theirs) for r in own}
+    return out
+
+
 def match(name: str, city: str | None, state: str | None, trade: str | None, licence: str | None = None) -> dict:
     """Run the rules. Returns {query, note, decisions: [{row, decision}]}."""
     q, described = build_query(name, city, state, trade)
@@ -182,9 +220,10 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     s1 = [_candidate(r) for r, d in decided.values() if d.rule_id == "S1"]
     for k, d in home_office(q, s1, descriptors).items():
         decided[k] = (decided[k][0], d)
-    # M3 guard, before the address expansion so a doubtful match can't pull in records at its address: a same-name
-    # record in another state whose trade code none of the sub's in-state matches have, under a colliding
-    # "<word> CONSTRUCTION|ELECTRIC" name, is often another company (rules.m3_collides). It goes to the adjudicator.
+    # M3 guards, before the address expansion so a doubtful match can't pull in records at its address. Both go to
+    # the adjudicator. M3u: a same-name record in another state whose trade code none of the sub's in-state matches
+    # have, under a colliding "<word> CONSTRUCTION|ELECTRIC" name, is often another company (rules.m3_collides).
+    # M3a: one at another company's address (m3_rivals).
     own_trades = {r["primary_naics4"] for r, d in decided.values()
                   if d.bucket == MATCHED and d.rule_id != "M3" and r.get("primary_naics4")}
     for k, (r, d) in list(decided.items()):
@@ -192,6 +231,12 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
             decided[k] = (r, Decision(UNCERTAIN, "M3u", (
                 f"Same name in another state ({r['state']}), but under a trade code the sub's records here don't have; "
                 f"a '<name> {r['clean_name'].split()[-1]}' name in another state is often another company")))
+    for k, (rival, n) in m3_rivals(q, {k: r for k, (r, d) in decided.items() if d.rule_id == "M3"},
+                                   generic, descriptors).items():
+        r = decided[k][0]
+        decided[k] = (r, Decision(UNCERTAIN, "M3a", (
+            f"Same name in another state ({r['state']}), but at the address of {rival} ({n} inspections there), "
+            "a name the rules don't tie to the sub: likely that company's record")))
     # address expansion (two passes): records at a matched address whose name differs only by spelling
     excluded_at_address: dict[str, dict] = {}
     for _ in range(2):

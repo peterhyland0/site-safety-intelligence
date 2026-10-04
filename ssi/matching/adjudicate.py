@@ -73,17 +73,21 @@ def resolve(sub_id: str, project: dict, llm: LLMFn | None = None,
 def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | None]) -> dict:
     """The M3 web check. M3 matches the same distinctive name in another state; the M3 audit (eval/m3_audit) found the
     wrong ones are other companies with their own websites. With the sub's own website known, for each M3 group (a
-    name in a state), up to M3_CHECK_LIMIT, most inspections first:
+    name in a state), up to M3_CHECK_LIMIT: the groups with a matched record first, since they count in the sub's
+    history until checked (for Ames Construction of Ephrata PA, the matched record at the Minnesota Ames's Aurora CO
+    office, 1 inspection, ranked behind four groups the guard had already held back and wasn't looked up), then the
+    most inspections:
       a state the profile lists              ->  matched (an M3u record the guard held back is restored)
       otherwise the record's company is looked up (build_fn: profile.build, cached):
         the sub's own website                ->  matched, the reason says so (M3u restored)
         another company's website            ->  possible, rule M3w, for the adjudicator (needs_adjudication)
         no website of its own                ->  as it was (a short or missing profile isn't evidence)
     M3u records (rules.m3_collides) are the guard's doubtful ones, already waiting for the adjudicator. A red-flagged
-    M3u record is never restored: it stays uncertain, so adjudicate makes it the GC's question. Returns
+    M3u record is never restored: it stays uncertain, so adjudicate makes it the GC's question. M3a records (at another
+    company's office, run.m3_rivals) aren't looked up: the address already says whose they likely are. Returns
     {checked, moved, confirmed}: lookups made, records sent back, records confirmed or restored."""
     # imported here: the matching package doesn't otherwise need the profile module
-    from ssi.llm.profile import company_domain
+    from ssi.llm.profile import company_domain, printed
     stats = {"checked": 0, "moved": 0, "confirmed": 0}
     site = company_domain(profile)
     if not site:
@@ -99,7 +103,8 @@ def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | 
         ev = r["evidence"] or {}
         if ev.get("state") and (ev["state"] not in listed or r["rule_id"] == "M3u"):
             groups[(ev.get("name"), ev["state"])].append(r)
-    order = sorted(groups.items(), key=lambda kv: -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1]))
+    order = sorted(groups.items(), key=lambda kv: (not any(r["rule_id"] == "M3" for r in kv[1]),
+                                                   -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1])))
     flags = C.red_flag_counts([r["establishment_key"] for r in rows if r["rule_id"] == "M3u"])
 
     def confirm(c, grp: list[dict], why: str) -> None:
@@ -123,7 +128,8 @@ def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | 
         top = max((r["evidence"] for r in grp), key=lambda e: e.get("inspections") or 0)
         at = ", ".join(x for x in (top.get("address"), top.get("city"), state, top.get("zip")) if x)
         theirs = company_domain(build_fn({"name": name, "city": top.get("city"), "state": state, "trade": None,
-                                          "osha_spelling": name, "tier": None, "matched_at": [at] if top.get("address") else []}))
+                                          "osha_spelling": printed(name, [r["establishment_key"] for r in grp]),
+                                          "tier": None, "matched_at": [at] if top.get("address") else []}))
         stats["checked"] += 1
         with pg.conn() as c:
             if theirs == site:

@@ -1,6 +1,6 @@
 # Matching rules, one at a time (silver labels from ITA EINs)
 
-3264 searches (general 1500, person 282, shared address 274, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T230852Z: 140,766 records decided, 23,612 of them labelled; 8,020 graded after the cap of 3 per search, rule and bucket. 477 s.
+3264 searches (general 1500, person 282, shared address 274, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T230852Z: 140,764 records decided, 23,612 of them labelled; 8,020 graded after the cap of 3 per search, rule and bucket. 456 s.
 
 The targeted pools oversample the cases their rules act on, so each share describes a rule where it acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a corporate family's divisions as different companies.
 
@@ -14,7 +14,7 @@ Share same = precision: the rest are records of another company counted in the s
 | M1b | Same distinctive core, differing only by descriptor words | 113 | 180 | 44 (21) | 20 | 24 (9) | 0.455 [0.32–0.6] | 0 of 24 reviewed |
 | M1s | The sub's name plus OF <PLACE>, in its city, at an address where another OF <PLACE> of it files | 1 | 2 | 0 (0) | 0 | 0 (0) |  |  |
 | M2 | At a matched address, the name differs only by spelling | 237 | 318 | 40 (28) | 28 | 12 (6) | 0.7 [0.55–0.82] | 0 of 12 reviewed |
-| M3 | Same distinctive name in another state | 409 | 3593 | 469 (120) | 366 | 103 (40) | 0.78 [0.74–0.82] | 0 of 103 reviewed |
+| M3 | Same distinctive name in another state | 408 | 3591 | 469 (120) | 366 | 103 (40) | 0.78 [0.74–0.82] | 0 of 103 reviewed |
 | L1 | Linked to the licence number entered | 91 | 124 | 112 (78) | 112 | 0 (0) | 1.0 [0.97–1.0] |  |
 
 ## Rules that exclude
@@ -34,6 +34,7 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
 | M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 61 | 109 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
+| M3a | M3 held back: at an address where its name spelt another way, or plus a trade word, has more inspections | 2 | 2 | 0 (0) | 0 | 0 (0) |  |  |
 | S1 | Differs only by OF <STATE> / AT <project> | 416 | 20537 | 482 (208) | 5 | 477 (458) | 0.01 [0.0–0.02] |  |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 9 | 51 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
 | S3 | The sub's name plus a real word, at an address the sub uses | 120 | 209 | 48 (28) | 18 | 30 (21) | 0.375 [0.25–0.52] |  |
@@ -47,7 +48,7 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 | G1 | Initials-only names | 104 | 431 | 61 (31) | 31 | 30 (29) | 0.508 [0.39–0.63] |  |
 | N1 | A related facility (not coded construction), by name | 290 | 809 | 319 (117) | 272 | 47 (21) | 0.853 [0.81–0.89] |  |
 | R1 | A red-flagged record at an address the company uses | 115 | 127 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
-| U | Anything else the rules can't settle | 671 | 3417 | 404 (195) | 127 | 277 (214) | 0.314 [0.27–0.36] |  |
+| U | Anything else the rules can't settle | 670 | 3415 | 404 (195) | 127 | 277 (214) | 0.314 [0.27–0.36] |  |
 
 ## Rules that never fired in these searches
 

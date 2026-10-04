@@ -631,6 +631,34 @@ def test_pages_keep_only_results_that_name_the_company_cut_to_size(monkeypatch):
     assert list(P.pages(tavily_resp(sunrun), "SUNRUN INSTALLATION SERVICES")[0]) == ["sunrun.com/x"]  # first word
 
 
+def test_a_page_names_the_company_without_its_apostrophes_or_with_its_first_words_run_together():
+    # v2 dropped every page about McKenney's (searched as MCKENNEYS) and Aboveboard Contracting (ABOVE BOARD), so the
+    # profiles came back not found
+    mck = {"title": "Locations - McKenney\u2019s Inc.", "url": "https://www.mckenneys.com/locations",
+           "content": "McKenney's Atlanta 1056 Moreland Industrial Blvd"}
+    above = {"title": "Home | Aboveboard Contracting", "url": "https://aboveboardcontracting.com", "content": "Portsmouth RI"}
+    assert list(P.pages(tavily_resp(mck), "MCKENNEYS")[0]) == ["mckenneys.com/locations"]
+    assert list(P.pages(tavily_resp(mck), "MCKENNEY'S")[0]) == ["mckenneys.com/locations"]
+    assert list(P.pages(tavily_resp(above), "ABOVE BOARD CONTRACTING")[0]) == ["aboveboardcontracting.com"]
+    board = {"title": "Board Contracting", "url": "https://boardco.com", "content": "Board Contracting, Portsmouth RI"}
+    assert not P.pages(tavily_resp(board), "ABOVE BOARD CONTRACTING")[0]  # the first word is still needed
+
+
+def test_the_search_spells_the_name_with_oshas_apostrophes(monkeypatch):
+    # cleaning makes MCKENNEY'S INC. MCKENNEYS, and a web search for MCKENNEYS found nothing at all
+    monkeypatch.setattr(P.warehouse, "rows", lambda sql, params: [{"display_name": "146544 - MCKENNEY'S, INC."},
+                                                                  {"display_name": "MCKENNEYS INC"}])
+    assert P.printed("MCKENNEYS", ["a", "b"]) == "MCKENNEY'S"
+    assert P.printed("MCKENNEYS MECHANICAL", ["a"]) == "MCKENNEY'S MECHANICAL"
+    assert P.printed("BRASFIELD GORRIE", ["a"]) == "BRASFIELD GORRIE" and P.printed(None, ["a"]) is None
+    ev = {"name": "MCKENNEYS", "state": "GA", "city": "ATLANTA", "address": "1056 MORELAND INDUSTRIAL BLVD",
+          "zip": "30316", "inspections": 7, "query": {"clean": "MCKENNEYS", "tier": "distinctive"}}
+    ctx = P.context({"entered_name": "McKennys", "entered_city": "Atlanta"}, "GA",
+                    [{"establishment_key": "a", "bucket": "matched", "evidence": ev}])
+    assert ctx["osha_spelling"] == "MCKENNEY'S"
+    assert P.tavily_query(ctx) == "MCKENNEY'S Atlanta GA contractor locations"
+
+
 class FakeProvider:
     model = "deepseek-ai/DeepSeek-V4.1-Flash"
 
@@ -802,3 +830,21 @@ def test_m3_check_needs_the_subs_own_site_and_stops_at_the_limit(m3_sub, monkeyp
     monkeypatch.setattr(ADJ, "M3_CHECK_LIMIT", 1)
     ADJ.check_m3(m3_sub, NPL, build)
     assert calls == ["NV"]  # the most inspections first (8 in NV)
+
+
+@local_db
+def test_m3_check_looks_up_matched_records_before_the_guards(m3_sub, monkeypatch):
+    # Ames Construction of Ephrata PA: its one matched record in Colorado (Ames of Minnesota's office) came after the
+    # guard's MN, CA, UT and NC groups, already held back for the adjudicator, and was never looked up
+    import json
+
+    from ssi.store import pg
+    with pg.conn() as c:
+        c.execute("""INSERT INTO app.sub_match (sub_id, establishment_key, bucket, method, rule_id, rationale, evidence,
+                                                needs_adjudication, decided_by)
+                     VALUES (%s, 'u_mn', 'possible', 'rule', 'M3u', 'held', %s, true, 'rules')""",
+                  [m3_sub["sub_id"], json.dumps({"name": "NPL CONSTRUCTION", "state": "MN", "inspections": 20})])
+    calls, build = lookups({"NV": "gonpl.com", "AZ": "azpipeline.com", "TX": "buildzoom.com", "MN": "other.com"})
+    monkeypatch.setattr(ADJ, "M3_CHECK_LIMIT", 3)
+    ADJ.check_m3(m3_sub, NPL, build)
+    assert calls == ["NV", "AZ", "TX"]  # MN has the most inspections, but only the guard's record

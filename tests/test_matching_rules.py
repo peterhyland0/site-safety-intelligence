@@ -635,3 +635,44 @@ def test_a_rule_match_replaces_web_holds_and_ai_decisions_never_the_gcs():
     assert not gives_way(row("web", "excluded")) and not gives_way(row("profile", "matched", "M4"))  # settled, not held
     # after the M3 web check found another company's website: the rules alone would match it as plain M3 again
     assert not gives_way(row("llm", "excluded", "M3w"))
+
+
+# --- M3a: the same name in another state, at another company's address -------------------------------------
+def _est(key, clean, core, insp, state="MO"):
+    return {"establishment_key": key, "clean_name": clean, "name_core": core, "legal_name": clean, "dba_name": None,
+            "state": state, "city": "CHESTERFIELD", "zip5": "63005", "addr_key": "16650 CHESTERFIELD",
+            "primary_naics4": "2362", "sibling_suffix": None, "initials_only": False, "insp_n": insp}
+
+
+def test_an_m3_record_where_a_near_name_has_more_inspections_is_held_back(monkeypatch):
+    # "Brinkmman Construction, Wheat Ridge" is BRINKMAN. BRINKMAN CONSTRUCTORS (2 inspections) in Missouri is OSHA's
+    # misspelling at Brinkmann Constructors' St. Louis office, where BRINKMANN CONSTRUCTORS has 22
+    from ssi.matching import candidates, run
+    gen, desc = GENERIC | {"CONSTRUCTORS"}, DESCRIPTORS | {"CONSTRUCTORS"}
+    monkeypatch.setattr(rules, "DESCRIPTORS", desc)
+    brinkman = q("BRINKMAN CONSTRUCTION", "BRINKMAN", state="CO", city="Wheat Ridge")
+    m3, big = _est("m3", "BRINKMAN CONSTRUCTORS", "BRINKMAN", 2), _est("big", "BRINKMANN CONSTRUCTORS", "BRINKMANN", 22)
+    assert decide(brinkman, run._candidate(m3), gen, desc).rule_id == "M3"
+
+    def at(*rows):
+        monkeypatch.setattr(candidates, "at_addresses", lambda keys, exclude: list(rows))
+    at(m3, big)
+    assert run.m3_rivals(brinkman, {"m3": m3}, gen, desc) == {"m3": ("Brinkmann Constructors", 22)}
+    # the sub's own office, with a smaller near name beside it, stays matched
+    at({**m3, "insp_n": 30}, big)
+    assert run.m3_rivals(brinkman, {"m3": {**m3, "insp_n": 30}}, gen, desc) == {}
+    # another company's name at the address is a tenant, not a rival
+    at(m3, _est("t", "ZEPHYR HOLDINGS", "ZEPHYR HOLDINGS", 50))
+    assert run.m3_rivals(brinkman, {"m3": m3}, gen, desc) == {}
+    # nor are the company's other names at its own office: SUNRUN (3) beside SUNRUN INSTALLATION SERVICES (1) at
+    # Sunrun's head office, or SUNRUN SOLAR, another trade word but not the record's whole name plus one
+    sunrun = q("SUNRUN INSTALLATION SERVICES", "SUNRUN", state="AZ")
+    m3 = _est("m3", "SUNRUN INSTALLATION SERVICES", "SUNRUN", 1, state="UT")
+    at(m3, _est("p", "SUNRUN", "SUNRUN", 3, state="UT"), _est("s", "SUNRUN SOLAR", "SUNRUN", 2, state="UT"))
+    assert run.m3_rivals(sunrun, {"m3": m3}, gen | {"SOLAR"}, desc) == {}
+    # "Aboe Board Contracting" (Portsmouth RI) is ABOVE BOARD CONTRACTING; ABOVE BOARD CONSTRUCTION (1) in Redding is
+    # at the address of ABOVE BOARD CONSTRUCTION & ROOFING (9), a roofer the rules hold back as a sister company (U3)
+    above = q("ABOVE BOARD CONTRACTING", "ABOVE BOARD", state="RI", city="Portsmouth")
+    m3 = _est("m3", "ABOVE BOARD CONSTRUCTION", "ABOVE BOARD", 1, state="CA")
+    at(m3, _est("roofer", "ABOVE BOARD CONSTRUCTION ROOFING", "ABOVE BOARD", 9, state="CA"))
+    assert run.m3_rivals(above, {"m3": m3}, gen, desc) == {"m3": ("Above Board Construction Roofing", 9)}

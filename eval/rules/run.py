@@ -51,6 +51,7 @@ RULES = {
     "M2": "At a matched address, the name differs only by spelling",
     "M3": "Same distinctive name in another state",
     "M3u": "M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack",
+    "M3a": "M3 held back: at an address where its name spelt another way, or plus a trade word, has more inspections",
     "L1": "Linked to the licence number entered",
     "X1": "A different real word in the name",
     "X2": "A different generic name",
