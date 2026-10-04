@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ProjectDetail, SubCard } from "../api/types";
+import type { MatchQuestion, ProjectDetail, ProjectQuestion, SubCard } from "../api/types";
 import { toProjectDetail } from "../mock/derive";
 import { seedProjects } from "../mock/fixtures";
 import { ProjectPage } from "../pages/ProjectPage";
@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   addSubs: vi.fn(),
   adjudicate: vi.fn(),
   deleteProject: vi.fn(),
+  answerQuestions: vi.fn(),
   health: vi.fn(),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
 }));
@@ -199,6 +200,54 @@ describe("GC scorecard", () => {
     await user.click(screen.getByRole("button", { name: "Delete project" }));
     expect(api.deleteProject).toHaveBeenCalledWith("demo-riverside");
     expect(await screen.findByRole("heading", { name: "All projects" })).toBeInTheDocument();
+  });
+
+  it("answers the questions with a suggestion in one go, leaving out any the GC unticks", async () => {
+    const user = userEvent.setup();
+    const d = detail();
+    const [a, b] = d.subs;
+    const q = (id: string, sub: SubCard, suggestion: MatchQuestion["ai_suggestion"], extra: Partial<ProjectQuestion> = {}): ProjectQuestion => ({
+      question_id: id, text: `Is this OSHA record ${sub.entered_name}?`, establishment_keys: ["e1"], ai_suggestion: suggestion,
+      ai_rationale: null, kind: "red_flag", sources: [], sub_id: sub.sub_id, sub_name: sub.entered_name, has_red_flags: false, ...extra,
+    });
+    const qs = [
+      q("q1", a, "same", { kind: "web" }),
+      q("q2", a, "different", { has_red_flags: true }),
+      q("q3", b, "same", { kind: "profile", establishment_keys: ["e2", "e3"] }),
+      q("q4", b, "unsure"),
+    ];
+    api.getProject.mockResolvedValueOnce({ ...d, questions: qs }).mockResolvedValue({ ...d, questions: [qs[1], qs[3]] });
+    api.adjudicate.mockImplementation(() => new Promise(() => {}));
+    api.answerQuestions.mockResolvedValue({ answered: 2 });
+    renderPage();
+
+    const panel = await screen.findByRole("region", { name: "3 match questions with a suggestion" });
+    expect(within(panel).getByText("1 more question without a clear suggestion: answer it on the sub's page.")).toBeInTheDocument();
+    expect(within(panel).getByText("carries red flags")).toBeInTheDocument();
+    expect(within(panel).getByRole("checkbox", { name: `${a.entered_name}: A web page ties this record to your sub` })).toBeChecked();
+    expect(within(panel).getByRole("checkbox", { name: `${b.entered_name}: The company's website lists these addresses` })).toBeChecked();
+
+    await user.click(within(panel).getByRole("checkbox", { name: `${a.entered_name}: AI read: probably a different company` }));
+    await user.click(within(panel).getByRole("button", { name: "Answer 2 questions with the suggestions" }));
+    expect(api.answerQuestions).toHaveBeenCalledWith(d.project.project_id, [
+      { question_id: "q1", answer: "yes" },
+      { question_id: "q3", answer: "yes" },
+    ]);
+    expect(await screen.findByText("Answered 2 questions.")).toBeInTheDocument();
+    expect(api.getProject).toHaveBeenCalledTimes(2);
+    // the one the GC unticked stays unticked, and waits
+    const left = await screen.findByRole("region", { name: "1 match question with a suggestion" });
+    expect(within(left).getByRole("checkbox")).not.toBeChecked();
+    expect(within(left).getByRole("button", { name: "Answer with the suggestions" })).toBeDisabled();
+  });
+
+  it("shows no suggestions panel when no question has a clear suggestion", async () => {
+    const d = detail();
+    api.getProject.mockResolvedValue({ ...d, questions: [] });
+    api.adjudicate.mockImplementation(() => new Promise(() => {}));
+    renderPage();
+    await screen.findByRole("heading", { name: "Riverside Medical Office Building" });
+    expect(screen.queryByRole("region", { name: /with a suggestion/ })).not.toBeInTheDocument();
   });
 
   it("shows an access message on 401", async () => {

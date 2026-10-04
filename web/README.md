@@ -33,7 +33,7 @@ code out entirely.
 | Route | What it is |
 |---|---|
 | `/` | Projects list and "New project" (name, job-site state, lookback 3/5/10 years) |
-| `/projects/:projectId` | GC scorecard: lookback toggle, data-as-of, bulk "Add subs" paste box with preview, ranked sub cards, CSV export, link to the foreman assistant. Subs with `match_status: needs_adjudication` show "Resolving N uncertain records…" while the page calls `/adjudicate` (max 2 at a time) and swaps in the returned card. |
+| `/projects/:projectId` | GC scorecard: lookback toggle, data-as-of, bulk "Add subs" paste box with preview, ranked sub cards, CSV export, link to the foreman assistant. Open match questions with a suggestion are listed above the scorecard, ticked, and answered together with "Answer N questions with the suggestions" (`POST /questions/answers`; the GC unticks any they'd answer differently). Subs with `match_status: needs_adjudication` show "Resolving N uncertain records…" while the page calls `/adjudicate` (max 2 at a time) and swaps in the returned card. |
 | `/projects/:projectId/subs/:subId` | Sub detail: verdict, every reason with evidence links, yes/no match questions, red flags, yearly trend chart, hazards, open cases (provisional), injury rates and licence, the three match buckets with a bucket override, the paged inspection list (rows expand to citations and accident narratives), data-quality notes |
 | `/projects/:projectId/ask` | Foreman chat, phone-first: suggested questions, markdown answers, osha.gov citation chips, coverage line, clarify options as buttons ("I mean …"), friendly copy for `needs_confirmation`, `unanswerable`, `guard_failed`, `no_api_key` |
 | `/methodology` | Verdict rules, matching buckets, sources and limits |

@@ -409,3 +409,44 @@ def test_a_re_match_replaces_the_ais_exclusion_of_records_a_rule_now_matches(hof
     assert {k: v[:2] for k, v in by_name(hoffman).items()} == {k: ("excluded", "llm") for k in HQ_MATCHED}
     run.match_and_persist(hoffman, "OR")  # the re-match, with M1s
     assert by_name(hoffman) == HQ_MATCHED  # the Seattle company, still S1 to the rules, keeps the AI's answer
+
+
+def test_the_project_page_answers_several_questions_at_once(client, make_user, make_sub, flags, monkeypatch):
+    from ssi.api import app as A
+    monkeypatch.setattr(A.Q, "card", stub_card)
+    same, other, red = key(), key(), key()
+    p, s = make_sub({same: "ACME ELECTRIC", other: "ACME ELECTRICAL SUPPLY", red: "ACME ELECTRIC CO"})
+    _, s2 = make_sub({key(): "ACME ELECTRIC"})
+    flags[red] = 1
+
+    def ask(sub, keys, suggestion, kind="red_flag") -> str:
+        with pg.conn() as c:
+            return str(c.execute("""INSERT INTO app.match_question (sub_id, establishment_keys, text, ai_suggestion, kind)
+                                    VALUES (%s, %s, 'Is this your sub?', %s, %s) RETURNING question_id""",
+                                 [sub["sub_id"], keys, suggestion, kind]).fetchone()["question_id"])
+
+    q_same, q_other, q_red = ask(s, [same], "same", "web"), ask(s, [other], "different", "profile"), ask(s, [red], "different")
+    q_elsewhere = ask(s2, [key()], "same")
+    c = client(signed_in_as=make_user())
+    url = f"/api/projects/{p['project_id']}/questions/answers"
+
+    detail = c.get(f"/api/projects/{p['project_id']}").json()
+    assert [(q["question_id"], q["sub_name"], q["has_red_flags"]) for q in detail["questions"]] == [
+        (q_same, "Acme Electric", False), (q_other, "Acme Electric", False), (q_red, "Acme Electric", True)]
+
+    # a question from another project: 404, and nothing is answered
+    r = c.post(url, json={"answers": [{"question_id": q_same, "answer": "yes"}, {"question_id": q_elsewhere, "answer": "yes"}]})
+    assert r.status_code == 404 and rows(str(s["sub_id"]))[same]["bucket"] == "possible"
+    assert c.post(url, json={"answers": []}).status_code == 422
+
+    r = c.post(url, json={"answers": [{"question_id": q_same, "answer": "yes"}, {"question_id": q_other, "answer": "no"}]})
+    assert r.json() == {"answered": 2}
+    after = rows(str(s["sub_id"]))
+    assert (after[same]["bucket"], after[same]["method"]) == ("matched", "gc")
+    assert (after[other]["bucket"], after[other]["method"]) == ("excluded", "gc")
+    assert after[red]["bucket"] == "possible"
+    assert [q["question_id"] for q in c.get(f"/api/projects/{p['project_id']}").json()["questions"]] == [q_red]
+
+    # an answered question keeps its answer
+    assert c.post(url, json={"answers": [{"question_id": q_same, "answer": "no"}]}).json() == {"answered": 0}
+    assert rows(str(s["sub_id"]))[same]["bucket"] == "matched"

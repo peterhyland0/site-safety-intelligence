@@ -5,6 +5,7 @@ The SPA (web/) mirrors these as TypeScript types in web/src/api/types.ts. Change
 from __future__ import annotations
 
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, StringConstraints
 
@@ -123,6 +124,7 @@ class ProjectDetail(BaseModel):
     data_as_of: str
     history_since: str | None = None  # first inspection date kept by the build (None = every year)
     web_check: bool = False  # the web check can run on this server (its settings are shown)
+    questions: list[ProjectQuestion] = []  # every open match question, in scorecard order
 
 
 # --- matching ------------------------------------------------------------------------------------
@@ -167,6 +169,13 @@ class MatchQuestion(BaseModel):
     # answered differently; web: from the web check, a suggestion that doesn't hold up the verdict or the assistant
     kind: Literal["red_flag", "profile", "remap", "web"] = "red_flag"
     sources: list[ProfileSource] = []
+
+
+class ProjectQuestion(MatchQuestion):
+    """An open question on the project page, where the GC can answer those with a suggestion all at once."""
+    sub_id: str
+    sub_name: str
+    has_red_flags: bool  # a record it asks about carries a red flag
 
 
 class ProfileLocation(BaseModel):
@@ -220,6 +229,18 @@ class MatchOverride(BaseModel):
 
 class QuestionAnswer(BaseModel):
     answer: Literal["yes", "no"]
+
+
+class ProjectAnswer(QuestionAnswer):
+    question_id: UUID
+
+
+class ProjectAnswers(BaseModel):
+    answers: list[ProjectAnswer] = Field(min_length=1, max_length=500)
+
+
+class AnsweredQuestions(BaseModel):
+    answered: int  # the rest were already answered (an earlier answer carried to them, or someone else answered)
 
 
 # --- evidence ------------------------------------------------------------------------------------

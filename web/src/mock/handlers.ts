@@ -10,6 +10,8 @@ import type {
   ChatSummary,
   Health,
   LoginRequest,
+  MatchQuestion,
+  ProjectAnswer,
   ProjectCreate,
   ProjectUpdate,
   SubInput,
@@ -228,6 +230,22 @@ function acceptWebQuestions(s: FxSub): void {
   }
 }
 
+/** The GC's answer (mock of adjudicate._answer, without carrying it to the company's other records). */
+function answerMock(sub: FxSub, q: MatchQuestion, answer: "yes" | "no"): void {
+  for (const key of q.establishment_keys) {
+    const e = sub.establishments.find((x) => x.key === key);
+    if (e)
+      Object.assign(e, {
+        bucket: answer === "yes" ? "matched" : "excluded",
+        method: "gc",
+        confidence: null,
+        rule_id: null,
+        rationale: answer === "yes" ? "Confirmed by the GC as the same company." : "The GC says this is a different company.",
+      });
+  }
+  sub.questions = sub.questions.filter((x) => x !== q);
+}
+
 function csvFor(p: FxProject): string {
   const detail = toProjectDetail(p);
   const head = ["sub", "city", "state", "trade", "verdict", "top_reason", "inspections_in_window", "serious_plus_rate", "trade_median", "red_flags", "possible_inspections_not_counted"];
@@ -442,20 +460,31 @@ const routes: Route[] = [
       const project = projects.find((p) => p.subs.some((s) => s.questions.some((q) => q.question_id === qid)));
       const sub = project?.subs.find((s) => s.questions.some((q) => q.question_id === qid));
       if (!project || !sub) fail(404, "Question not found");
-      const q = sub.questions.find((x) => x.question_id === qid)!;
-      for (const key of q.establishment_keys) {
-        const e = sub.establishments.find((x) => x.key === key);
-        if (e)
-          Object.assign(e, {
-            bucket: answer === "yes" ? "matched" : "excluded",
-            method: "gc",
-            confidence: null,
-            rule_id: null,
-            rationale: answer === "yes" ? "Confirmed by the GC as the same company." : "The GC says this is a different company.",
-          });
-      }
-      sub.questions = sub.questions.filter((x) => x !== q);
+      answerMock(sub, sub.questions.find((x) => x.question_id === qid)!, answer);
       return toCard(sub, project.lookback_years);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/projects\/([^/]+)\/questions\/answers$/,
+    run: (m, body) => {
+      const p = findProject(decodeURIComponent(m[1]));
+      const answers = (body as { answers?: ProjectAnswer[] })?.answers ?? [];
+      if (!answers.length) fail(422, "answers must not be empty.");
+      if (answers.some((a) => a.answer !== "yes" && a.answer !== "no")) fail(422, "answer must be yes or no.");
+      const found = answers.map((a) => {
+        const sub = p.subs.find((s) => s.questions.some((q) => q.question_id === a.question_id));
+        if (!sub) fail(404, "Question not found on this project");
+        return { sub, qid: a.question_id, answer: a.answer };
+      });
+      let answered = 0;
+      for (const { sub, qid, answer } of found) {
+        const q = sub.questions.find((x) => x.question_id === qid);
+        if (!q) continue; // already answered
+        answerMock(sub, q, answer);
+        answered++;
+      }
+      return { answered };
     },
   },
   {

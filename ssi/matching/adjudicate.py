@@ -840,16 +840,41 @@ def answer_question(question_id: str, answer: str) -> dict:
         q = c.execute("SELECT * FROM app.match_question WHERE question_id = %s", [question_id]).fetchone()
         if not q:
             raise KeyError(question_id)
-        c.execute("UPDATE app.match_question SET answer = %s, answered_at = now() WHERE question_id = %s",
-                  [answer, question_id])
-        bucket = "matched" if answer == "yes" else "excluded"
-        c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', rule_id = NULL, decided_by = 'gc', decided_at = now(),
-                            needs_adjudication = false, rationale = %s
-                     WHERE sub_id = %s AND establishment_key = ANY(%s)""",
-                  [bucket, "Confirmed by the GC" if answer == "yes" else "Rejected by the GC", q["sub_id"],
-                   q["establishment_keys"]])
-        carry(c, str(q["sub_id"]), q["establishment_keys"], bucket)  # ...and the companies it named
+        _answer(c, q, answer)
     return q
+
+
+def answer_questions(project_id: str, answers: dict[str, str]) -> int:
+    """Several of a project's questions answered at once ({question_id: yes|no}, in order), in one transaction: the
+    project page's "Answer with the suggestions". A question that's already answered, by an earlier answer here
+    carrying to it or by someone else, keeps its answer. KeyError, and nothing answered, when a question isn't on the
+    project. Returns how many were answered."""
+    with pg.conn() as c:
+        on_project = {str(r["question_id"]) for r in c.execute(
+            """SELECT q.question_id FROM app.match_question q JOIN app.project_sub s USING (sub_id)
+               WHERE s.project_id = %s AND q.question_id = ANY(%s::uuid[])""", [project_id, list(answers)]).fetchall()}
+        if missing := [qid for qid in answers if qid not in on_project]:
+            raise KeyError(missing[0])
+        n = 0
+        for qid, answer in answers.items():
+            # read as each is answered: an earlier one can settle it, or take a record out of it
+            q = c.execute("SELECT * FROM app.match_question WHERE question_id = %s FOR UPDATE", [qid]).fetchone()
+            if q["answer"] is None:
+                _answer(c, q, answer)
+                n += 1
+    return n
+
+
+def _answer(c, q: dict, answer: str) -> None:
+    c.execute("UPDATE app.match_question SET answer = %s, answered_at = now() WHERE question_id = %s",
+              [answer, q["question_id"]])
+    bucket = "matched" if answer == "yes" else "excluded"
+    c.execute("""UPDATE app.sub_match SET bucket = %s, method = 'gc', rule_id = NULL, decided_by = 'gc', decided_at = now(),
+                        needs_adjudication = false, rationale = %s
+                 WHERE sub_id = %s AND establishment_key = ANY(%s)""",
+              [bucket, "Confirmed by the GC" if answer == "yes" else "Rejected by the GC", q["sub_id"],
+               q["establishment_keys"]])
+    carry(c, str(q["sub_id"]), q["establishment_keys"], bucket)  # ...and the companies it named
 
 
 def override(sub_id: str, establishment_key: str, bucket: str) -> None:

@@ -26,6 +26,15 @@ function webSuggestion(s: NonNullable<MatchQuestion["ai_suggestion"]>, several: 
   return "The web search didn't settle it";
 }
 
+/** What a question's suggestion says, in the words of where it came from: the AI, the company's pages or the web. */
+export function suggestionLabel(q: MatchQuestion): string | null {
+  if (!q.ai_suggestion) return null;
+  const several = q.establishment_keys.length > 1;
+  if (q.kind === "web") return webSuggestion(q.ai_suggestion, several);
+  if (q.kind === "profile" || q.sources?.length) return profileSuggestion(q.ai_suggestion, several);
+  return SUGGESTION[q.ai_suggestion];
+}
+
 function host(url: string): string {
   return url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
 }
@@ -98,16 +107,7 @@ export function QuestionCard({
       ) : null}
       {question.ai_suggestion || question.ai_rationale ? (
         <p className="mt-2 text-sm text-ink-2">
-          {question.ai_suggestion ? (
-            <span className="font-medium">
-              {fromWeb
-                ? webSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
-                : fromProfile || sources.length
-                  ? profileSuggestion(question.ai_suggestion, question.establishment_keys.length > 1)
-                  : SUGGESTION[question.ai_suggestion]}
-              .{" "}
-            </span>
-          ) : null}
+          {question.ai_suggestion ? <span className="font-medium">{suggestionLabel(question)}. </span> : null}
           {fromWeb ? null : question.ai_rationale /* a web question's quotes are under their records */}
         </p>
       ) : null}

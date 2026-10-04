@@ -8,6 +8,7 @@ import { AskForemanButton } from "../components/AskForemanButton";
 import { IconDownload, IconPlus, IconTrash } from "../components/Icons";
 import { LookbackToggle } from "../components/LookbackToggle";
 import { SubCard } from "../components/SubCard";
+import { SuggestedAnswers } from "../components/SuggestedAnswers";
 import { BackLink, ErrorBanner, InlineError, Loading } from "../components/ui";
 import type { WebCheckSettingsPatch } from "../components/WebCheck";
 import { VerdictIcon } from "../components/VerdictChip";
@@ -94,7 +95,7 @@ export function ProjectPage() {
     );
   }
 
-  const { project, subs, data_as_of, history_since, web_check } = detail.data;
+  const { project, subs, data_as_of, history_since, web_check, questions = [] } = detail.data;
   const showAdd = adding || subs.length === 0;
 
   return (
@@ -127,6 +128,8 @@ export function ProjectPage() {
       </div>
 
       {subs.length ? <VerdictSummary subs={subs} /> : null}
+
+      <SuggestedAnswers projectId={project.project_id} questions={questions} onAnswered={reload} />
 
       {showAdd ? (
         <AddSubsBox

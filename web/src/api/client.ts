@@ -15,6 +15,7 @@ import type {
   InspectionRow,
   LoginRequest,
   Project,
+  ProjectAnswer,
   ProjectCreate,
   ProjectDetail,
   ProjectUpdate,
@@ -217,6 +218,9 @@ export const api = {
   /** Yes/no on a match question; returns the re-scored SubCard of the sub it belongs to. */
   answerQuestion: (questionId: string, answer: "yes" | "no") =>
     request<SubCard>("POST", `/api/questions/${enc(questionId)}/answer`, { answer }),
+  /** All or nothing; a question that's already answered keeps its answer and isn't counted. */
+  answerQuestions: (projectId: string, answers: ProjectAnswer[]) =>
+    request<{ answered: number }>("POST", `/api/projects/${enc(projectId)}/questions/answers`, { answers }),
 
   getInspection: (activityNr: number) =>
     request<InspectionDetail>("GET", `/api/inspections/${activityNr}`),

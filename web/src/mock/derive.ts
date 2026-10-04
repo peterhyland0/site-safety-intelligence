@@ -512,5 +512,16 @@ export function toProjectDetail(p: FxProject): ProjectDetail {
       (b.serious_plus_rate ?? -1) - (a.serious_plus_rate ?? -1) ||
       a.entered_name.localeCompare(b.entered_name),
   );
-  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF, history_since: "2016-09-23", web_check: true };
+  const rank = new Map(cards.map((c, i) => [c.sub_id, i]));
+  const questions = [...p.subs]
+    .sort((a, b) => rank.get(a.sub_id)! - rank.get(b.sub_id)!)
+    .flatMap((s) =>
+      s.questions.map((q) => ({
+        ...q,
+        sub_id: s.sub_id,
+        sub_name: s.entered_name,
+        has_red_flags: q.establishment_keys.some((k) => redFlagged(s, k)),
+      })),
+    );
+  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF, history_since: "2016-09-23", web_check: true, questions };
 }

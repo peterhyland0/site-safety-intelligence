@@ -176,6 +176,8 @@ export interface ProjectDetail {
   history_since?: string | null;
   /** the web check can run on this server (its settings are shown) */
   web_check?: boolean;
+  /** every open match question, in scorecard order */
+  questions?: ProjectQuestion[];
 }
 
 // --- matching ------------------------------------------------------------------------------------
@@ -213,6 +215,19 @@ export interface MatchQuestion {
    *  web: from the web check, a suggestion that doesn't hold up the verdict (sources are keyed to their records) */
   kind?: "red_flag" | "profile" | "remap" | "web";
   sources?: ProfileSource[];
+}
+
+/** An open question on the project page, where the GC can answer those with a suggestion all at once. */
+export interface ProjectQuestion extends MatchQuestion {
+  sub_id: string;
+  sub_name: string;
+  /** a record it asks about carries a red flag */
+  has_red_flags: boolean;
+}
+
+export interface ProjectAnswer {
+  question_id: string;
+  answer: "yes" | "no";
 }
 
 export interface ProfileSource {

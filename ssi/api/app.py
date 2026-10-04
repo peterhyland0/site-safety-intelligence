@@ -212,7 +212,24 @@ def get_project(project_id: str):
     # subs left unresolved (the server stopped before it finished them) are picked up when the project is opened
     resolve_later(p, [c.sub_id for c in cards if c.match_status == "needs_adjudication"])
     return S.ProjectDetail(project=_project_model(p), subs=cards, data_as_of=m["data_as_of"],
-                           history_since=m.get("history_since"), web_check=W.available())
+                           history_since=m.get("history_since"), web_check=W.available(),
+                           questions=_open_questions(project_id, [c.sub_id for c in cards]))
+
+
+def _open_questions(project_id: str, sub_order: list[str]) -> list[S.ProjectQuestion]:
+    """The project's open match questions, subs in `sub_order` (the scorecard's)."""
+    with pg.conn() as c:
+        qs = c.execute("""SELECT q.*, s.entered_name FROM app.match_question q JOIN app.project_sub s USING (sub_id)
+                          WHERE s.project_id = %s AND q.answer IS NULL ORDER BY q.created_at""", [project_id]).fetchall()
+    from ssi.matching import candidates as C
+    flagged = C.red_flag_counts(sorted({k for q in qs for k in q["establishment_keys"]}))
+    rank = {sid: i for i, sid in enumerate(sub_order)}
+    qs.sort(key=lambda q: rank.get(str(q["sub_id"]), len(rank)))
+    return [S.ProjectQuestion(question_id=str(q["question_id"]), text=q["text"], establishment_keys=q["establishment_keys"],
+                              ai_suggestion=q["ai_suggestion"], ai_rationale=q["ai_rationale"],
+                              kind=q.get("kind") or "red_flag", sources=q.get("sources") or [], sub_id=str(q["sub_id"]),
+                              sub_name=q["entered_name"], has_red_flags=any(flagged.get(k) for k in q["establishment_keys"]))
+            for q in qs]
 
 
 @app.patch("/api/projects/{project_id}", response_model=S.Project)
@@ -407,6 +424,17 @@ def answer(question_id: str, body: S.QuestionAnswer):
     with pg.conn() as c:
         s = c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [q["sub_id"]]).fetchone()
     return Q.card(s, _project(str(s["project_id"])))
+
+
+@app.post("/api/projects/{project_id}/questions/answers", response_model=S.AnsweredQuestions)
+def answer_many(project_id: str, body: S.ProjectAnswers):
+    """Several of the project's questions at once, all or nothing: the project page's "Answer with the suggestions"."""
+    _project(project_id)
+    try:
+        n = ADJ.answer_questions(project_id, {str(a.question_id): a.answer for a in body.answers})
+    except KeyError:
+        raise HTTPException(404, "Question not found on this project")
+    return S.AnsweredQuestions(answered=n)
 
 
 @app.get("/api/inspections/{activity_nr}", response_model=S.InspectionDetail)
