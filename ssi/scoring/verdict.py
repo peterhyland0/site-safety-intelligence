@@ -187,7 +187,13 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     if len(repeat_insp) == 1:
         add("R_repeat", f"Repeat violation in the last {f.window_years} years", "review", repeat_window)
     old_repeat = [x for x in f.red_flags if x.kind == "repeat" and not in_window(x)]
-    if old_repeat and len(repeat_insp) == 0:
+    old_visits = {x.visit or str(x.activity_nr) for x in old_repeat}
+    if len(old_visits) >= 2 and len(repeat_insp) < 2:
+        # a repeat-violation pattern counts over the whole history, as willful and fatality events do: older than the
+        # window it's Review (the README's "whole history window"), not a note under a "No flags" verdict
+        add("R_old_repeat_pattern", f"Repeat violations in {len(old_visits)} separate inspections before the last "
+            f"{f.window_years} years ({_years(old_repeat)})", "review", old_repeat, inspections=len(old_visits))
+    elif old_repeat and len(repeat_insp) == 0:
         add("R_old_repeat", f"Repeat violations before the last {f.window_years} years ({_years(old_repeat)})",
             "info", old_repeat)
     if (rate is not None and peer_ok and f.benchmark_p75 is not None and f.rated_window >= config.BENCHMARK_MIN_RATED_INSPECTIONS

@@ -176,3 +176,19 @@ def test_records_the_build_doesnt_have_are_review_never_no_record():
     v, r = evaluate(facts(matched_establishments=0, inspections_all=0, inspections_window=0, rated_window=0,
                           serious_plus_window=0, stale_records=1))
     assert v == "review" and "R_stale" in [x.code for x in r]
+
+
+def test_a_repeat_pattern_older_than_the_window_is_review():
+    # the whole history counts a repeat-violation pattern (README §2): Rosedale Roofing's repeats in 4 inspections in
+    # 2017-2021 read "No flags" at a 5-year window. One older repeat is still only a note
+    old = [RedFlagFact("repeat", y, nr, False) for y, nr in ((2017, 1), (2019, 2), (2021, 3))]
+    v, r = evaluate(facts(red_flags=old))
+    assert v == "review" and [x.code for x in r] == ["R_old_repeat_pattern"] and r[0].figures == {"inspections": 3}
+    v, r = evaluate(facts(red_flags=old[:1]))
+    assert v == "no_flags" and [x.code for x in r] == ["R_old_repeat"]
+    # a safety and a health inspection of one visit are one visit
+    v, _ = evaluate(facts(red_flags=[RedFlagFact("repeat", 2018, 1, False, visit="v1"), RedFlagFact("repeat", 2018, 2, False, visit="v1")]))
+    assert v == "no_flags"
+    # with a pattern inside the window it's High already, and isn't said twice
+    recent = [RedFlagFact("repeat", 2025, 8, False), RedFlagFact("repeat", 2024, 9, False)]
+    assert [x.code for x in evaluate(facts(red_flags=old + recent))[1]] == ["H_repeat"]

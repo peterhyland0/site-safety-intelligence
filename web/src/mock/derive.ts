@@ -276,7 +276,12 @@ function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: 
   }
   if (repeatWindow.length === 1) add("R_repeat", `Repeat violation in the last ${lookback} years`, "review", repeatWindow.map((f) => f.nr));
   const oldRepeat = flags.filter((f) => f.kind === "repeat" && f.year <= windowCutoff);
-  if (oldRepeat.length && repeatWindow.length === 0) {
+  const oldVisits = new Set(oldRepeat.map((f) => f.nr));
+  if (oldVisits.size >= 2 && repeatWindow.length < 2) {
+    // a pattern counts over the whole history (ssi/scoring/verdict.py)
+    add("R_old_repeat_pattern", `Repeat violations in ${oldVisits.size} separate inspections before the last ${lookback} years (${yearsList(oldRepeat.map((f) => f.year))})`,
+      "review", oldRepeat.map((f) => f.nr), { inspections: oldVisits.size });
+  } else if (oldRepeat.length && repeatWindow.length === 0) {
     add("R_old_repeat", `Repeat violations before the last ${lookback} years (${yearsList(oldRepeat.map((f) => f.year))})`, "info", oldRepeat.map((f) => f.nr));
   }
   const sp = inWindow.reduce((a, i) => a + i.cits.filter(isSeriousPlus).length, 0);
