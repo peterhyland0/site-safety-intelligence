@@ -9,6 +9,7 @@ import pytest
 from ssi import config
 from ssi.cleaning import install_macros
 from ssi.matching.candidates import PLACE_PREFIXES, is_person_core
+from ssi.store import warehouse
 
 pytestmark = pytest.mark.skipif(config.current_warehouse() is None, reason="needs a built warehouse")
 
@@ -19,7 +20,10 @@ LEGAL_END = (r" (INC|INCORPORATED|INCORPORATION|LLC|LCC|LC|CORP|CORPORATION|CO|C
 
 @pytest.fixture(scope="module")
 def wh(tmp_path_factory):
-    con = duckdb.connect(str(config.current_warehouse()), read_only=True)
+    # a cursor on the app's connection: DuckDB opens a file once per process, with one configuration, and an earlier
+    # test may have opened the warehouse already (test_foreman_fake does). A cursor doesn't see that connection's
+    # temp macros, so an older warehouse without stored ones still reads as stale below.
+    con = warehouse.open_warehouse(config.current_warehouse()).cursor()
     # the repo's macros as a stored database prints them (stored lambdas read back in another form than they're written)
     path = tmp_path_factory.mktemp("macros") / "repo.duckdb"
     with duckdb.connect(str(path)) as repo:
