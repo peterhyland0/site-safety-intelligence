@@ -166,6 +166,30 @@ def table_checksums(con) -> dict[str, str]:
     return out
 
 
+# Tables that take in new data every day: a build with fewer rows than the live one is missing raw files
+SHRINK_TABLES = ["osha.inspection", "osha.violation"]
+MAX_SHRINK = 0.02
+
+
+def shrink_check(prev: dict | None, counts: dict, history_since: str | None) -> dict | None:
+    """Error level: a table that shrank by more than MAX_SHRINK since the live build. The other checks compare the
+    tables with whatever raw files are there, so a build missing one of the ~268 violation files passed them all and
+    went live, its subs' willful and repeat flags gone. New data, the history window moving forward and cleaning
+    changes move these counts far less. Not checked with no earlier build or when the history setting changed
+    (SSI_HISTORY_YEARS); SSI_ALLOW_SHRINK=1 lets a deliberate cut through."""
+    if not prev or os.environ.get("SSI_ALLOW_SHRINK") == "1":
+        return None
+    before_since, since = prev.get("history_since"), history_since
+    if (before_since is None) != (since is None) or (
+            since and abs((datetime.fromisoformat(str(since)) - datetime.fromisoformat(str(before_since))).days) > 366):
+        return None
+    before = {t: int(v.split(":")[0]) for t, v in json.loads(prev.get("table_checksums") or "{}").items()}
+    ratios = {t: round(counts[t] / before[t], 4) for t in SHRINK_TABLES if before.get(t) and t in counts}
+    short = {t: r for t, r in ratios.items() if r < 1 - MAX_SHRINK}
+    return {"name": "rows_vs_live_build", "severity": "error", "expected": f">= {1 - MAX_SHRINK:.0%} of the live build",
+            "actual": short or ratios, "pass": not short}
+
+
 def previous_build_info(build_dir: Path) -> dict | None:
     ptr = build_dir / "CURRENT"
     if not ptr.exists() or not (build_dir / ptr.read_text().strip()).exists():
@@ -178,7 +202,10 @@ def previous_build_info(build_dir: Path) -> dict | None:
         return None
 
 
-def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_scratch: bool = False) -> dict:
+def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_scratch: bool = False,
+          live_dir: Path | None = None) -> dict:
+    """`live_dir`: where the live build is, to compare with (default: this build's own directory; Modal builds on the
+    container's disk, and the live build is on the Volume)."""
     raw_dir = data_dir / "raw"
     build_dir = data_dir / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
@@ -239,7 +266,9 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     checksums = table_checksums(con)
     report.update(fingerprints)
     # Same raw files and same code must build identical tables; a difference means a non-deterministic step.
-    prev = previous_build_info(build_dir)
+    prev = previous_build_info(live_dir or build_dir)
+    if (shrink := shrink_check(prev, report["tables"], history_since)) is not None:
+        report["checks"].append(shrink)
     if prev and prev.get("inputs_fingerprint") == fingerprints["inputs_fingerprint"] \
             and prev.get("code_fingerprint") == fingerprints["code_fingerprint"]:
         prev_sums = json.loads(prev.get("table_checksums") or "{}")
@@ -268,7 +297,9 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     report["ok"] = not failed
     (build_dir / f"build_report-{build_id}.json").write_text(json.dumps(report, indent=2, default=str))
     if failed:
-        raise SystemExit(f"Build {build_id} failed checks: {[c['name'] for c in failed]}")
+        hint = ("; if the code cut them on purpose (a scope change), build again with SSI_ALLOW_SHRINK=1"
+                if any(c["name"] == "rows_vs_live_build" for c in failed) else "")
+        raise SystemExit(f"Build {build_id} failed checks: {[c['name'] for c in failed]}{hint}")
 
     tmp_ptr = build_dir / "CURRENT.tmp"
     tmp_ptr.write_text(wh_path.name)

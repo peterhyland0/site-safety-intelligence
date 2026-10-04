@@ -62,7 +62,9 @@ the daily rebuild off again.
 Once a refresh's build is live, it moves every sub's decisions onto it (a cleaning-rule change gives some records new
 keys; rules only, no AI) using `ssi-db`, and the running API switches to the new build within a minute. A first
 refresh before the database exists (the plain `modal run` above) just builds. A sub it couldn't move (busy, or an
-error in the log) reads Review in the app until `make follow` moves it.
+error in the log) reads Review in the app until `make follow` moves it. A build with fewer inspections or citations
+than the live one (missing raw files) fails and leaves the live build in place; for a deliberate cut,
+`SSI_ALLOW_SHRINK=1 make refresh`.
 
 ## Deploy the website on Vercel
 Live at [site-safety-intelligence.vercel.app](https://site-safety-intelligence.vercel.app): project

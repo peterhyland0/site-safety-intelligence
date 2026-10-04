@@ -76,7 +76,7 @@ flowchart TB
   haz["Hazard map<br/>standard codes → 20 hazard categories"]
   est["Establishments<br/>exact cleaned name + address + zip + state"]
   enr["Enrich and roll up<br/>injury rates · licences · marts · red flags"]
-  chk{"24 build checks"}
+  chk{"24 build checks<br/>+ no fewer rows than the live build"}
   stop["Build stops<br/>live data untouched"]
   swap[("Pointer swap<br/>new warehouse goes live, old one kept")]
   rem["Every sub's decisions follow their records<br/>(remap + rules, no AI); apps switch within a minute"]
@@ -193,7 +193,7 @@ flowchart LR
 | **Rollups are additive at establishment × year.** | The lookback window (3/5/10 years) is a setting, not a schema decision. A sub's figures are sums over its matched keys and years. The red-flag table covers the whole history window, so catastrophic events count however old they are within it. | Duplicated data. Company-level medians can't be precomputed, but benchmarks describe *peers*, so that's fine. |
 | **Flag, don't delete.** Blank penalty ≠ $0; deleted citations are marked, not removed; an `other` hazard bucket. | Totals always reconcile: hazard counts sum to citation counts, a build check. Every quirk stays visible. | Every query has to respect the flags, so only the named queries touch the data. |
 | **One meaning per business term, in `ref`.** | "Fall protection" means 1926.501–503 *and* Washington's `296-155-24510`, Oregon's `437-003-…` and so on, in both the GC view and the foreman's answers. | The map needs upkeep. Unmapped codes land in `other` and are still counted. |
-| **New file per build, then an atomic pointer swap.** | A failed build never replaces live data. The previous build stays available for rollback. | 2× disk during a build. Daily incremental updates via the DOL API are a next step. |
+| **New file per build, then an atomic pointer swap.** | A failed build never replaces live data, including one short of raw files: a build whose inspections or citations shrank more than 2% against the live one fails (`SSI_ALLOW_SHRINK=1` for a deliberate cut). Running apps switch to a new build within a minute. The previous build stays available for rollback. | 2× disk during a build. Daily incremental updates via the DOL API are a next step. |
 
 **Key tables:**
 - `osha.inspection`: PK `activity_nr`. Columns include `establishment_key`, `jurisdiction`, `scope_reason`, `fatality_status`, `is_open`, `site_group_n` (employers on the same site and day) and `dq_flags`.

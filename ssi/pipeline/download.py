@@ -40,10 +40,22 @@ def download_osha(raw_dir: Path) -> None:
     for t in OSHA_TABLES:
         z = raw_dir / f"OSHA_{t}.zip"
         fetch(OSHA_URL.format(t=t), z)
-        out = raw_dir / t
-        shutil.rmtree(out, ignore_errors=True)
-        with zipfile.ZipFile(z) as zf:
-            zf.extractall(out)
+        extract(z, raw_dir / t)
+
+
+def extract(z: Path, out: Path) -> None:
+    """The zip's files into `out`, replacing what's there only once every file is out whole: extracting in place left
+    a partial folder when it failed part way (a full disk), which a later build read as the whole dataset."""
+    part = out.with_name(out.name + ".part")
+    shutil.rmtree(part, ignore_errors=True)
+    with zipfile.ZipFile(z) as zf:
+        zf.extractall(part)  # a damaged member fails its CRC check here
+        missing = [m.filename for m in zf.infolist() if not m.is_dir()
+                   and (not (part / m.filename).is_file() or (part / m.filename).stat().st_size != m.file_size)]
+    if missing:
+        raise RuntimeError(f"{z.name}: {len(missing)} file(s) didn't extract whole, e.g. {missing[:3]}")
+    shutil.rmtree(out, ignore_errors=True)
+    part.rename(out)
 
 
 def download_licences(raw_dir: Path) -> None:

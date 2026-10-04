@@ -50,7 +50,9 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .uv_pip_install("duckdb==1.4.5", "fastapi>=0.115", "uvicorn>=0.30", "psycopg[binary,pool]>=3.2", "pydantic>=2.8",
                     "anthropic>=1.0", "langsmith>=0.3", "httpx>=0.27", "python-dotenv>=1.0", "jellyfish>=1.0", "openai>=1.0")
-    .env({"SSI_DATA_DIR": VOL_PATH, "PYTHONPATH": "/root", **with_flags})
+    .env({"SSI_DATA_DIR": VOL_PATH, "PYTHONPATH": "/root", **with_flags,
+          # `SSI_ALLOW_SHRINK=1 make refresh`: a build may have fewer rows than the live one (a deliberate scope cut)
+          **({"SSI_ALLOW_SHRINK": "1"} if os.environ.get("SSI_ALLOW_SHRINK") == "1" else {})})
     .add_local_dir(APP_DIR / "ssi", "/root/ssi", ignore=["**/__pycache__"])
     .add_local_dir(APP_DIR / "scripts", "/root/scripts", ignore=["**/__pycache__"])
     .add_local_dir(APP_DIR / "web" / "dist", "/root/web/dist")
@@ -85,7 +87,7 @@ def refresh(download: bool = True) -> dict:
     if download:
         dl.download_osha(raw)
         dl.download_licences(raw)
-    report = build.build(work)
+    report = build.build(work, live_dir=vol / "build")  # compared with the live build on the Volume
     (vol / "build").mkdir(parents=True, exist_ok=True)
     wh = work / "build" / report["warehouse"]
     shutil.copy(wh, vol / "build" / wh.name)
