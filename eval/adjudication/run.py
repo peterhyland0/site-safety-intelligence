@@ -23,7 +23,12 @@ Results: results.md / results.json here.
 Seed 7 is the development set (results.md), where the app's Jev thresholds were picked. Any other seed is a
 held-out check (results-seed<N>.md): it leaves out every pair, and every search, in the seed-7 set.
 
+Other OpenAI-compatible models can run beside them with --llm LABEL=URL[@effort] (repeatable; URL may be
+env:VAR to read it from .env, effort is passed to the chat template). They get the production LLM's prompt,
+checks and thresholds, with room for reasoning (EXTRA_MAX_TOKENS instead of the app's 1024 output tokens).
+
     uv run python -m eval.adjudication.run [--n 400] [--cross 1600] [--seed 7] [--only llm,jev] [--workers 4]
+        [--llm kimi-k3=https://...modal.direct/v1 --llm glm-5.3=env:SSI_LLM_FOREMAN_BASE_URL@low]
 """
 from __future__ import annotations
 
@@ -35,6 +40,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from eval.adjudication import jev
 from eval.matching.run import build_pairs
@@ -50,7 +56,9 @@ from ssi.store import warehouse
 OUT = Path(__file__).parent
 CACHE = OUT / "cache.jsonl"
 DEV = {"seed": 7, "n": 400, "cross": 1600}  # the development set: results.md
-VARIANTS = ["rules only", "llm", "jev-choice", "jev-tuned", "jev-noul"]
+VARIANTS = ["rules only", "llm", "jev-choice", "jev-tuned", "jev-noul"]  # extra LLMs ("llm:LABEL") go after "llm"
+EXTRA_MAX_TOKENS = 8192  # extra LLMs may reason before answering; the app's adjudicator call allows 1024
+PROVIDERS: dict[str, object] = {}  # "llm" and "llm:LABEL" -> provider
 SWEEP = [0.95, 0.9, 0.85, 0.8, 0.7, 0.6]
 
 
@@ -137,10 +145,29 @@ def load_cache() -> dict[str, dict]:
     return {e["key"]: e for e in map(json.loads, CACHE.read_text().splitlines()) if e.get("key")}
 
 
-def ask_llm(packet: dict) -> dict:
+def extra_llm(spec: str) -> tuple[str, object] | None:
+    """'LABEL=URL[@effort]' (URL or env:VAR) -> ("llm:LABEL", provider); None when env:VAR isn't set."""
+    import os
+
+    from ssi.llm.openai_compat_provider import OpenAICompatProvider
+    label, _, rest = spec.partition("=")
+    url, _, effort = rest.partition("@")
+    if label and url.startswith("env:"):
+        if not os.environ.get(url[4:], "").strip():
+            print(f"Skipping {label}: {url[4:]} is not set")
+            return None
+        url = os.environ[url[4:]].strip()
+    if not (label and url):
+        raise SystemExit(f"--llm needs LABEL=URL (or env:VAR), got {spec!r}")
+    if not urlsplit(url).path.strip("/"):
+        url = url.rstrip("/") + "/v1"  # an OpenAI-compatible server's API lives under /v1
+    return f"llm:{label}", OpenAICompatProvider(None, url, reasoning_effort=effort or None)
+
+
+def ask_llm(packet: dict, name: str = "llm") -> dict:
     t = time.time()
-    raw, usage = llm.get("adjudicator").structured(adjudicator.SYSTEM, adjudicator.user_prompt(packet),
-                                                   adjudicator.SCHEMA, max_tokens=1024)
+    raw, usage = PROVIDERS[name].structured(adjudicator.SYSTEM, adjudicator.user_prompt(packet), adjudicator.SCHEMA,
+                                            max_tokens=1024 if name == "llm" else EXTRA_MAX_TOKENS)
     return {"raw": raw, "seconds": round(time.time() - t, 3),
             "usage": {"input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens}}
 
@@ -149,7 +176,13 @@ def collect(cases: list[dict], which: list[str], workers: int) -> tuple[dict[str
     """Every (adjudicator, packet) answer, from the cache or a new call. Returns (cache, models, errors)."""
     cache, models, errors = load_cache(), {}, []
     if "llm" in which:
-        models["llm"] = llm.get("adjudicator").model
+        PROVIDERS["llm"] = llm.get("adjudicator")
+    for name in which:
+        if name.startswith("llm"):
+            models[name] = PROVIDERS[name].model
+            if "@" not in models[name] and getattr(PROVIDERS[name], "extra_body", None) and name != "llm":
+                # the reasoning effort changes the answers, so it's part of the cache key
+                models[name] += "@" + PROVIDERS[name].extra_body["chat_template_kwargs"]["reasoning_effort"]
     http = None
     if "jev" in which:
         models["jev"], http = jev.model(), jev.client()
@@ -159,12 +192,12 @@ def collect(cases: list[dict], which: list[str], workers: int) -> tuple[dict[str
             k = cache_key(name, models[name], c["packet"])
             if k not in cache:
                 jobs[k] = (name, c["packet"])
-    print(f"{len(jobs)} new calls ({sum(1 for n, _ in jobs.values() if n == 'llm')} LLM, "
-          f"{sum(1 for n, _ in jobs.values() if n == 'jev')} Jev); the rest cached")
+    counts = ", ".join(f"{sum(1 for n, _ in jobs.values() if n == name)} {name}" for name in which)
+    print(f"{len(jobs)} new calls ({counts}); the rest cached")
     lock = threading.Lock()
 
     def call(k: str, name: str, packet: dict) -> None:
-        resp = ask_llm(packet) if name == "llm" else jev.ask(packet, http)
+        resp = ask_llm(packet, name) if name.startswith("llm") else jev.ask(packet, http)
         entry = {"key": k, "adjudicator": name, "model": models[name], "response": resp}
         with lock:
             cache[k] = entry
@@ -188,19 +221,19 @@ def collect(cases: list[dict], which: list[str], workers: int) -> tuple[dict[str
 def predictions(case: dict, cache: dict[str, dict], models: dict[str, str]) -> dict[str, dict]:
     """{variant: {bucket, p_same, seconds, tokens, note}} for one case; a missing answer stays possible."""
     out = {"rules only": {"bucket": "possible", "p_same": 0.5}}
-    if "llm" in models:
-        e = cache.get(cache_key("llm", models["llm"], case["packet"]))
+    for name in (n for n in models if n.startswith("llm")):
+        e = cache.get(cache_key(name, models[name], case["packet"]))
         if not e:
-            out["llm"] = {"bucket": "possible", "p_same": 0.5, "missing": True}
-        else:
-            r = e["response"]
-            ans = adjudicator.checked(r["raw"], case["packet"])  # checks run at grading, like the app's cache
-            p = 0.5 if ans.get("rejected") or ans["decision"] == "unsure" else (
-                ans["confidence"] if ans["decision"] == "same" else 1 - ans["confidence"])
-            out["llm"] = {"bucket": "possible" if ans.get("rejected") else ADJ.ai_bucket(ans), "p_same": p,
-                          "rejected": bool(ans.get("rejected")), "seconds": r["seconds"],
-                          "tokens": r["usage"]["input_tokens"] + r["usage"]["output_tokens"],
-                          "note": f"{ans['decision']} {ans['confidence']:.2f}: {ans.get('rationale', '')}"}
+            out[name] = {"bucket": "possible", "p_same": 0.5, "missing": True}
+            continue
+        r = e["response"]
+        ans = adjudicator.checked(r["raw"], case["packet"])  # checks run at grading, like the app's cache
+        p = 0.5 if ans.get("rejected") or ans["decision"] == "unsure" else (
+            ans["confidence"] if ans["decision"] == "same" else 1 - ans["confidence"])
+        out[name] = {"bucket": "possible" if ans.get("rejected") else ADJ.ai_bucket(ans), "p_same": p,
+                     "rejected": bool(ans.get("rejected")), "seconds": r["seconds"],
+                     "input_tokens": r["usage"]["input_tokens"], "output_tokens": r["usage"]["output_tokens"],
+                     "note": f"{ans['decision']} {ans['confidence']:.2f}: {ans.get('rationale', '')}"}
     if "jev" in models:
         e = cache.get(cache_key("jev", models["jev"], case["packet"]))
         for variant, ans in (jev.decisions(e["response"]).items() if e else ()):
@@ -281,6 +314,8 @@ def main() -> None:
                     help="cross-state different-company pairs (about 6%% reach the adjudicator; 0 skips them)")
     ap.add_argument("--only", default="llm,jev", help="adjudicators to run: llm, jev, or both")
     ap.add_argument("--workers", type=int, default=4, help="concurrent calls")
+    ap.add_argument("--llm", action="append", default=[], metavar="LABEL=URL[@effort]",
+                    help="another OpenAI-compatible model to compare (repeatable; URL may be env:VAR)")
     ap.add_argument("--seed", type=int, default=DEV["seed"],
                     help=f"sample seed; {DEV['seed']} is the development set, any other is held out from it")
     a = ap.parse_args()
@@ -296,6 +331,10 @@ def main() -> None:
         else:
             print(f"Skipping {name}: " + ("no adjudicator LLM configured (see ssi/llm/client.py)" if name == "llm"
                                           else "JEV_API_KEY is not set"))
+    for spec in a.llm:
+        if extra := extra_llm(spec):
+            PROVIDERS[extra[0]] = extra[1]
+            which.append(extra[0])
     n_pairs, cases, outcomes = load_cases(a.n, a.cross, a.seed)
     held_out = a.seed != DEV["seed"]
     stem = "results" if not held_out else f"results-seed{a.seed}"
@@ -305,11 +344,14 @@ def main() -> None:
     cache, models, errors = collect(cases, which, a.workers) if which else ({}, {}, [])
     for c in cases:
         c["pred"] = predictions(c, cache, models)
-    variants = [v for v in VARIANTS if all(v in c["pred"] for c in cases)]
+    order = VARIANTS[:2] + sorted(n for n in models if n.startswith("llm:")) + VARIANTS[2:]
+    variants = [v for v in order if all(v in c["pred"] for c in cases)]
     rows = {v: [{"label": c["label"], **c["pred"][v]} for c in cases] for v in variants}
     m = {v: metrics(rows[v]) for v in variants}
     served = sorted({c["pred"][v].get("served_by") for c in cases for v in variants if c["pred"][v].get("served_by")})
-    cost = {"llm_tokens": sum(r.get("tokens") or 0 for r in rows.get("llm", [])),
+    cost = {"llm_tokens": {v: {"input": sum(r.get("input_tokens") or 0 for r in rows[v]),
+                               "output": sum(r.get("output_tokens") or 0 for r in rows[v])}
+                           for v in variants if v.startswith("llm")},
             "jev_input_tokens": sum(r.get("input_tokens") or 0 for r in rows.get("jev-noul", []))}
     secs = round(time.time() - t0)
     (OUT / f"{stem}.json").write_text(json.dumps({
@@ -327,7 +369,7 @@ def main() -> None:
 
     label = {"llm": f"LLM ({llm.model_label('adjudicator')})" if "llm" in models else "LLM",
              "jev-choice": "Jev choice", "jev-tuned": "Jev choice, tuned", "jev-noul": "Jev yes/no",
-             "rules only": "Rules only"}
+             "rules only": "Rules only", **{n: n.removeprefix("llm:") for n in models if n.startswith("llm:")}}
     head = "| | " + " | ".join(label[v] for v in variants) + " |"
     rule = "|---|" + "---|" * len(variants)
 
@@ -359,7 +401,9 @@ def main() -> None:
              row("Answers missing (call failed)", "missing"),
              row("Median seconds per packet", "median_s"),
              row("p90 seconds per packet", "p90_s"), "",
-             (f"Tokens: LLM {cost['llm_tokens']:,} (in + out); Jev {cost['jev_input_tokens']:,} input "
+             ("Tokens: " + "; ".join(f"{label[v]} {t['input']:,} in, {t['output']:,} out"
+                                     for v, t in cost["llm_tokens"].items())
+              + f"; Jev {cost['jev_input_tokens']:,} input "
               f"(≈ ${cost['jev_input_tokens'] * jev.USD_PER_M_INPUT / 1e6:.4f} at list price; output is free)."), "",
              ("Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "
               f"\"Jev choice, tuned\" is what the app does with Jev (`ssi.llm.jev.decision`): the choice's P(same), "

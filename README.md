@@ -237,6 +237,7 @@ Both are served from Modal as OpenAI-compatible APIs.
 - **What it sees:** identity evidence only (names, addresses, years, trade codes, the GC's input). **Never safety history**, so a fatality can't bias whether a record is judged "the same company".
 - **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence, each fact for or against the same company ("Against: Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records. For: same trade code (2371).").
 - **Mapping:** LLM "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible. Jev's P(same) ≥0.85 → matched; ≤0.20 → excluded (≤0.06 for a record outside the sub's state, where a national firm's own branches are); otherwise possible.
+- **How many:** up to 50 uncertain groups per sub get an AI call, most inspections first (`ADJUDICATE_MAX_CLUSTERS`; it was 15 when every call went to the LLM). The rest stay possible, and red-flagged ones still reach the GC.
 - **Company profile first** ([docs/company-profile.md](docs/company-profile.md)): for a new sub with uncertain records, Claude looks the company up on the web (the locations it lists, each quoted from its page). Records at those locations skip the AI and go to the GC in one question with the page, along with records found at those addresses under other names. Nothing is matched from the web without the GC's answer.
 - **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
@@ -282,7 +283,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 297 test cases:
+**Tests:** `uv run pytest`, 298 test cases:
 - the cleaning traps
 - every matching rule
 - verdict thresholds
@@ -375,26 +376,31 @@ Not fixed: 936 federal citations recorded as serious or other-than-serious carry
 | Accents were cut out of a GC's names: `Muñoz` cleaned to `MU OZ`, `José Hernández` to a "distinctive" `JOS HERN NDEZ` that skipped the person-name rule | Accents folded in the cleaning macros and in city comparison. OSHA's records have none, so no establishment changes |
 | The foreman's grounding check skipped `#` inspection IDs and made chips by substring: an invented `(#9999999)` passed, a truncated real ID became a chip | IDs checked whole against the IDs the tools returned. Digits in field names (other than a percentile's) and sub IDs no longer count as figures. Replaying the 20 eval answers, it passes and fails the same ones as before |
 
-**Adjudicator**, on the same silver pairs plus 1,600 cross-state ones ([eval/adjudication/](eval/adjudication/)): the same name core in two states under different tax IDs, each filing in one state only (two local firms, which leaves out national firms that file under several tax IDs). Only the pairs the rules leave uncertain are adjudicated, with the packet the app would build. It compares the current model with Jev 1.13, TypeSafe's decision model (probabilities, no text; runs when `JEV_API_KEY` is set), asked as a same/different/unsure choice with the same guidance. Answers and the rules' cases are cached, so a re-run takes seconds: `make eval-adjudication`.
+**Adjudicator**, on the same silver pairs plus 1,600 cross-state ones ([eval/adjudication/](eval/adjudication/)): the same name core in two states under different tax IDs, each filing in one state only (two local firms, which leaves out national firms that file under several tax IDs). Only the pairs the rules leave uncertain are adjudicated, with the packet the app would build, and every answer goes through the app's thresholds. Compared: the current LLM (DeepSeek V4.1 Flash), two larger LLMs (GLM 5.3 and Kimi K3, same prompt and checks, with room to reason) and Jev 1.13, TypeSafe's decision model, at the thresholds the app uses for it. Jev's thresholds were picked on the development sample (seed 7, [results](eval/adjudication/results.md)) and frozen, then checked on a held-out one (seed 11, [results](eval/adjudication/results-seed11.md)) that shares no pair or search with it. Answers and the rules' cases are cached, so a re-run only pays for new answers: `make eval-adjudication` (each model runs when its key or URL is set).
 
-Jev is scored two ways: at the app's thresholds, and "tuned": excluded when its P(same) is at most 0.20 for a record in the sub's state, 0.06 in another. The tuned thresholds were picked on the development sample (seed 7, [results](eval/adjudication/results.md)) and frozen, then checked on a held-out one (seed 11, [results](eval/adjudication/results-seed11.md)) that shares no pair or search with it:
+| Held out: 246 uncertain (matched · possible · excluded) | n | DeepSeek V4.1 Flash | GLM 5.3 | Kimi K3 | Jev (as the app uses it) |
+|---|---|---|---|---|---|
+| Different company, same state | 62 | 2 · 39 · 21 | 0 · 47 · 15 | 1 · 43 · 18 | 0 · 20 · 42 |
+| Different company, other state | 110 | 0 · 21 · 89 | 0 · 27 · 83 | 1 · 16 · 93 | 0 · 22 · 88 |
+| Same company, same state | 16 | 4 · 11 · 1 | 3 · 13 · 0 | 5 · 11 · 0 | 0 · 16 · 0 |
+| Same company, other state | 58 | 0 · 46 · 12 | 0 · 56 · 2 | 0 · 56 · 2 | 0 · 49 · 9 |
+| **Wrong merges / wrong exclusions** | | 2 / 13 | **0 / 2** | 2 / 2 | 0 / 9 |
+| Lookalikes excluded (of 172) | | 110 | 98 | 111 | **130** |
+| AUC / Brier of P(same) | | 0.77 / 0.17 | **0.87 / 0.14** | 0.86 / 0.15 | 0.84 / 0.20 |
+| Answers rejected by validation | | 1 | 25 | 22 | 0 |
+| Median / p90 seconds a group | | 0.8 / 1.2 | 2.7 / 18 | 7.4 / 21 | **0.23 / 0.28** |
+| Tokens a group (in / out); cost per 1,000 groups | | 690 / 100; $0.33 | 710 / 1,530 | 780 / 390; $8 | 1,250 / 0; $0.05 |
 
-| Held out: 246 uncertain (matched · possible · excluded) | n | DeepSeek V4.1 Flash | Jev, app thresholds | Jev, tuned |
-|---|---|---|---|---|
-| Different company, same state | 62 | 2 · 39 · 21 | 0 · 27 · 35 | 0 · 20 · 42 |
-| Different company, other state | 110 | 0 · 21 · 89 | 0 · 13 · 97 | 0 · 22 · 88 |
-| Same company, same state | 16 | 4 · 11 · 1 | 0 · 16 · 0 | 0 · 16 · 0 |
-| Same company, other state | 58 | 0 · 46 · 12 | 0 · 41 · 17 | 0 · 49 · 9 |
-| Wrong merges / wrong exclusions | | 2 / 13 | 0 / 17 | **0 / 9** |
-| Median per packet | | 0.8 s | 0.23 s | 0.23 s |
+Development sample (302 uncertain), wrong merges / wrong exclusions / lookalikes excluded (of 215): DeepSeek 1 / 9 / 137, GLM 5.3 1 / 0 / 114, Kimi K3 3 / 3 / 119, Jev 0 / 3 / 154.
 
-- **Tuned Jev beats DeepSeek on the held-out sample:** 130 lookalikes excluded against 110, 9 wrong exclusions against 13, no wrong merge against 2 (Barton Malow and Barton Malow Builders, Stellar Contracting and Stellar Group: corporate families under different tax IDs). It ranks same against different better too (AUC 0.84 against 0.77).
-- **The same-state threshold held; the other-state one loosened:** wrong exclusions of an out-of-state branch went from 2 of 66 on the development sample to 9 of 58 held out. They're three national firms (NPL Construction six times, NVR twice, PAR Electrical), each a lookalike name in another state with no shared address.
-- **Only DeepSeek ever matches:** 4 correct and 2 wrong. Jev's P(same) never reaches 0.85, so it only excludes; a same-company record stays possible, which isn't counted.
+- **The larger LLMs are the most accurate when they act.** GLM 5.3 and Kimi K3 wrongly excluded 2 of 58 same-company records held out (a national firm's branch in another state: Jev 9, DeepSeek 12) and rank same against different best.
+- **Jev clears the most lookalikes** (130 against 98–111), has no wrong merge on either sample, and is 10–30× faster.
+- **Kimi K3 matches the most** (5 same-company records held out) **but merged 2 different companies**, the worst error; GLM 5.3 merged none held out.
+- **About 1 answer in 10 from the larger LLMs fails the checks** (no parseable answer, a rationale over 400 characters, or a word that isn't in the evidence, such as "ZIP" or "NYC"), so that group stays possible. Several were correct "same" calls on Turner and NVR branches.
+- **A split looks best:** Jev in the sub's state and GLM 5.3 outside it would have excluded 125 lookalikes held out with 2 wrong exclusions and no wrong merge (Jev alone: 130, 9, 0), and 154, 1, 0 on the development sample. The split was seen after the held-out results, so it needs a fresh sample before the app uses it.
 - **No text from Jev.** The GC's red-flag questions show the AI's reason, so those stay with the LLM.
-- **Cost:** about a cent of Jev per run (307k input tokens held out).
 
-**Outcome:** the app now uses Jev with those tuned thresholds for groups without red flags ([docs/adjudicator.md](docs/adjudicator.md)).
+**Outcome:** the app uses Jev with the tuned thresholds for groups without red flags ([docs/adjudicator.md](docs/adjudicator.md)).
 
 **What the cross-state pairs showed about the rules:** M3 ("same distinctive name, another state") auto-matched 51 of the 1,600 local-firm pairs (3%), such as Quinn Construction in Pennsylvania and Tennessee, and Straub Construction in California and Kansas. Those never reach the adjudicator: each attaches another company's history to the sub. The matching table above doesn't count them, because its different-company pairs are all same-state.
 
@@ -462,7 +468,7 @@ Without them, enrichment is just empty.
   Check both endpoints with `uv run python -m scripts.check_llm`: one plain call, one JSON call and one tool call per role.
 - `LANGSMITH_API_KEY` (optional): traces and eval experiments.
 - `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` (optional): company profiles, Claude with web search ([docs/company-profile.md](docs/company-profile.md)). `SSI_PROFILE=off` switches them off; `SSI_DAILY_PROFILE_LIMIT` (default 100) caps them; `SSI_PROFILE_MODEL` (default `claude-opus-5-5`). The foreman and adjudicator keep using `SSI_LLM_PROVIDER`.
-- `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`.
+- `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`, which also compares GLM 5.3 (the foreman's endpoint) and Kimi K3 (`SSI_LLM_ADJUDICATOR_KIMI_3`, an OpenAI-compatible base URL) when they're set.
 
 **Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).
 

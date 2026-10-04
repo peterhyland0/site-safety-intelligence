@@ -2,27 +2,27 @@
 
 Seed 11: held out from the seed-7 development set (no shared pair or search), so Jev's tuned thresholds were fixed before this sample was drawn.
 
-1931 silver pairs; the rules leave **246** uncertain (74 same company, 172 different). Those go to each adjudicator with the packet the app would build. 23 carry red flags (the app asks the GC about those whatever the AI says). 745 s.
+1931 silver pairs; the rules leave **246** uncertain (74 same company, 172 different). Those go to each adjudicator with the packet the app would build. 23 carry red flags (the app asks the GC about those whatever the AI says). 2 s.
 
-Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, jev: `jev-latest` (Jev served by jev-1.13.0).
+Models: llm: `deepseek-ai/DeepSeek-V4.1-Flash`, llm:glm-5.3: `zai-org/GLM-5.3`, llm:kimi-k3: `moonshotai/Kimi-K3`, jev: `jev-latest` (Jev served by jev-1.13.0).
 
-| | Rules only | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | Jev choice | Jev choice, tuned | Jev yes/no |
-|---|---|---|---|---|---|
-| Wrong merges (of 172 different) | 0 | 2 | 0 | 0 | 0 |
-| Wrong exclusions (of 74 same) | 0 | 13 | 17 | 9 | 26 |
-| Same company matched (of 74) | 0 | 4 | 0 | 0 | 0 |
-| Different company excluded (of 172) | 0 | 110 | 132 | 130 | 137 |
-| Resolved (share not left possible) | 0.0 | 0.524 | 0.606 | 0.565 | 0.663 |
-| Precision of matches | None | 0.667 | None | None | None |
-| Precision of exclusions | None | 0.894 | 0.886 | 0.935 | 0.84 |
-| AUC of P(same) | 0.5 | 0.772 | 0.838 | 0.838 | 0.806 |
-| Brier score of P(same) (lower is better) | 0.25 | 0.174 | 0.2 | 0.2 | 0.189 |
-| Answers rejected by validation | 0 | 1 | 0 | 0 | 0 |
-| Answers missing (call failed) | 0 | 0 | 0 | 0 | 0 |
-| Median seconds per packet | None | 0.84 | 0.23 | 0.23 | 0.23 |
-| p90 seconds per packet | None | 1.15 | 0.28 | 0.28 | 0.28 |
+| | Rules only | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | glm-5.3 | kimi-k3 | Jev choice | Jev choice, tuned | Jev yes/no |
+|---|---|---|---|---|---|---|---|
+| Wrong merges (of 172 different) | 0 | 2 | 0 | 2 | 0 | 0 | 0 |
+| Wrong exclusions (of 74 same) | 0 | 13 | 2 | 2 | 17 | 9 | 26 |
+| Same company matched (of 74) | 0 | 4 | 3 | 5 | 0 | 0 | 0 |
+| Different company excluded (of 172) | 0 | 110 | 98 | 111 | 132 | 130 | 137 |
+| Resolved (share not left possible) | 0.0 | 0.524 | 0.419 | 0.488 | 0.606 | 0.565 | 0.663 |
+| Precision of matches | None | 0.667 | 1.0 | 0.714 | None | None | None |
+| Precision of exclusions | None | 0.894 | 0.98 | 0.982 | 0.886 | 0.935 | 0.84 |
+| AUC of P(same) | 0.5 | 0.772 | 0.87 | 0.862 | 0.838 | 0.838 | 0.806 |
+| Brier score of P(same) (lower is better) | 0.25 | 0.174 | 0.139 | 0.146 | 0.2 | 0.2 | 0.189 |
+| Answers rejected by validation | 0 | 1 | 25 | 22 | 0 | 0 | 0 |
+| Answers missing (call failed) | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Median seconds per packet | None | 0.84 | 2.74 | 7.4 | 0.23 | 0.23 | 0.23 |
+| p90 seconds per packet | None | 1.15 | 17.8 | 21.29 | 0.28 | 0.28 | 0.28 |
 
-Tokens: LLM 194,014 (in + out); Jev 307,191 input (≈ $0.0129 at list price; output is free).
+Tokens: LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) 169,000 in, 25,014 out; glm-5.3 173,553 in, 377,206 out; kimi-k3 190,578 in, 95,108 out; Jev 307,191 input (≈ $0.0129 at list price; output is free).
 
 Thresholds are the app's (`adjudicate.ai_bucket`): same ≥ 0.85 → matched, different ≥ 0.80 → excluded. "Jev choice, tuned" is what the app does with Jev (`ssi.llm.jev.decision`): the choice's P(same), excluded at ≤ 0.2 in the sub's state and ≤ 0.06 in another, matched at ≥ 0.85.
 
@@ -42,25 +42,25 @@ Only the uncertain ones reach the adjudicator.
 
 Outcomes as matched · possible · excluded. The other-state different companies are two local firms (each tax ID files in one state), so a national firm's own namesakes aren't among them.
 
-| Pairs | n | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | Jev choice | Jev choice, tuned | Jev yes/no |
-|---|---|---|---|---|---|
-| Same company, same state | 16 | 4 · 11 · 1 | 0 · 16 · 0 | 0 · 16 · 0 | 0 · 16 · 0 |
-| Same company, other state | 58 | 0 · 46 · 12 | 0 · 41 · 17 | 0 · 49 · 9 | 0 · 32 · 26 |
-| Different company, same state | 62 | 2 · 39 · 21 | 0 · 27 · 35 | 0 · 20 · 42 | 0 · 27 · 35 |
-| Different company, other state | 110 | 0 · 21 · 89 | 0 · 13 · 97 | 0 · 22 · 88 | 0 · 8 · 102 |
+| Pairs | n | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | glm-5.3 | kimi-k3 | Jev choice | Jev choice, tuned | Jev yes/no |
+|---|---|---|---|---|---|---|---|
+| Same company, same state | 16 | 4 · 11 · 1 | 3 · 13 · 0 | 5 · 11 · 0 | 0 · 16 · 0 | 0 · 16 · 0 | 0 · 16 · 0 |
+| Same company, other state | 58 | 0 · 46 · 12 | 0 · 56 · 2 | 0 · 56 · 2 | 0 · 41 · 17 | 0 · 49 · 9 | 0 · 32 · 26 |
+| Different company, same state | 62 | 2 · 39 · 21 | 0 · 47 · 15 | 1 · 43 · 18 | 0 · 27 · 35 | 0 · 20 · 42 | 0 · 27 · 35 |
+| Different company, other state | 110 | 0 · 21 · 89 | 0 · 27 · 83 | 1 · 16 · 93 | 0 · 13 · 97 | 0 · 22 · 88 | 0 · 8 · 102 |
 
 ## Matching at other thresholds
 
 Matched if P(same) ≥ t: same-company records matched / different-company records matched.
 
-| t | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | Jev choice | Jev yes/no |
-|---|---|---|---|
-| 0.95 | 0/74 · 0 | 0/74 · 0 | 0/74 · 0 |
-| 0.9 | 1/74 · 1 | 0/74 · 0 | 0/74 · 0 |
-| 0.85 | 4/74 · 2 | 0/74 · 0 | 0/74 · 0 |
-| 0.8 | 4/74 · 3 | 0/74 · 0 | 0/74 · 0 |
-| 0.7 | 9/74 · 4 | 1/74 · 1 | 0/74 · 0 |
-| 0.6 | 10/74 · 4 | 3/74 · 1 | 1/74 · 1 |
+| t | LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash) | glm-5.3 | kimi-k3 | Jev choice | Jev yes/no |
+|---|---|---|---|---|---|
+| 0.95 | 0/74 · 0 | 0/74 · 0 | 0/74 · 0 | 0/74 · 0 | 0/74 · 0 |
+| 0.9 | 1/74 · 1 | 0/74 · 0 | 2/74 · 2 | 0/74 · 0 | 0/74 · 0 |
+| 0.85 | 4/74 · 2 | 3/74 · 0 | 5/74 · 2 | 0/74 · 0 | 0/74 · 0 |
+| 0.8 | 4/74 · 3 | 8/74 · 1 | 6/74 · 2 | 0/74 · 0 | 0/74 · 0 |
+| 0.7 | 9/74 · 4 | 20/74 · 2 | 11/74 · 5 | 1/74 · 1 | 0/74 · 0 |
+| 0.6 | 10/74 · 4 | 22/74 · 4 | 15/74 · 7 | 3/74 · 1 | 1/74 · 1 |
 
 ## LLM (openai_compat:deepseek-ai/DeepSeek-V4.1-Flash): disagreements with the silver label (15, first 15)
 
@@ -81,6 +81,22 @@ Matched if P(same) ≥ t: same-company records matched / different-company recor
 | same | HOME ROOFING SOLUTIONS (ETNA, ME) | VERTEX SERVICE PARTNERS (ETNA, ME) | different 0.90: E4 is named 'VERTEX SERVICE PARTNERS', a completely different name from the sub 'HOME ROOFING SOLUTIONS, LLC'. The only overlap is the shared address 161 STAGE RD in Etna, ME, which suggests a different company occupying the same premises. |
 | different | BARTON MALOW (SOUTHFIELD, MI) | BARTON MALOW BUILDERS (SOUTHFIELD, MI) | same 0.85: Candidates 'BARTON MALOW BUILDERS' share the exact addresses 26500 AMERICAN DR, SOUTHFIELD MI (E7/E2) and 1274 LIBRARY ST, DETROIT MI (E8/E6) with already-matched 'BARTON MALOW' records, same trade code 2362, so the BUILDERS variant is the same company. |
 | different | STELLAR CONTRACTING (JACKSONVILLE, FL) | STELLAR GROUP (JACKSONVILLE, FL) | same 0.90: Candidate 'STELLAR GROUP' shares the exact address 2900 Hartley/Hartly Rd, Jacksonville FL 32257 and trade code 2362 with the already-matched Stellar records, all linked to the GC's sub in Jacksonville; name variant is consistent with the OSHA records already treated as the same company. |
+
+## glm-5.3: disagreements with the silver label (2, first 15)
+
+| Label | Search (A) | Candidate (B) | Answer |
+|---|---|---|---|
+| same | STAR CONSTRUCTION (KNOXVILLE, TN) | STAR CONSTRUCTION (LEXINGTON, KY) | different 0.80: The sub's matched OSHA records are all in Knoxville, TN (E2-E4), while the candidate is in Lexington, KY with no shared address (E5); a common name like STAR CONSTRUCTION in a different state is usually a different company despite the matching trade code 2371. |
+| same | VENTURE CONSTRUCTION (OVERLAND PARK, KS) | VENTURE CONSTRUCTION (BARTLETT, TN) | different 0.80: The sub is VENTURE CONSTRUCTION in Overland Park KS (E1, E2), while all candidates are in Tennessee (Bartlett/Franklin TN) with no shared address; a common name in a different state is usually a different company. |
+
+## kimi-k3: disagreements with the silver label (4, first 15)
+
+| Label | Search (A) | Candidate (B) | Answer |
+|---|---|---|---|
+| same | PERFORMANCE CONTRACTING (WOODINVILLE, WA) | PERFORMANCE CONTRACTING (WYOMING, OH) | different 0.80: The sub and its matched record are in WOODINVILLE WA (E1, E2), while all candidates are in Ohio (WYOMING/CINCINNATI) with no shared address; 'PERFORMANCE CONTRACTING' is a common name, and the shared trade code 2383 alone is weak evidence. The Ohio records (E3, E5 sharing the 431 Elliot/Elliott Ave address) appear to be an Ohio company, not the WA sub. |
+| same | PERFORMANCE CONTRACTING (MEMPHIS, TN) | PERFORMANCE CONTRACTING (WYOMING, OH) | different 0.80: The sub and its matched OSHA record are in MEMPHIS TN (E1, E2), while all candidates are in OHIO (WYOMING/CINCINNATI, E3-E5) with no shared address and different trade codes (3339 vs 2383/2362). The common name in a different state with no address overlap indicates a different company. |
+| different | STELLAR CONTRACTING (JACKSONVILLE, FL) | STELLAR GROUP (JACKSONVILLE, FL) | same 0.90: Candidate 'STELLAR GROUP' (E5) matches an already-matched record name exactly (E2) and shares the same address (2900 HARTLY RD is an obvious typo of HARTLEY RD), same Jacksonville FL 32257 zip, same trade code 2362, and its 2019 activity falls within E2's 2017-2026 range. |
+| different | MOTOR CITY ELECTRIC (KOKOMO, IN) | MOTOR CITY ELECTRIC UTILITIES (DETROIT, MI) | same 0.92: Candidate E5 'MOTOR CITY ELECTRIC UTILITIES' at 9440 GRINNEL ST, DETROIT MI matches already-matched E3 on name and address (Grinnel/Grinnell spelling variant) with the same trade code 2382, so it is the same company. |
 
 ## Jev choice: disagreements with the silver label (17, first 15)
 

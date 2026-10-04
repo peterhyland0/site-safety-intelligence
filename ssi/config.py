@@ -40,7 +40,10 @@ DISTINCTIVE_MAX_VARIETY = 5
 GENERIC_MIN_VARIETY = 25
 SHARED_OFFICE_MIN_CORES = 6
 RELATED_MIN_CONSTRUCTION_SHARE = 0.2  # related facilities only for firms with >= 20% construction-coded inspections
-ADJUDICATE_MAX_CLUSTERS = 15
+# uncertain groups per sub sent to the AI, most inspections first (the rest stay possible; red flags still reach
+# the GC). 15 when every call was the LLM; Jev answers in ~0.25 s for a fraction of a cent, so smaller lookalike
+# groups get cleared too.
+ADJUDICATE_MAX_CLUSTERS = 50
 QUESTION_GROUP_THRESHOLD = 3  # past this many red-flag questions for a sub, one question per OSHA name
 
 

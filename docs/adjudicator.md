@@ -160,6 +160,18 @@ budget like the LLM's.
 **Settings:** `JEV_API_KEY` (from console.typesafe.ai/keys), optional `JEV_API_URL`, and `SSI_ADJUDICATOR=llm`
 to switch Jev off. On Modal, the `ssi-jev` secret with `SSI_WITH_JEV=1` ([deploy guide](deploy.md)).
 
+## Larger LLMs (GLM 5.3, Kimi K3)
+
+Run afterwards on the same samples, with the LLM adjudicator's prompt and checks
+([README, evaluation](../README.md#8-evaluation)). Held out, wrong merges / wrong exclusions / lookalikes excluded:
+DeepSeek 2 / 13 / 110, **GLM 5.3 0 / 2 / 98**, Kimi K3 2 / 2 / 111, Jev 0 / 9 / 130.
+
+The larger models mostly fix the national-branch weakness, but they clear fewer lookalikes. They're 10–30× slower
+(p90 around 20 s a group), and about 1 answer in 10 fails the checks. Kimi K3 also merged 2 different companies.
+The best result so far is a split: Jev in the sub's state, GLM 5.3 outside it (held out 2 wrong exclusions, no
+wrong merge, 125 lookalikes excluded). It was found after the held-out run, so it needs a fresh sample before the
+app adopts it.
+
 ## When to look again
 
 Re-run `make eval-adjudication` (answers are cached, so it only pays for new ones) when:

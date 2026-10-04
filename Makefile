@@ -29,8 +29,11 @@ eval:             ## Matching + foreman evals (foreman eval spends API credit)
 	uv run python -m eval.matching.run
 	uv run python -m eval.foreman.run
 
-eval-adjudication: ## Current LLM adjudicator vs Jev on uncertain matches (calls cached; Jev needs JEV_API_KEY)
-	uv run python -m eval.adjudication.run
+eval-adjudication: ## Adjudicators compared on uncertain matches, both samples (answers cached; each model needs its key/URL)
+	uv run python -m eval.adjudication.run --seed 7 $(EVAL_LLMS)
+	uv run python -m eval.adjudication.run --seed 11 $(EVAL_LLMS)
+
+EVAL_LLMS = --llm glm-5.3=env:SSI_LLM_FOREMAN_BASE_URL --llm kimi-k3=env:SSI_LLM_ADJUDICATOR_KIMI_3
 
 seed-demo:        ## Create the demo project through the real API
 	uv run python -m scripts.seed_demo

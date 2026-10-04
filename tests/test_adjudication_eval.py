@@ -92,3 +92,23 @@ def test_jev_env_names_and_url_forms(monkeypatch):
     for url in ("https://api.typesafe.ai/", "https://api.typesafe.ai/v1", "https://api.typesafe.ai/v1/systemone"):
         monkeypatch.setenv("JEV_API_URL", url)
         assert jev.base_url() == "https://api.typesafe.ai"
+
+
+def test_extra_llm_endpoints(monkeypatch):
+    import ssi.llm.openai_compat_provider as oc
+    from eval.adjudication.run import extra_llm
+    made = []
+
+    class Fake:
+        def __init__(self, model, url, reasoning_effort=None):
+            made.append((url, reasoning_effort))
+            self.model = "moonshotai/Kimi-K3"
+    monkeypatch.setattr(oc, "OpenAICompatProvider", Fake)
+    monkeypatch.setenv("SSI_LLM_ADJUDICATOR_KIMI_3", "https://x--ep-kimi-k3-server.us-west.modal.direct")
+    name, provider = extra_llm("kimi-k3=env:SSI_LLM_ADJUDICATOR_KIMI_3@low")
+    assert name == "llm:kimi-k3" and provider.model == "moonshotai/Kimi-K3"
+    assert made == [("https://x--ep-kimi-k3-server.us-west.modal.direct/v1", "low")]  # /v1 added to a bare URL
+    extra_llm("glm=https://y.modal.direct/v1")
+    assert made[-1] == ("https://y.modal.direct/v1", None)  # a path is left alone
+    monkeypatch.delenv("SSI_LLM_ADJUDICATOR_KIMI_3")
+    assert extra_llm("kimi-k3=env:SSI_LLM_ADJUDICATOR_KIMI_3") is None  # unset: skipped, not an error
