@@ -16,6 +16,7 @@ Sign-in accounts live in the app database: create them with scripts/add_user.py 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import modal
@@ -38,6 +39,9 @@ VOL_PATH = "/vol"
 SECRET_FLAGS = (("ssi-db", "SSI_WITH_DB"), ("ssi-glm", "SSI_WITH_GLM"), ("ssi-anthropic", "SSI_WITH_ANTHROPIC"),
                 ("ssi-langsmith", "SSI_WITH_LANGSMITH"), ("ssi-jev", "SSI_WITH_JEV"), ("ssi-tavily", "SSI_WITH_TAVILY"))
 with_flags = {flag: "1" for _, flag in SECRET_FLAGS if os.environ.get(flag) == "1"}
+# A deploy without ssi-db serves an API with no database (it tries 127.0.0.1); `modal run ::refresh` needs none
+if modal.is_local() and "deploy" in sys.argv and "SSI_WITH_DB" not in with_flags:
+    raise SystemExit("modal deploy without SSI_WITH_DB=1: the web app would have no database. Use `make deploy`.")
 
 volume = modal.Volume.from_name("ssi-data", create_if_missing=True)
 image = (
