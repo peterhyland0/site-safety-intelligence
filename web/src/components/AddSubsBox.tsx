@@ -15,6 +15,7 @@ import {
 } from "../lib/subRows";
 import { IconPlus, IconTrash } from "./Icons";
 import { InlineError } from "./ui";
+import { WebCheckSettings, type WebCheckSettingsPatch } from "./WebCheck";
 
 const PASTE_PLACEHOLDER = `ABC Roofing, Dallas, TX, roofing
 Lone Star Framing, Fort Worth, TX, framing
@@ -34,11 +35,20 @@ export function AddSubsBox({
   defaultState,
   onAdded,
   onCancel,
+  webCheck,
 }: {
   projectId: string;
   defaultState: string | null;
   onAdded: (cards: SubCard[]) => void;
   onCancel?: () => void;
+  /** The project's web check settings, when the server can run the check; they save as they're switched. */
+  webCheck?: {
+    autoCheck: boolean;
+    autoMatch: boolean;
+    onChange: (patch: WebCheckSettingsPatch) => void;
+    busy?: boolean;
+    error?: string | null;
+  };
 }) {
   const [rows, setRows] = useState<SubRow[]>(() => [emptyRow()]);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -242,6 +252,17 @@ export function AddSubsBox({
               from a sub's page.
             </p>
           </div>
+        </div>
+      ) : null}
+      {webCheck ? (
+        <div className="mt-3">
+          <WebCheckSettings
+            autoCheck={webCheck.autoCheck}
+            autoMatch={webCheck.autoMatch}
+            onChange={webCheck.onChange}
+            busy={webCheck.busy}
+          />
+          <InlineError message={webCheck.error ?? null} />
         </div>
       ) : null}
 

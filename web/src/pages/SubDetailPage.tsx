@@ -11,7 +11,7 @@ import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
 import { TrendChart } from "../components/TrendChart";
-import { WebCheck, type WebCheckSettingsPatch } from "../components/WebCheck";
+import { WebCheck } from "../components/WebCheck";
 import { EvidenceChip } from "../components/InspectionSheet";
 import { BackLink, ErrorBanner, InlineError, Loading, Section } from "../components/ui";
 import { VerdictChip } from "../components/VerdictChip";
@@ -29,7 +29,6 @@ export function SubDetailPage() {
   const [lookingUp, setLookingUp] = useState(false);
   const [checkingWeb, setCheckingWeb] = useState(false);
   const [webResult, setWebResult] = useState<WebCheckResult | null>(null);
-  const [savingWebSettings, setSavingWebSettings] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const location = useLocation();
   useTitle(detail.data?.card.entered_name ?? "Sub");
@@ -113,20 +112,6 @@ export function SubDetailPage() {
     }
   }
 
-  async function saveWebSettings(patch: WebCheckSettingsPatch) {
-    setSavingWebSettings(true);
-    setActionError(null);
-    try {
-      await api.updateProject(projectId, patch);
-      if (patch.auto_web_match) setWebResult(null); // the questions it reported are settled now
-      await detail.reload();
-    } catch (err) {
-      setActionError(errorMessage(err));
-    } finally {
-      setSavingWebSettings(false);
-    }
-  }
-
   async function move(key: string, bucket: Bucket) {
     setBusyEst(key);
     setActionError(null);
@@ -153,7 +138,7 @@ export function SubDetailPage() {
   // questions from the company's pages or the web check aren't only about red flags
   const fromTheWeb = d.questions.some((q) => q.kind === "profile" || q.kind === "web");
   const web = d.web_check;
-  const showWebCheck = !!web?.available && c.match_status !== "needs_adjudication";
+  const showWebCheck = !!web?.available && c.match_status !== "needs_adjudication" && (web.unchecked > 0 || !!webResult);
   const nav = [
     d.questions.length ? ["questions", "Questions"] : null,
     ["reasons", "Why"],
@@ -401,8 +386,6 @@ export function SubDetailPage() {
             result={webResult}
             onCheck={() => void checkWeb()}
             error={autoWeb.errors[subId]}
-            onSettings={(patch) => void saveWebSettings(patch)}
-            savingSettings={savingWebSettings}
           />
         ) : null}
         <MatchBuckets

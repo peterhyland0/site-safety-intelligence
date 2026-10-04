@@ -36,6 +36,29 @@ describe("Add subs", () => {
     expect(screen.getByRole("button", { name: "Add 1 sub" })).toBeEnabled();
   });
 
+  it("switches the project's automatic web check and auto-match, when the server can run the check", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(<AddSubsBox projectId="p1" defaultState="TX" onAdded={() => {}} />);
+    expect(screen.queryByRole("checkbox", { name: /automatically/ })).not.toBeInTheDocument();
+    rerender(
+      <AddSubsBox
+        projectId="p1"
+        defaultState="TX"
+        onAdded={() => {}}
+        webCheck={{ autoCheck: false, autoMatch: true, onChange }}
+      />,
+    );
+    const check = screen.getByRole("checkbox", { name: "Check leftover records on the web automatically" });
+    const match = screen.getByRole("checkbox", { name: "Auto-match from the web check" });
+    expect(check).not.toBeChecked();
+    expect(match).toBeChecked();
+    expect(match).toHaveAccessibleDescription(/Records with red flags still come to you as a question/);
+    await user.click(check);
+    await user.click(match);
+    expect(onChange.mock.calls).toEqual([[{ auto_web_check: true }], [{ auto_web_match: false }]]);
+  });
+
   it("moves a city and state typed into the name into their own fields", async () => {
     const user = userEvent.setup();
     render(<AddSubsBox projectId="p1" defaultState="TN" onAdded={() => {}} />);

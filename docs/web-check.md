@@ -59,8 +59,9 @@ about records that don't count yet.
 
 ## Automatic: the two settings
 
-Each project has two switches, on the scorecard and in a sub's Matches section (`app.project.auto_web_check`,
-`auto_web_match`; both off by default):
+Each project has two switches in its Add subs box, under "Look up each company on the web first", so subs added with
+them on are checked as soon as they're matched (`app.project.auto_web_check`, `auto_web_match`; both off by default,
+and they save for every sub on the project as they're switched):
 
 - **Check leftover records on the web automatically.** The open project page (or sub page) presses the button for
   each resolved sub with records left to check ([web/src/lib/useAutoWebCheck.ts](../web/src/lib/useAutoWebCheck.ts)),

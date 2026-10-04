@@ -64,27 +64,6 @@ describe("Web check", () => {
     );
     expect(screen.getByText(/auto-match takes its answer/)).toHaveTextContent("Records with red flags come back as a question.");
     expect(screen.getByRole("button", { name: /Checking records on the web automatically/ })).toBeDisabled();
-  });
-
-  it("switches the project's automatic check and auto-match", async () => {
-    const user = userEvent.setup();
-    const onSettings = vi.fn();
-    render(
-      <WebCheck
-        info={{ available: true, unchecked: 0, checked: 4, auto_check: false, auto_match: true }}
-        busy={false}
-        result={null}
-        onCheck={vi.fn()}
-        onSettings={onSettings}
-      />,
-    );
-    const check = screen.getByRole("checkbox", { name: "Check leftover records on the web automatically" });
-    const match = screen.getByRole("checkbox", { name: "Auto-match from the web check" });
-    expect(check).not.toBeChecked();
-    expect(match).toBeChecked();
-    expect(match).toHaveAccessibleDescription(/Records with red flags still come to you as a question/);
-    await user.click(check);
-    await user.click(match);
-    expect(onSettings.mock.calls).toEqual([[{ auto_web_check: true }], [{ auto_web_match: false }]]);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument(); // the settings are in the Add subs box
   });
 });

@@ -25,8 +25,8 @@ export function webCheckSummary(r: WebCheckResult, auto = false): string {
 export type WebCheckSettingsPatch = { auto_web_check?: boolean; auto_web_match?: boolean };
 
 /**
- * The project's web check settings: check the subs' leftover records without the button, and take the web's
- * answer without asking. Shown on the scorecard and in a sub's Matches section; either saves for the whole project.
+ * The project's web check settings, in the Add subs box: check each sub's leftover records on the web once it's
+ * matched, without the button, and take the web's answer without asking. They save for the whole project at once.
  */
 export function WebCheckSettings({
   autoCheck,
@@ -47,8 +47,9 @@ export function WebCheckSettings({
       patch: (on: boolean) => ({ auto_web_check: on }),
       label: "Check leftover records on the web automatically",
       hint:
-        "Once a sub is resolved, its possible and excluded records are looked up on the web while this project is open, " +
-        "without pressing the button. Each search uses a web-search credit, within the day's limit.",
+        "Once each sub is matched, its possible and excluded records are looked up on the web while this project is " +
+        "open, without pressing a button. For every sub on this project. Each search uses a web-search credit, within " +
+        "the day's limit.",
     },
     {
       key: "match",
@@ -90,7 +91,7 @@ export function WebCheckSettings({
 /**
  * The web check, above the match buckets: a web search on each undecided possible or excluded record says whose it
  * is, and what it finds comes back as a question, or with the project's auto-match settles the record (never a
- * red-flagged one). The project's settings sit below it; with the automatic check on, the page presses the button.
+ * red-flagged one). With the project's automatic check on (set in the Add subs box), the page presses the button.
  */
 export function WebCheck({
   info,
@@ -98,16 +99,12 @@ export function WebCheck({
   result,
   onCheck,
   error,
-  onSettings,
-  savingSettings = false,
 }: {
   info: WebCheckInfo;
   busy: boolean;
   result: WebCheckResult | null;
   onCheck: () => void;
   error?: string | null;
-  onSettings?: (patch: WebCheckSettingsPatch) => void;
-  savingSettings?: boolean;
 }) {
   const auto = !!info.auto_check;
   return (
@@ -144,16 +141,6 @@ export function WebCheck({
         <p role="alert" className="mt-2 text-sm text-high-fg">
           Couldn't check on the web: {error}
         </p>
-      ) : null}
-      {onSettings ? (
-        <div className="mt-3 border-t border-line pt-3">
-          <WebCheckSettings
-            autoCheck={auto}
-            autoMatch={!!info.auto_match}
-            onChange={onSettings}
-            busy={savingSettings}
-          />
-        </div>
       ) : null}
     </div>
   );

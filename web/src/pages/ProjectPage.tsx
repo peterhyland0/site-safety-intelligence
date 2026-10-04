@@ -5,11 +5,11 @@ import type { LookbackYears, ProjectDetail, SubCard as SubCardT, Verdict } from 
 import { useApi } from "../api/useApi";
 import { AddSubsBox } from "../components/AddSubsBox";
 import { AskForemanButton } from "../components/AskForemanButton";
-import { IconDownload, IconPlus, IconSpinner } from "../components/Icons";
+import { IconDownload, IconPlus } from "../components/Icons";
 import { LookbackToggle } from "../components/LookbackToggle";
 import { SubCard } from "../components/SubCard";
 import { BackLink, ErrorBanner, InlineError, Loading } from "../components/ui";
-import { WebCheckSettings, type WebCheckSettingsPatch } from "../components/WebCheck";
+import type { WebCheckSettingsPatch } from "../components/WebCheck";
 import { VerdictIcon } from "../components/VerdictChip";
 import { rememberProjectName } from "../lib/chatPanel";
 import { formatDate, plural } from "../lib/format";
@@ -95,7 +95,6 @@ export function ProjectPage() {
   }
 
   const { project, subs, data_as_of, history_since, web_check } = detail.data;
-  const checkingName = subs.find((s) => s.sub_id === autoWeb.checking)?.entered_name;
   const showAdd = adding || subs.length === 0;
 
   return (
@@ -125,29 +124,6 @@ export function ProjectPage() {
           abate count whatever the window{history_since ? `, from every record since ${formatDate(history_since)}` : ""}.
         </p>
         <InlineError message={lookbackError} />
-        {web_check ? (
-          <div className="mt-4 rounded-xl border border-line bg-surface px-3.5 py-3">
-            <h2 className="mb-2 text-sm font-semibold text-ink">Web check</h2>
-            <WebCheckSettings
-              autoCheck={!!project.auto_web_check}
-              autoMatch={!!project.auto_web_match}
-              onChange={(patch) => void changeWebSettings(patch)}
-              busy={savingWebSettings}
-            />
-            {project.auto_web_check && (checkingName || autoWeb.limitReached) ? (
-              <p role="status" className="mt-2.5 flex items-center gap-2 text-sm text-ink-2">
-                {autoWeb.limitReached ? (
-                  "Today's web-check limit is reached; the rest are checked tomorrow."
-                ) : (
-                  <>
-                    <IconSpinner size={14} /> Checking {checkingName}'s records on the web…
-                  </>
-                )}
-              </p>
-            ) : null}
-            <InlineError message={webSettingsError} />
-          </div>
-        ) : null}
       </div>
 
       {subs.length ? <VerdictSummary subs={subs} /> : null}
@@ -161,6 +137,17 @@ export function ProjectPage() {
             void reload();
           }}
           onCancel={subs.length ? () => setAdding(false) : undefined}
+          webCheck={
+            web_check
+              ? {
+                  autoCheck: !!project.auto_web_check,
+                  autoMatch: !!project.auto_web_match,
+                  onChange: (patch) => void changeWebSettings(patch),
+                  busy: savingWebSettings,
+                  error: webSettingsError,
+                }
+              : undefined
+          }
         />
       ) : null}
 
@@ -177,6 +164,11 @@ export function ProjectPage() {
               </button>
             ) : null}
           </div>
+          {project.auto_web_check && autoWeb.limitReached ? (
+            <p role="status" className="mb-3 text-sm text-muted">
+              Today's web-check limit is reached; the rest of the leftover records are checked tomorrow.
+            </p>
+          ) : null}
           <ol className="space-y-3" aria-busy={detail.refreshing || undefined}>
             {subs.map((card) => (
               <li key={card.sub_id}>
