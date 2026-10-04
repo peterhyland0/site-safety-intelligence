@@ -44,7 +44,7 @@ cd web && npm run build && cd ..
 uv run modal run modal_app.py::refresh
 ```
 
-## Deploy the API (and the nightly refresh)
+## Deploy the API
 ```bash
 make deploy        # builds web/dist, then deploys with ssi-db, ssi-glm, ssi-langsmith, ssi-jev and ssi-tavily
 uv run modal run modal_app.py::seed_demo        # demo project against the deployed data
@@ -54,6 +54,10 @@ overriding the list, e.g. `make deploy SSI_SECRETS="SSI_WITH_DB=1 SSI_WITH_GLM=1
 it the API has no database. `modal deploy` prints the API URL, e.g.
 `https://<workspace>--site-safety-intelligence-web.modal.run`.
 Set `SSI_MIN_CONTAINERS=1` on deploy while reviewers are looking, to avoid cold starts.
+
+The data doesn't rebuild on its own: refresh it with `make refresh`, or deploy with `SSI_NIGHTLY=1 make deploy` to
+rebuild daily at 13:00 UTC (after DOL's ~11:00 UTC update; about 3 minutes on 8 CPUs). A plain `make deploy` turns
+the daily rebuild off again.
 
 ## Deploy the website on Vercel
 1. `web/vercel.json` forwards `/api/*` to `peterhyland101210--site-safety-intelligence-web.modal.run`; another

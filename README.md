@@ -280,7 +280,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 - **API** ([ssi/api/app.py](ssi/api/app.py)): FastAPI with a typed contract ([ssi/api/schemas.py](ssi/api/schemas.py)) mirrored in `web/src/api/types.ts`.
 - **Sign-in** ([ssi/api/auth.py](ssi/api/auth.py)): invite-only accounts, made with `scripts/add_user.py`; there is no sign-up page. Passwords are hashed with scrypt. A sign-in sets a random token in an HttpOnly, SameSite=Lax cookie, and Postgres keeps only its SHA-256, so the sessions table can't be used to sign in. Sessions last 30 days from last use. Every `/api` route except health and sign-in needs a session, and writes must also carry the app's `X-SSI-Client` header, which a form on another site can't send. Ten failed sign-ins lock an email for 15 minutes (per container).
 - **Web** ([web/](web/)): Vite + React + Tailwind. Mobile-first: the foreman's view is designed for 375 px. The design uses Inter, the green / forest / concrete palette, pill buttons, and the dark pill tab bar for switches. Light by default, with a dark forest theme on a header toggle that's remembered per browser.
-- **Deploy** ([modal_app.py](modal_app.py), live at [peterhyland101210--site-safety-intelligence-web.modal.run](https://peterhyland101210--site-safety-intelligence-web.modal.run)): a nightly `refresh` downloads and builds on a Modal Volume; `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
+- **Deploy** ([modal_app.py](modal_app.py), live at [peterhyland101210--site-safety-intelligence-web.modal.run](https://peterhyland101210--site-safety-intelligence-web.modal.run)): `refresh` downloads and builds on a Modal Volume (by hand for now; `SSI_NIGHTLY=1` on deploy runs it daily); `web` serves the app and copies the warehouse to local disk on cold start. Postgres for `app` is any Postgres (Supabase free tier is plenty: the app layer is tiny).
 
 **Why these tools:**
 - **DuckDB** builds 18M raw rows in about a minute on a laptop, reads the CSVs directly, and serves read-only analytical queries in-process. Polars would also have worked; I wanted one language, SQL, across pipeline and queries.
@@ -485,7 +485,7 @@ Without them, enrichment is just empty.
 - `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` (optional): company profiles, Claude with web search ([docs/company-profile.md](docs/company-profile.md)). `SSI_PROFILE_BACKEND=tavily` uses `TAVILY_API_KEY` and the adjudicator LLM instead (about $0.01 and 3 s a profile, against $0.20 and 30 s). With a profile, M3 matches in states it doesn't list are checked on the web (up to 5 lookups a sub): on with Tavily, `SSI_M3_WEB_CHECK=on` with Claude, `off` to switch it off. `SSI_PROFILE=off` switches them off; `SSI_DAILY_PROFILE_LIMIT` caps them (default 100 a day, 30 with Tavily for its free 1,000 a month); `SSI_PROFILE_MODEL` (default `claude-sonnet-5-5`). The sub page's web check ([docs/web-check.md](docs/web-check.md)) uses `TAVILY_API_KEY` too: `SSI_WEB_CHECK=off` hides it, `SSI_DAILY_WEB_CHECK_LIMIT` caps it (default 100 searches a day). The foreman and adjudicator keep using `SSI_LLM_PROVIDER`.
 - `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`, which also compares GLM 5.3 (the foreman's endpoint) and Kimi K3 (`SSI_LLM_ADJUDICATOR_KIMI_3`, an OpenAI-compatible base URL) when they're set.
 
-**Hosting.** The app is live on Modal at [peterhyland101210--site-safety-intelligence-web.modal.run](https://peterhyland101210--site-safety-intelligence-web.modal.run): the API, the React site and a nightly data refresh, one Modal app ([modal_app.py](modal_app.py)); sign-in is invite-only. [docs/deploy.md](docs/deploy.md) describes the setup, and the optional Vercel front for the site.
+**Hosting.** The app is live on Modal at [peterhyland101210--site-safety-intelligence-web.modal.run](https://peterhyland101210--site-safety-intelligence-web.modal.run): the API, the React site and the data build, one Modal app ([modal_app.py](modal_app.py)); sign-in is invite-only. [docs/deploy.md](docs/deploy.md) describes the setup, and the optional Vercel front for the site.
 
 ---
 
@@ -530,5 +530,5 @@ web/               React SPA
 eval/              matching (silver labels), adjudicator (LLM vs Jev) and foreman evaluations
 scripts/           demo seed, account management (add_user)
 docs/              decision log, data profile, glossary, why the adjudicator uses Jev, company profiles
-modal_app.py       nightly build + web deployment
+modal_app.py       data build + web deployment
 ```

@@ -1,7 +1,8 @@
-"""Modal deployment: the nightly data build and the web app (API + SPA) share one Volume.
+"""Modal deployment: the data build and the web app (API + SPA) share one Volume.
 
     uv run modal run modal_app.py::refresh      # download + build on Modal (first time: ~10 min)
-    make deploy                                 # deploy the web app and the nightly schedule, with its secrets
+    make deploy                                 # deploy the web app with its secrets (the nightly build is off)
+    SSI_NIGHTLY=1 make deploy                   # ... and rebuild the data daily at 13:00 UTC
 
 Secrets (created by you, never committed):
     modal secret create ssi-db DATABASE_URL=postgresql://...      (Postgres for the app layer)
@@ -55,7 +56,8 @@ web_secrets = [modal.Secret.from_name(name) for name, flag in SECRET_FLAGS if fl
 
 # No ephemeral_disk: the default 512 GiB is the smallest Modal accepts, and the build needs about 15 GB
 @app.function(volumes={VOL_PATH: volume}, cpu=8, memory=32768, timeout=2 * 3600,
-              schedule=modal.Cron("0 13 * * *"))  # daily, after DOL's ~11:00 UTC refresh
+              # daily, after DOL's ~11:00 UTC refresh; off unless deployed with SSI_NIGHTLY=1 (else `make refresh`)
+              schedule=modal.Cron("0 13 * * *") if os.environ.get("SSI_NIGHTLY") == "1" else None)
 def refresh(download: bool = True) -> dict:
     """Download the latest OSHA files and rebuild the warehouse on the container's local disk, then copy only
     the finished warehouse to the Volume. CURRENT is swapped only if every error-level check passed."""
