@@ -43,10 +43,36 @@ def test_keys_and_sub_ids_do_not_ground_figures():
     assert check("A rate of 1.2, at the trade's 75th percentile.", outs) == []
 
 
-def test_date_parts_and_written_dates_pass():
+def test_dates_are_checked_whole():
     outs = [{"events": [{"date": "2025-11-03", "inspection_id": 1234567}]}]
-    assert check("Inspected November 3, 2025 (#1234567), opened 2025-11-03.", outs) == []
-    assert check("Opened 2025-11-04.", outs) == ["04"]
+    assert check("Inspected November 3, 2025 (#1234567), opened 2025-11-03, in Nov 2025 and 3 Nov 2025.", outs) == []
+    assert check("Opened 2025-11-04.", outs) == ["2025-11-04"]
+    assert check("Inspected December 3, 2025.", outs) == ["December 3, 2025"]  # the right day, the wrong month
+    assert check("In 2025.", outs) == []  # a year on its own is quoted
+
+
+def test_a_dates_day_and_month_arent_figures():
+    outs = [{"red_flags": [{"kind": "Fatality, cited", "date": "2023-05-14", "inspection_id": 1234567}]}]
+    assert check("5 fatalities and 14 willful violations.", outs) == ["5", "14"]
+
+
+def test_numbers_written_as_words_are_checked():
+    outs = [{"fatality_investigations": {"Fatality, cited": 1}, "open_cases": 2}]
+    assert check("Two open cases, and one of them is provisional.", outs) == []
+    assert check("Three fatalities and a dozen willful citations.", outs) == ["Three", "dozen"]
+    assert check("Fall protection, one of the Fatal Four.", [{"label": "Fall protection (Fatal Four)"}]) == []
+
+
+def test_a_percentage_needs_a_percentage_or_a_share():
+    outs = [{"matched_inspections": 42, "share_serious": 0.25}]
+    assert check("25% of its inspections had serious citations.", outs) == []
+    assert check("42% of its inspections had serious citations.", outs) == ["42%"]
+
+
+def test_the_models_own_words_in_a_tool_call_ground_nothing():
+    outs = [{"logged": True, "reason": "asked about 7 fatalities"},
+            {"unconfirmed": True, "query": {"name": "ACME 12", "city": "Austin", "state": "TX"}, "matched_records": 0}]
+    assert check("ACME has 7 fatalities and 12 citations.", outs) == ["7", "12"]
 
 
 def test_list_lengths_and_instruction_constants_pass():

@@ -120,8 +120,15 @@ class Toolbox:
 
     # --- tools ---------------------------------------------------------------------------------------
     def t_compare_subs(self) -> dict:
-        rows = []
+        rows, held = [], []
         for sid, s in self.subs.items():
+            # the precondition holds here too: a sub whose red flags wait on the GC (or the adjudicator) gets no
+            # figures, or "which subs had fatalities?" would read its empty count as none
+            if pre := self._precondition(sid):
+                held.append(s["entered_name"])
+                rows.append({"sub_id": sid, "sub": s["entered_name"], "status": "needs_confirmation",
+                             "pending_questions": pre["pending_questions"], "note": pre["note"]})
+                continue
             c = Q.card(s, self.project, self.data(sid))
             rows.append({"sub_id": sid, "sub": s["entered_name"], "verdict": c.verdict_label,
                          "top_reasons": [r.label for r in c.reasons[:2]], "matched_inspections": c.matched_inspections,
@@ -135,6 +142,8 @@ class Toolbox:
                          "pending_match_questions": c.pending_questions,
                          # these hold up the per-sub tools (needs_confirmation); the rest don't
                          "match_questions_with_red_flags": self.data(sid)["facts"].pending_questions})
+        if held:  # the comparison could change with the GC's answers: say so (foreman.answer's status)
+            return {"subs": rows, "status": "needs_confirmation", "held": held}
         return {"subs": rows}
 
     def t_sub_summary(self, sub_id: str) -> dict:

@@ -133,3 +133,19 @@ def test_a_red_flag_the_adjudicator_hasnt_seen_holds_up_the_answer(monkeypatch, 
         return Reply("Brasfield & Gorrie: no fatalities.", [], {"role": "assistant", "content": "x"}, "end_turn")
     resp, _ = run(monkeypatch, unresolved, [summary_call(unresolved[1]), final])
     assert resp.status == "needs_confirmation"
+
+
+def test_compare_subs_gives_no_figures_for_a_held_sub(unresolved, project):
+    from ssi.agent.tools import Toolbox
+    from ssi.store import pg
+
+    def compare(proj, sub_id):
+        with pg.conn() as c:
+            sub = c.execute("SELECT * FROM app.project_sub WHERE sub_id = %s", [sub_id]).fetchone()
+        return Toolbox(proj, [sub]).run("compare_subs", {})
+    out = compare(*unresolved)  # "which subs had fatalities?" mustn't read an empty count as none
+    assert out["status"] == "needs_confirmation" and out["held"] == ["Brasfield & Gorrie"]
+    (row,) = out["subs"]
+    assert row["status"] == "needs_confirmation" and "fatality_investigations" not in row and "red_flags" not in row
+    out = compare(*project)  # resolved and answered: the figures
+    assert "status" not in out and "fatality_investigations" in out["subs"][0]
