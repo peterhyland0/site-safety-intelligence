@@ -359,12 +359,26 @@ def export(project_id: str):
 
 
 # --- SPA -------------------------------------------------------------------------------------------
+# Modal mounts files with mtime 0: Last-Modified is 1970, which caches read as years of freshness, and the ETag
+# (mtime + size) stays the same across deploys while index.html keeps its size. So the page and the other unhashed
+# files are never stored, and the content-hashed assets are kept for good.
+NO_STORE = {"Cache-Control": "no-store"}
+
+
+class HashedAssets(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        r = await super().get_response(path, scope)
+        if r.status_code == 200:
+            r.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return r
+
+
 if WEB_DIST.exists():
-    app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+    app.mount("/assets", HashedAssets(directory=WEB_DIST / "assets"), name="assets")
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
         f = WEB_DIST / path
         if path and f.is_file() and WEB_DIST in f.resolve().parents:
-            return FileResponse(f)
-        return FileResponse(WEB_DIST / "index.html")
+            return FileResponse(f, headers=NO_STORE)
+        return FileResponse(WEB_DIST / "index.html", headers=NO_STORE)
