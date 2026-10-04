@@ -264,7 +264,7 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
 
     # S1: "… OF OREGON" vs "… OF AMERICA", "… AT ELAN" vs "… AT MERIDIAN": usually sibling companies. The cores
     # are compared without the suffix (HOFFMAN, not HOFFMAN OREGON); a common name or a person's only in the
-    # same state, as with the same name in another state (X4, X5)
+    # same state
     if (q.sibling or c.sibling_suffix) and q.sibling != c.sibling_suffix:
         qb, cb = without_suffix(q.core, q.sibling, generic), without_suffix(c.name_core, c.sibling_suffix, generic)
         if core_equal or same_full or typo_equal(q.core, c.name_core) or (
@@ -357,8 +357,11 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     if not q.core and not c.name_core and not same_full:
         return Decision(EXCLUDED, "X2", "Different generic name")
     if not q.core and same_full and q.state and c.state and not same_state and not c.at_matched_address:
-        # a name made only of common words (QUALITY ROOFING) in another state is almost always another company
-        return Decision(EXCLUDED, "X4", f"Common name, different state ({c.state})")
+        # U4: a name made only of common words (QUALITY ROOFING) in another state. Usually another company, but on
+        # the per-rule eval 18 of 72 labelled records were the sub's own (Premier Roofing's other offices, Power
+        # Home Solar's), which X4 used to exclude: a question, never "different", as for U (0.31) and U2 (0.17)
+        return Decision(UNCERTAIN, "U4", f"The sub's common name in another state ({c.state}): usually another "
+                                         "company, sometimes its other office")
     if not distinctive and not same_full:
         # a common name (CLARK, ABC) plus different trade words: only a same-city record could be related
         if same_state and (same_city or c.at_matched_address):

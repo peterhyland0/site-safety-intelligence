@@ -1,6 +1,6 @@
 # Matching rules, one at a time (silver labels from ITA EINs)
 
-2989 searches (general 1500, person 282, shared address 272, joint venture 93, branch or sibling 274, related facility 268, licence 300) on warehouse 20261004T203138Z: 140,344 records decided, 23,421 of them labelled; 7,832 graded after the cap of 3 per search, rule and bucket. 415 s.
+3262 searches (general 1500, person 282, shared address 272, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T203138Z: 140,808 records decided, 23,598 of them labelled; 8,008 graded after the cap of 3 per search, rule and bucket. 435 s.
 
 The targeted pools oversample the cases their rules act on, so each share describes a rule where it acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a corporate family's divisions as different companies.
 
@@ -10,9 +10,9 @@ Share same = precision: the rest are records of another company counted in the s
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M1 | Same name, same state (distinctive, or the same city) | 894 | 1537 | 872 (543) | 868 | 4 (3) | 0.995 [0.99–1.0] | 0 of 4 reviewed |
+| M1 | Same name, same state (distinctive, or the same city) | 968 | 1621 | 951 (586) | 947 | 4 (3) | 0.996 [0.99–1.0] | 0 of 4 reviewed |
 | M1b | Same distinctive core, differing only by descriptor words | 113 | 180 | 44 (21) | 20 | 24 (9) | 0.455 [0.32–0.6] | 0 of 24 reviewed |
-| M2 | At a matched address, the name differs only by spelling | 224 | 305 | 36 (26) | 24 | 12 (6) | 0.667 [0.5–0.8] | 0 of 12 reviewed |
+| M2 | At a matched address, the name differs only by spelling | 235 | 316 | 40 (28) | 28 | 12 (6) | 0.7 [0.55–0.82] | 0 of 12 reviewed |
 | M3 | Same distinctive name in another state | 407 | 3588 | 467 (120) | 365 | 102 (40) | 0.782 [0.74–0.82] | 0 of 102 reviewed |
 | L1 | Linked to the licence number entered | 92 | 125 | 113 (79) | 113 | 0 (0) | 1.0 [0.97–1.0] |  |
 
@@ -24,7 +24,6 @@ Share same = the share wrongly excluded: the sub's own records hidden.
 |---|---|---|---|---|---|---|---|---|
 | X1 | A different real word in the name | 2315 | 86047 | 3494 (1334) | 18 | 3476 (2935) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
 | X3 | A common name with different words | 709 | 21318 | 1209 (473) | 1 | 1208 (1082) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
-| X4 | A common name in another state | 21 | 86 | 16 (6) | 10 | 6 (6) | 0.625 [0.39–0.82] | 0 of 10 reviewed |
 | X5 | A person's name in another city or state | 17 | 23 | 0 (0) | 0 | 0 (0) |  |  |
 
 ## Rules that hold records back
@@ -36,17 +35,18 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 | M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 61 | 109 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
 | S1 | Differs only by OF <STATE> / AT <project> | 415 | 20504 | 476 (206) | 5 | 471 (452) | 0.011 [0.0–0.02] |  |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 10 | 52 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
-| S3 | The sub's name plus a real word, at an address the sub uses | 116 | 204 | 47 (28) | 18 | 29 (20) | 0.383 [0.26–0.53] |  |
+| S3 | The sub's name plus a real word, at an address the sub uses | 120 | 208 | 47 (28) | 18 | 29 (20) | 0.383 [0.26–0.53] |  |
 | S4 | The sub's name plus a state, or the record's own city | 43 | 111 | 23 (8) | 3 | 20 (8) | 0.13 [0.05–0.32] |  |
 | P1 | A person's name without a city to tell people apart | 9 | 9 | 2 (2) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
 | P3 | A company named after a person, in another city or state | 53 | 90 | 23 (13) | 23 | 0 (0) | 1.0 [0.86–1.0] |  |
 | J1 | A joint venture at a member's address | 62 | 85 | 0 (0) | 0 | 0 (0) |  |  |
 | U3 | Same family name, a different trade word | 384 | 1086 | 147 (91) | 20 | 127 (98) | 0.136 [0.09–0.2] |  |
-| U2 | A common name with other words, same city | 102 | 150 | 29 (21) | 5 | 24 (23) | 0.172 [0.08–0.35] |  |
+| U2 | A common name with other words, same city | 125 | 183 | 42 (29) | 7 | 35 (34) | 0.167 [0.08–0.31] |  |
+| U4 | The sub's common name in another state | 121 | 378 | 72 (36) | 18 | 54 (52) | 0.25 [0.16–0.36] |  |
 | G1 | Initials-only names | 104 | 431 | 61 (31) | 31 | 30 (29) | 0.508 [0.39–0.63] |  |
 | N1 | A related facility (not coded construction), by name | 290 | 809 | 319 (117) | 272 | 47 (21) | 0.853 [0.81–0.89] |  |
-| R1 | A red-flagged record at an address the company uses | 114 | 126 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
-| U | Anything else the rules can't settle | 638 | 3369 | 375 (182) | 102 | 273 (211) | 0.272 [0.23–0.32] |  |
+| R1 | A red-flagged record at an address the company uses | 115 | 127 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
+| U | Anything else the rules can't settle | 669 | 3408 | 399 (193) | 124 | 275 (213) | 0.311 [0.27–0.36] |  |
 
 ## Rules that never fired in these searches
 
@@ -122,17 +122,4 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 | Silver | Search (A) | Record (B) | Verdict |
 |---|---|---|---|
 | same | PCL CONSTRUCTION SERVICES, INC. (ORLANDO, FL) | PCL CONSTRUCTION, INC. (2000 S COLORADO BLVD TOWER 2 STE 2 500, DENVER, CO) |  |
-
-### X4 (excluded): 10
-
-| Silver | Search (A) | Record (B) | Verdict |
-|---|---|---|---|
-| same | PREMIER ROOFING COMPANY (OMAHA, NE) | PREMIER ROOFING COMPANY (11406 GRAVOIS RD, SAINT LOUIS, MO) |  |
-| same | PREMIER ROOFING COMPANY (OMAHA, NE) | PREMIER ROOFING LLC (406 AUBURN DR, COLORADO SPRINGS, CO) |  |
-| same | PREMIER ROOFING LLC (COLORADO SPRINGS, CO) | PREMIER ROOFING COMPANY (11406 GRAVOIS RD, SAINT LOUIS, MO) |  |
-| same | POWER HOME SOLAR LLC (MOORESVILLE, NC) | POWER HOME SOLAR LLC (51531 GRATIOT AVE, CHESTERFIELD, MI) |  |
-| same | POWER HOME SOLAR LLC (KENTWOOD, MI) | POWER HOME SOLAR LLC (270 INTERNATIONAL DR, CONCORD, NC) |  |
-| same | PREMIER ROOFING COMPANY (OMAHA, NE) | PREMIER ROOFING COMPANY (3201 E MULBERRY ST UNIT B, FORT COLLINS, CO) |  |
-| same | POWER HOME SOLAR LLC (KENTWOOD, MI) | POWER HOME SOLAR LLC (919 N MAIN ST, MOORESVILLE, NC) |  |
-| same | POWER HOME SOLAR LLC (MOORESVILLE, NC) | POWER HOME SOLAR LLC (4652 DANVERS DR SE, KENTWOOD, MI) |  |
 

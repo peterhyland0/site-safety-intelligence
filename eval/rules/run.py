@@ -6,7 +6,8 @@ the rules decide is filed under the rule that decided it, so each rule gets its 
 
   pools   where the searches come from. "general" samples every labelled establishment; the others are drawn
           where particular rules act (people's names, shared buildings, joint ventures, branch and OF <STATE>
-          names, related facilities, licence numbers), so those rules get enough cases to grade
+          names, related facilities, names made only of common words, licence numbers), so those rules get
+          enough cases to grade
   labels  silver, from ITA tax IDs as in eval/matching: a record is the same company when it files under the
           searched establishment's EIN. Only records with exactly one EIN are labelled. A "different" label is
           "local" when both EINs file in one state only: two local firms, the most reliable negatives
@@ -53,7 +54,6 @@ RULES = {
     "X1": "A different real word in the name",
     "X2": "A different generic name",
     "X3": "A common name with different words",
-    "X4": "A common name in another state",
     "X5": "A person's name in another city or state",
     "S1": "Differs only by OF <STATE> / AT <project>",
     "S2": "The sub's name plus BRANCH / DIVISION / OFFICE",
@@ -65,6 +65,7 @@ RULES = {
     "J1": "A joint venture at a member's address",
     "U3": "Same family name, a different trade word",
     "U2": "A common name with other words, same city",
+    "U4": "The sub's common name in another state",
     "G1": "Initials-only names",
     "N1": "A related facility (not coded construction), by name",
     "R1": "A red-flagged record at an address the company uses",
@@ -100,6 +101,7 @@ POOLS = {
                           f"(sibling_suffix IS NOT NULL OR {BRANCHY}))", "NULL"),
     "related facility": ("name_core IN (SELECT name_core FROM entity.establishment WHERE related_only AND name_core <> '')",
                          "NULL"),
+    "common name": ("coalesce(name_core, '') = ''", "NULL"),
     "licence": ("establishment_key IN (SELECT establishment_key FROM entity.ref_link "
                 "WHERE source LIKE 'licence:%' AND method = 'M1')",
                 "(SELECT min(ref_id) FROM entity.ref_link k WHERE k.establishment_key = e.establishment_key "

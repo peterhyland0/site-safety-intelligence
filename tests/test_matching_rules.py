@@ -110,7 +110,7 @@ def test_a_generic_dba_is_judged_as_its_own_name():
     full.alias_queries = {"QORVANEX HOLDINGS": q("QORVANEX HOLDINGS", "QORVANEX", state="TN", city="NASHVILLE"),
                           "QUALITY ROOFING": q("QUALITY ROOFING", "", state="TN", tier="generic", city="NASHVILLE")}
     d = decide(full, c("QUALITY ROOFING", "", state="CO", city="GREELEY"), GENERIC)
-    assert (d.bucket, d.rule_id) == (EXCLUDED, "X4")
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "U4")
     d = decide(full, c("QUALITY ROOFING", "", state="TN", city="NASHVILLE"), GENERIC)
     assert (d.bucket, d.rule_id) == (MATCHED, "M1")
     assert decide(full, c("QUALITY ROOFING", "", state="TN", city="KNOXVILLE"), GENERIC).bucket == UNCERTAIN
@@ -133,9 +133,14 @@ def test_trade_word_difference_is_a_sister_company():
     assert decide(t, c("TURNKEY ELECTRIC", "TURNKEY", state="PA", at_addr=True), GENERIC).bucket == UNCERTAIN
 
 
-def test_all_generic_name_in_another_state_is_excluded():
+def test_all_generic_name_in_another_state_is_a_question_not_another_company():
+    # X4 used to exclude these: on the per-rule eval 18 of 72 were the sub's own (Premier Roofing in Omaha, St Louis,
+    # Denver and Fort Collins), too many to hide
     qr = q("QUALITY ROOFING", "", state="TN", tier="generic", city="NASHVILLE")
-    assert decide(qr, c("QUALITY ROOFING", "", state="OH", city="AKRON"), GENERIC).bucket == EXCLUDED
+    d = decide(qr, c("QUALITY ROOFING", "", state="OH", city="AKRON"), GENERIC)
+    assert (d.bucket, d.rule_id) == (UNCERTAIN, "U4")
+    # other common words are still another company
+    assert decide(qr, c("QUALITY PLUMBING", "", state="OH", city="AKRON"), GENERIC).bucket == EXCLUDED
     assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="KNOXVILLE"), GENERIC).bucket == UNCERTAIN
     assert decide(qr, c("QUALITY ROOFING", "", state="TN", city="NASHVILLE"), GENERIC).bucket == MATCHED
 

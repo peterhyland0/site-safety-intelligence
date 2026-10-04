@@ -254,7 +254,7 @@ def test_a_dba_trade_name_is_judged_as_the_common_name_it_is():
     got, _, _ = outcome("Qorvanex Holdings LLC dba Quality Roofing", "Nashville", "TN")
     assert got[("QORVANEX HOLDINGS DBA QUALITY ROOFING", "NASHVILLE", "TN")][0] == "matched"
     assert got[("QUALITY ROOFING", "NASHVILLE", "TN")][0] == "matched"
-    assert got[("QUALITY ROOFING", "GREELEY", "CO")] == ("excluded", "X4")
+    assert got[("QUALITY ROOFING", "GREELEY", "CO")] == ("uncertain", "U4")
 
 
 def test_red_flags_at_the_companys_address_reach_the_gc():

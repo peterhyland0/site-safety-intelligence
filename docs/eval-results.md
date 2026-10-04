@@ -140,11 +140,12 @@ right on real records is in [§3.6](#36-each-rule-on-its-own).
 | **P3** a company named after a person, in another city or state | Uncertain | The per-rule eval ([§3.6](#36-each-rule-on-its-own)): X5 excluded the company's own records in all 24 labelled cases (13 firms). In the warehouse, 8% of bare person names recur in another city, spread wide (JOSE GARCIA: 36 cities); 3.4% of person names with a trade or company word do, and the widest are real firms (David Weekley Homes, Stanley Martin Homes, Edward Rose & Sons). Bare names with a legal form on every record that recur are firms too (Oscar W. Larson, James N. Gray); common names carry one only sometimes (JOSE MARTINEZ: 2 of 37). So P3 needs a company word on both sides, or a legal form both typed and on the record. Unsure rather than matched: a few such names are several people's (JOSE GARCIA CONSTRUCTION, 3 states) |
 | **J1** a joint venture at a member's address | Uncertain | The audit: M2 had merged **7 JVs into their members**. A JV is its own company |
 | **U3** same family name, different trade word | Uncertain | The first eval run (WAUSAU HOMES / TILE), and the audit: 9 sister companies at one address (`EENIGENBURG FRAMING` / `ROOFING`) that M2 merged when the names were long enough to score ≥ 0.93 |
-| **X1–X4** different real word, common name, other state | Excluded | Keep lookalikes out: 0.88 of different-company pairs kept out |
+| **U4** the sub's common name in another state | Uncertain, never excluded | The per-rule eval ([§3.6](#36-each-rule-on-its-own)): X4 excluded these as another company, and with a pool of common-name searches 18 of 72 labelled records, from 36 firms, were the sub's own: about as often as for U. On all 533 common-name searches the eval can draw, 39 of 136 were, all from 6 firms of 61 (Premier Roofing's offices in Omaha, St Louis, Denver and Fort Collins; Power Home Solar's in Michigan and North Carolina), and 8 of the 18 red-flagged ones. A question, so a red-flagged one reaches the GC and the rest the adjudicator and the web check. The cost: plain "Quality Roofing" in Nashville gets 15 possible records, none counted, 2 of them red-flagged |
+| **X1–X3** different real word, different generic name, common name with other words | Excluded | Keep lookalikes out: 0.88 of different-company pairs kept out |
 | **R1** a red-flagged record at the company's address is never excluded by a rule | Uncertain → GC | The Barnhart branch fatality above |
 | **Red flags always reach the GC** (any uncertain record with a fatality, willful, repeat or failure-to-abate) | GC question | An earlier version let a confident AI "different" exclude a red-flagged record and capped questions at 3: on the demo that hid a lookalike's red flags from Barnhart's GC. Now the AI's lean is only a suggestion, and past 3 questions they're grouped one per OSHA name rather than dropped |
 | **N1** related facilities (in scope by name, not coded construction) | Uncertain | The outlier review: `related_name` pulled in US Postal (1,454 records), Amazon, Dollar Tree. Now only firms with ≥ 20% construction-coded inspections (Tindall: 51%): 28,726 → 10,713 records |
-| **Each of a sub's names rated on its own** | | The code review: "… Holdings LLC dba Quality Roofing", Nashville, borrowed the legal name's rarity and auto-matched **15 QUALITY ROOFING records in 11 states**. Now 1 possible, 14 excluded, as for plain "Quality Roofing" |
+| **Each of a sub's names rated on its own** | | The code review: "… Holdings LLC dba Quality Roofing", Nashville, borrowed the legal name's rarity and auto-matched **15 QUALITY ROOFING records in 11 states**. Now none matched, as for plain "Quality Roofing" (1 possible and 14 excluded then; 15 possible since U4) |
 | **An address-aware "uncertain" replaces a name-only "excluded"** | | The audit: the same record was uncertain or excluded depending on which search found it first |
 
 ### 3.4 A GC's typos
@@ -193,12 +194,12 @@ scenarios, 59 cleaning cases and 18 rule tests fail.
 
 The evals above grade the rules together, and the cases the rarer rules guard (people's names, joint ventures,
 branches) hardly ever appear in their samples. [eval/rules/run.py](../eval/rules/run.py) grades each rule separately.
-It runs searches the way a GC would, starting from 2,986 establishments that file injury reports under one tax ID:
+It runs searches the way a GC would, starting from 3,262 establishments that file injury reports under one tax ID:
 1,500 drawn at random, and the rest from pools where particular rules act (people's names, shared buildings, joint
-ventures, branch and OF <STATE> names, related facilities, licence numbers). Every record the rules decide is filed
-under the rule that decided it and labelled by tax ID, with at most 3 per search and rule so that one national firm
-can't fill a rule's set. 140,473 records were decided, 23,424 labelled and 7,842 graded, in about 6 minutes with no
-model calls. Full table and examples: [eval/rules/results.md](../eval/rules/results.md).
+ventures, branch and OF <STATE> names, related facilities, names made only of common words, licence numbers). Every
+record the rules decide is filed under the rule that decided it and labelled by tax ID, with at most 3 per search and
+rule so that one national firm can't fill a rule's set. 140,808 records were decided, 23,598 labelled and 8,008
+graded, in about 7 minutes with no model calls. Full table and examples: [eval/rules/results.md](../eval/rules/results.md).
 
 Share of a rule's labelled records that were the same company (firms = distinct tax IDs searched):
 
@@ -211,7 +212,7 @@ Share of a rule's labelled records that were the same company (firms = distinct 
 | M1b descriptor words differ | matched | 43 (21) | 0.44 [0.3–0.59] | precision |
 | X1 a different real word | excluded | 3,510 (1,339) | 0.006 [0.0–0.01] | wrongly excluded |
 | X3 common name, other words | excluded | 1,216 (476) | 0.001 [0.0–0.0] | wrongly excluded |
-| X4 common name, other state | excluded | 17 (7) | 0.59 [0.36–0.78] | wrongly excluded |
+| X4 common name, other state (before U4) | excluded | 17 (7) | 0.59 [0.36–0.78] | wrongly excluded |
 | X5 person's name, other city (before P3) | excluded | 24 (13) | 1.0 [0.86–1.0] | wrongly excluded |
 | X5, with P3 | excluded | 0 (23 records, none labelled) | – | wrongly excluded |
 | N1 related facility by name | possible | 315 (118) | 0.85 [0.81–0.89] | held back, but the sub's |
@@ -219,6 +220,7 @@ Share of a rule's labelled records that were the same company (firms = distinct 
 | M3u M3's guard for colliding names | possible | 24 (15) | 0.58 [0.39–0.76] | held back, but the sub's |
 | G1 initials-only | possible | 61 (31) | 0.51 [0.39–0.63] | held back, but the sub's |
 | U anything else | possible | 380 (183) | 0.27 [0.23–0.32] | held back, but the sub's |
+| U4 the sub's common name, other state | possible | 72 (36) | 0.25 [0.16–0.36] | held back, but the sub's |
 | S3 the sub's name + a word, at its address | possible | 50 (30) | 0.38 [0.26–0.52] | held back, but the sub's |
 | U2 common name, same city | possible | 29 (21) | 0.17 [0.08–0.35] | held back, but the sub's |
 | U3 trade word differs | possible | 149 (92) | 0.13 [0.09–0.2] | held back, but the sub's |
@@ -248,8 +250,10 @@ What the examples show:
   are now held back for the adjudicator or the GC, and X5 still excludes 23 records in these searches, all bare names
   without a label. 91 records across 54 searches moved from excluded to uncertain. The matching eval's 300 pairs
   don't change (none is a person-named company).
-- **X4's 10 wrong exclusions are two firms** (Premier Roofing, Power Home Solar), each operating in several states
-  under one tax ID.
+- **X4's 10 wrong exclusions were two firms** (Premier Roofing, Power Home Solar), each operating in several states
+  under one tax ID, from 7 firms in all. A pool of common-name searches gave it 72 labelled records from 36 firms:
+  18 were the sub's own, 0.25, as often as for U and far from X1's and X3's 0.006 and 0.001. **Now rule U4**
+  ([§3.3](#33-why-each-rule-exists)) holds them back.
 - **S1 holds back almost only other companies**: 474 of 479, 455 of them local firms, and 20,424 records from 415
   searches. It fires on any `<word> … OF <PLACE>` name: University Mechanical Contractors against the University of
   South Carolina, Consolidated Construction Co. of Alabama against a Michigan electrical contractor, and City of
