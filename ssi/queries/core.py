@@ -325,10 +325,39 @@ def benchmark(naics4: str | None, window: int) -> dict | None:
     return b
 
 
+def unmoved(sc: dict) -> tuple[list[str], set[str]]:
+    """(stale, present). stale: the sub's matched and asked-about records whose inspections this build has under a key
+    the sub isn't counting: decisions made on an earlier build whose records a rebuild regrouped (re-keyed, split),
+    not moved onto this one yet (ssi/matching/remap.py follow_all). Their history isn't counted until they are, so
+    the sub is Review meanwhile, never clean. Not a record whose inspections have all left the data (older than the
+    history window: nothing to count), nor one merged into a record the sub has matched. A row saved without its
+    inspections counts when its key is gone (can't tell). present: those of the keys this build has."""
+    rows = sc["rows"]
+    check = [k for k in dict.fromkeys(sc["matched"] + [k for q in sc["pending_questions"] for k in q["establishment_keys"]])
+             if k in rows]
+    if not check:
+        return [], set()
+    present = {r["establishment_key"] for r in warehouse.rows(
+        "SELECT establishment_key FROM entity.establishment WHERE establishment_key IN (SELECT unnest(?::VARCHAR[]))",
+        [check])}
+    counted = {k for k in sc["matched"] if k in present}
+    stored = {k: set(rows[k].get("activity_nrs") or []) for k in check}
+    nrs = sorted({n for s in stored.values() for n in s})
+    now = {r["activity_nr"]: r["establishment_key"] for r in warehouse.rows(
+        """SELECT activity_nr, establishment_key FROM entity.establishment_member
+           WHERE activity_nr IN (SELECT unnest(?::BIGINT[]))""", [nrs])} if nrs else {}
+    stale = [k for k in check
+             if (k not in present and not stored[k])
+             or any(n in now and now[n] != k and now[n] not in counted for n in stored[k])]
+    return stale, present
+
+
 def compute(sub: dict, project: dict) -> dict:
     """Everything the card, the detail page and the foreman need for one sub."""
     sc = scope(str(sub["sub_id"]))
-    keys = sc["matched"]
+    # a matched or asked-about record a rebuild regrouped counts nothing until it's moved: Review meanwhile
+    stale, present = unmoved(sc)
+    keys = [k for k in sc["matched"] if k in present]
     window = int(project["lookback_years"])
     aof = as_of()
     since = window_since(window)
@@ -389,6 +418,7 @@ def compute(sub: dict, project: dict) -> dict:
         benchmark_peers=bm["peer_n"] if bm else 0, benchmark_label=bm["label"] if bm else None,
         ita_dart_above_p75_years=dart_above_p75_years(rates, n4), licence_lapsed=licence_lapsed(lics),
         visits_without_inspection=tot["insp_n"] - tot["insp_conducted_n"], ita_deaths=ita_deaths,
+        stale_records=len(stale),
     )
     verdict, reasons = evaluate(facts)
     est = warehouse.rows(f"""SELECT establishment_key, display_name, state, insp_n, insp_conducted_n, first_seen, last_seen
@@ -398,7 +428,7 @@ def compute(sub: dict, project: dict) -> dict:
     display = max(matched_est, key=lambda e: e["insp_n"])["display_name"] if matched_est else None
     years = [y.year for y in trend(keys)]
     rate = (tot["w_viol_serious_plus_n"] / tot["w_insp_rated_n"]) if tot["w_insp_rated_n"] else None
-    return {"scope": sc, "keys": keys, "facts": facts, "verdict": verdict, "reasons": reasons, "flags": flags,
+    return {"scope": sc, "keys": keys, "stale": stale, "facts": facts, "verdict": verdict, "reasons": reasons, "flags": flags,
             "hazards": hz, "benchmark": bm, "naics4": n4, "display_name": display, "est_by": est_by,
             "rate": rate, "years": years, "window": window, "as_of": aof, "rates": rates, "licences": lics,
             "possible_inspections": sum(est_by[k]["insp_conducted_n"] for k in sc["possible"] if k in est_by),
@@ -458,9 +488,14 @@ def coverage(d: dict) -> S.Coverage:
                     + (f"; {no_insp} OSHA file(s) with no inspection conducted, not counted" if no_insp else "")
                     + (f"; {d['possible_inspections']} inspection(s) under similar names not counted" if d["possible_inspections"] else "")
                     + f"; accident details published through {meta['accident_detail_through']}.")
-    else:
+    elif not d.get("stale"):
         sentence = (f"No matching OSHA inspections found (data as of {meta['data_as_of']}). No record is not a clean "
                     "record: OSHA inspects a small share of employers. Ask the sub for its EMR, TRIR and OSHA 300 logs.")
+    else:
+        sentence = f"Nothing counted yet (data as of {meta['data_as_of']})."
+    if d.get("stale"):
+        sentence += (f" {len(d['stale'])} OSHA record(s) matched or asked about for this sub aren't in this data update "
+                     "(it regrouped them) and aren't counted until they're moved onto it.")
     return S.Coverage(as_of=meta["data_as_of"], window_years=d["window"], establishments_matched=len(d["keys"]),
                       possible_not_counted=d["possible_inspections"], inspections_all_time=d["facts"].inspections_all,
                       first_year=first, last_year=last, open_cases=open_n, visits_without_inspection=no_insp,

@@ -27,6 +27,7 @@ WEB_DIST = config.REPO_ROOT / "web" / "dist"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     warehouse.open_warehouse()
+    warehouse.follow()  # a new build goes live without a restart (on Modal, web() starts one that reads the Volume)
     pg.ensure_schema()
     yield
     pg.close()

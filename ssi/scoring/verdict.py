@@ -109,6 +109,8 @@ class Facts:
     # open questions with no red flag at stake: records at locations the company's profile lists, and the rest
     pending_profile_records: int = 0
     pending_other_questions: int = 0
+    # matched or asked-about records the data build doesn't have (a rebuild regrouped them; not moved yet)
+    stale_records: int = 0
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -206,6 +208,9 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     if f.pending_questions:  # a red flag is never counted or dropped without the GC's answer
         add("R_questions", f"{f.pending_questions} possible match(es) with red flags need your confirmation", "review",
             count=f.pending_questions)
+    if f.stale_records:  # a decision on a record the build doesn't have counts nothing: never shown as clean
+        add("R_stale", f"{f.stale_records} OSHA record(s) matched or asked about for this sub aren't in this data "
+            "update yet (it regrouped them), so their history isn't counted", "review", count=f.stale_records)
     # no red flag at stake: the held records are possible, counted neither way, like any other possible record
     if f.pending_profile_records:
         add("I_profile_questions", f"{f.pending_profile_records} record(s) at locations the company lists need your "

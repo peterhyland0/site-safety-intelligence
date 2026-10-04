@@ -1,5 +1,5 @@
 # Site Safety Intelligence — common tasks
-.PHONY: setup download build dev api web test eval eval-rules eval-adjudication eval-jev-search seed-demo add-user deploy refresh
+.PHONY: setup download build dev api web test eval eval-rules eval-adjudication eval-jev-search seed-demo add-user deploy refresh follow
 
 setup:            ## Python env, local Postgres databases, web deps
 	uv sync
@@ -10,7 +10,7 @@ setup:            ## Python env, local Postgres databases, web deps
 download:         ## OSHA enforcement zips + WA/OR licence lists (ITA/CSLB: see README)
 	uv run python -m ssi.pipeline.download --osha --licences
 
-build:            ## Build the warehouse (about 1-2 minutes)
+build:            ## Build the warehouse (about 1-2 minutes); a local DATABASE_URL's decisions move onto it
 	uv run python -m ssi.pipeline.build
 
 api:              ## API on :8000 (serves web/dist if built)
@@ -48,9 +48,13 @@ seed-demo:        ## Create the demo project through the real API
 add-user:         ## Create a sign-in account: make add-user EMAIL=pat@example.com NAME="Pat Lee"
 	uv run python -m scripts.add_user "$(EMAIL)" $(if $(NAME),--name "$(NAME)")
 
-refresh:          ## Download + build on Modal
+refresh:          ## Download + build on Modal, then move the app's decisions onto the new build
 	cd web && npm run build
-	uv run modal run modal_app.py::refresh
+	$(SSI_SECRETS) uv run modal run modal_app.py::refresh
+
+follow:           ## Move the app's decisions onto the live build again (subs a refresh or build couldn't move)
+	cd web && npm run build
+	$(SSI_SECRETS) uv run modal run modal_app.py::follow
 
 deploy:           ## Deploy the web app to Modal (secrets: docs/deploy.md; drop one with SSI_SECRETS=...; SSI_NIGHTLY=1 rebuilds daily)
 	cd web && npm run build

@@ -162,3 +162,11 @@ def test_a_match_question_makes_review_only_when_a_red_flag_is_at_stake():
     assert v == "no_record" and r[0].code == "I_profile_questions"
     v, r = evaluate(facts(pending_questions=1, pending_profile_records=2))
     assert v == "review" and [x.code for x in r] == ["R_questions", "I_profile_questions"]
+
+
+def test_records_the_build_doesnt_have_are_review_never_no_record():
+    # a rebuild regrouped the sub's only matched record and its decision hasn't moved: nothing is counted, but that's
+    # not "No OSHA record"
+    v, r = evaluate(facts(matched_establishments=0, inspections_all=0, inspections_window=0, rated_window=0,
+                          serious_plus_window=0, stale_records=1))
+    assert v == "review" and "R_stale" in [x.code for x in r]

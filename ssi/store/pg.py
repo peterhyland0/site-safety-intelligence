@@ -37,7 +37,12 @@ def pool() -> ConnectionPool:
 
 
 @contextmanager
-def conn():
+def conn(existing=None):
+    """A pooled connection, one transaction (committed on exit, rolled back on an error); or `existing`, so a step can
+    run inside its caller's transaction."""
+    if existing is not None:
+        yield existing
+        return
     with pool().connection() as c:
         yield c
 

@@ -83,6 +83,13 @@ class Toolbox:
                     "pending_questions": [q["text"] for q in Q.red_flag_questions(d["scope"]["pending_questions"])],
                     "note": "The GC must confirm possible matches with red flags before this sub's history can be "
                             "answered."}
+        # the same for records a data update regrouped that haven't been moved onto it: the history is incomplete in a
+        # way that could hide a red flag
+        if d["facts"].stale_records:
+            return {"status": "needs_confirmation", "sub": self.subs[sub_id]["entered_name"],
+                    "pending_questions": [r.label for r in d["reasons"] if r.code == "R_stale"],
+                    "note": "A data update regrouped this sub's OSHA records and its matches haven't moved onto it "
+                            "yet, so its history can't be answered yet."}
         return None
 
     def _open_questions(self, sub_id: str) -> dict | None:

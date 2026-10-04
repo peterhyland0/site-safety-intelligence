@@ -289,3 +289,75 @@ def test_the_dry_run_shows_the_move_and_writes_nothing(builds, new_sub):
     # the GC's answer lands on the LLC's record, so the rules have nothing left to change there
     assert rematch.plan(fresh(sub), "IA", p["after"]) == []
     assert json.dumps(rows(sub), default=str) == json.dumps(before, default=str)
+
+
+# --- after a build: every sub's decisions follow (remap.follow, from the build and from Modal's refresh) ----------
+def project_of(sub):
+    with pg.conn() as c:
+        return c.execute("SELECT * FROM app.project WHERE project_id = %s", [sub["project_id"]]).fetchone()
+
+
+def test_a_build_moves_each_subs_decisions_and_runs_the_rules_again(builds, new_sub):
+    sub, plain, lc = adelphi_on_a(builds, new_sub)
+    ADJ.override(str(sub["sub_id"]), lc, "matched")
+    use(builds, "B")
+    stats = remap.follow(fresh(sub), "IA", builds)
+    assert stats["moved"] == 1 and stats["carried"] == 1
+    r = rows(sub)
+    assert lc not in r and (r[plain]["bucket"], r[plain]["method"]) == ("matched", "gc")
+    assert remap.follow(fresh(sub), "IA", builds)["moved"] == 0  # done: nothing left to move
+
+
+def test_follow_leaves_a_sub_the_app_is_resolving(builds, new_sub):
+    sub, _, lc = adelphi_on_a(builds, new_sub)
+    use(builds, "B")
+    with ADJ.claim(str(sub["sub_id"])):
+        assert remap.follow(fresh(sub), "IA", builds) is None
+    assert lc in rows(sub)  # untouched; the next build or `python -m ssi.matching.remap` moves it
+
+
+def test_a_record_split_by_a_rebuild_is_stale_until_its_decision_moves(builds, new_sub):
+    # B -> A: the L.C.'s 2 inspections leave the sub's matched ADELPHI CONSTRUCTION for a record of their own, which
+    # the sub has no decision on. They aren't counted, and the sub is Review (core.compute; test_stale_and_server.py),
+    # until follow moves the decision
+    from ssi.queries import core as Q
+    use(builds, "B")
+    sub = new_sub("Adelphi Construction")
+    run.match_and_persist(sub, "IA")
+    plain = key("ADELPHI CONSTRUCTION")
+    use(builds, "A")
+    assert Q.unmoved(Q.scope(str(sub["sub_id"])))[0] == [plain]
+    remap.follow(fresh(sub), "IA", builds)
+    stale, present = Q.unmoved(Q.scope(str(sub["sub_id"])))
+    assert stale == [] and present == {plain, key("ADELPHI CONSTRUCTION LC")}
+
+
+def test_a_record_merged_into_a_matched_one_or_gone_from_the_data_isnt_stale(builds, new_sub):
+    from ssi.queries import core as Q
+    sub, plain, _ = adelphi_on_a(builds, new_sub)  # A -> B: the L.C. merges into the matched ADELPHI CONSTRUCTION
+    kestrel = new_sub("Kestrel Roofing")  # ...and KESTREL ROOFING's only record leaves the data
+    run.match_and_persist(kestrel, "IA")
+    gone = key("KESTREL ROOFING")
+    use(builds, "B")
+    assert Q.unmoved(Q.scope(str(sub["sub_id"]))) == ([], {plain})  # its inspections are all counted
+    assert Q.unmoved(Q.scope(str(kestrel["sub_id"]))) == ([], set())  # nothing in the data window to count
+    assert gone in rows(kestrel)
+
+
+def test_follow_all_moves_every_sub_and_tries_a_busy_one_again(builds, new_sub, monkeypatch):
+    sub, plain, lc = adelphi_on_a(builds, new_sub)
+    busy, _, busy_lc = adelphi_on_a(builds, new_sub)
+    ADJ.override(str(sub["sub_id"]), lc, "matched")
+    use(builds, "B")
+    real, tries = remap.follow, []
+
+    def follow(s, state, build_dir=None):
+        tries.append(s["entered_name"] + str(s["sub_id"]))
+        if s["sub_id"] == busy["sub_id"] and tries.count(s["entered_name"] + str(s["sub_id"])) == 1:
+            return None  # the app is resolving it; free on the second try
+        return real(s, state, build_dir)
+    monkeypatch.setattr(remap, "follow", follow)
+    out = remap.follow_all(builds, retry_after=0)
+    assert out["busy"] == [] and "Adelphi Construction" not in out["failed"]
+    assert lc not in rows(sub) and rows(sub)[plain]["method"] == "gc"
+    assert busy_lc not in rows(busy)  # moved on the second try

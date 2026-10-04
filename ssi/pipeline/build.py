@@ -4,6 +4,10 @@ Intermediate tables live in a scratch database; only final layers are written to
 warehouse-<build_id>.duckdb, which the API serves read-only. The CURRENT pointer is swapped only after
 every 'error' check passes, so a failed build never replaces the live data.
 
+Once the new build is live, the app's decisions follow their records onto it (ssi/matching/remap.py follow_all): a
+cleaning-rule change gives some records new keys, and a decision left on a key the build doesn't have counts nothing.
+Only against a local database: a local build isn't what a hosted app serves (Modal's refresh moves those).
+
     uv run python -m ssi.pipeline.build                 # full build
     uv run python -m ssi.pipeline.build --dev --from 40 # rerun from step 40 reusing scratch (dev only)
 """
@@ -281,11 +285,40 @@ def main() -> None:
     ap.add_argument("--dev", action="store_true", help="fixed build id 'dev'; keeps scratch for --from reruns")
     ap.add_argument("--from", dest="from_step", help="rerun from this step prefix, e.g. 40 (dev only)")
     ap.add_argument("--keep-scratch", action="store_true")
+    ap.add_argument("--no-follow", action="store_true", help="don't move the app's decisions onto the new build")
     args = ap.parse_args()
     r = build(args.data_dir, dev=args.dev, from_step=args.from_step, keep_scratch=args.keep_scratch)
     print(json.dumps({k: r[k] for k in ("build_id", "ok", "seconds_total", "warehouse_mb", "data_as_of", "history_since", "scope")}, indent=2))
     for c in r["checks"]:
         print(f"  {'PASS' if c['pass'] else 'FAIL'} {c['severity']:5s} {c['name']}: actual={c['actual']} expected={c['expected']}")
+    if not args.no_follow:
+        follow_decisions(args.data_dir / "build" / r["warehouse"], args.data_dir / "build")
+
+
+def follow_decisions(wh_path: Path, build_dir: Path) -> None:
+    """The app's decisions onto the build just made live (remap.follow_all), when DATABASE_URL is a local database.
+    A sub whose decisions couldn't move shows as Review in the app until `python -m ssi.matching.remap` is run."""
+    from urllib.parse import urlsplit
+
+    from ssi.matching import remap
+    from ssi.store import warehouse
+    host = urlsplit(config.DATABASE_URL).hostname
+    if host not in ("localhost", "127.0.0.1", "::1"):
+        print(f"\nDecisions not moved: DATABASE_URL is {host}, not a local database, and a local build isn't what a "
+              "hosted app serves (Modal's refresh moves them). To move them onto this build anyway: "
+              "uv run python -m ssi.matching.remap")
+        return
+    warehouse.open_warehouse(wh_path)
+    try:
+        res = remap.follow_all(build_dir)
+    except Exception as e:  # the build is live; say what to run
+        raise SystemExit(f"Build {wh_path.name} is live, but the app's decisions weren't moved onto it "
+                         f"({type(e).__name__}: {e}). Subs show as Review until: uv run python -m ssi.matching.remap") from e
+    print(f"\nDecisions moved onto the new build: {res['subs']} subs, {res['moved']} records regrouped, "
+          f"{res['questions']} new GC question(s)")
+    if res["busy"] or res["failed"]:
+        raise SystemExit(f"Not moved (Review in the app until `uv run python -m ssi.matching.remap`): "
+                         f"busy {res['busy']}, failed {res['failed']}")
 
 
 if __name__ == "__main__":

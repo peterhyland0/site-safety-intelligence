@@ -271,8 +271,9 @@ def _evidence(r: dict, d, q: Query) -> dict:
     }
 
 
-def persist(sub_id: str, result: dict) -> None:
-    """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept. Each row stores
+def persist(sub_id: str, result: dict, conn=None) -> None:
+    """Replace this sub's rule decisions; GC overrides and AI decisions on the same records are kept. In the caller's
+    transaction when given one (`conn`): adding subs, and moving decisions after a rebuild, write all or nothing. Each row stores
     its record's inspections, so the decision can follow them if a cleaning-rule change moves the key (remap.py).
     A record in an open question waits as possible for the GC's answer, whatever the rules say now; its row stays if
     the rules no longer find it. Except a record held only by web evidence (a company profile's or the web check's
@@ -287,7 +288,7 @@ def persist(sub_id: str, result: dict) -> None:
     excluded = sorted([x for x in decs if x["decision"].bucket == EXCLUDED], key=lambda x: -(x["row"].get("sim") or 0))[:EXCLUDED_KEEP]
     found = [x["row"]["establishment_key"] for x in matched + uncertain + excluded]
     nrs = C.members(found)
-    with pg.conn() as c:
+    with pg.conn(conn) as c:
         asked = {k for qn in c.execute("SELECT establishment_keys FROM app.match_question WHERE sub_id = %s "
                                        "AND answer IS NULL", [sub_id]).fetchall() for k in qn["establishment_keys"]}
         # a web-evidence hold the rules now match, with no red flags, gives way to the rule and leaves its question
@@ -333,10 +334,15 @@ def persist(sub_id: str, result: dict) -> None:
                       [sub_id, result["note"], build_id])
 
 
-def match_and_persist(sub: dict, project_state: str | None) -> dict:
-    result = match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state, sub.get("trade"),
-                   sub.get("licence"))
-    persist(str(sub["sub_id"]), result)
+def match_sub(sub: dict, project_state: str | None) -> dict:
+    """The rules for a saved sub (warehouse only; nothing written)."""
+    return match(sub["entered_name"], sub.get("entered_city"), sub.get("entered_state") or project_state, sub.get("trade"),
+                 sub.get("licence"))
+
+
+def match_and_persist(sub: dict, project_state: str | None, conn=None) -> dict:
+    result = match_sub(sub, project_state)
+    persist(str(sub["sub_id"]), result, conn)
     return result
 
 

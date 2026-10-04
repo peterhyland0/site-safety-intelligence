@@ -79,11 +79,11 @@ flowchart TB
   chk{"24 build checks"}
   stop["Build stops<br/>live data untouched"]
   swap[("Pointer swap<br/>new warehouse goes live, old one kept")]
-  rem["scripts.rematch (after rule changes)<br/>decisions move to their new keys"]
+  rem["Every sub's decisions follow their records<br/>(remap + rules, no AI); apps switch within a minute"]
   dl --> scope --> clean --> haz --> est --> enr --> chk
   chk -- "error" --> stop
   chk -- "pass" --> swap
-  swap -.-> rem
+  swap --> rem
 ```
 
 **Matching a sub** (§3). The rules run as the sub is added; only uncertain records go further. No AI or web answer settles a red-flagged record in either direction: those always go to the GC.
@@ -186,7 +186,7 @@ flowchart LR
 |---|---|---|
 | **No global "company" table.** A company is the set of establishments matched to *one GC's sub* (`app.sub_match`). | Grouping 1.2M name variants into companies blind gives wrong merges; in a spot check, 1 in 6 fuzzy merges was wrong. A wrong merge can pin someone else's fatality on a sub. The company question is decided per sub, where the GC's evidence is. | Matching runs when a sub is added, not once globally. AI decisions are cached by an evidence hash, so the same pair isn't re-decided. |
 | **Establishments only merge on exact cleaned values.** | Safe by construction. A wrong *split* costs a little review; a wrong *merge* is silent and harmful. | One company becomes many establishments (Brasfield & Gorrie is 129). The matcher puts them back together, with rules and evidence. |
-| **Layers split by trust and rebuildability; decisions in a separate store.** | A pipeline rebuild can never destroy a GC's confirmed matches. Every figure traces to source records. | `app` can't use foreign keys into the rebuildable warehouse. Instead, establishment keys are **deterministic hashes** (the same input and cleaning rules give the same key every build). A cleaning-rule change does give some records new keys, so every decision also stores its record's inspections, whose OSHA IDs never change. `scripts/rematch.py` moves each decision to the keys that now hold them (`entity.establishment_member`); a GC answer always moves, and two GC answers that now land on one record become a question to the GC. |
+| **Layers split by trust and rebuildability; decisions in a separate store.** | A pipeline rebuild can never destroy a GC's confirmed matches. Every figure traces to source records. | `app` can't use foreign keys into the rebuildable warehouse. Instead, establishment keys are **deterministic hashes** (the same input and cleaning rules give the same key every build). A cleaning-rule change does give some records new keys, so every decision also stores its record's inspections, whose OSHA IDs never change. Every build that goes live moves each decision to the keys that now hold them (`entity.establishment_member`; [ssi/matching/remap.py](ssi/matching/remap.py) `follow_all`, from the build and from Modal's refresh) and runs the rules again; a GC answer always moves, and two GC answers that now land on one record become a question to the GC. Until a sub's decisions have moved, a record whose inspections the build has under another key counts nothing and the sub reads Review, never clean. |
 | **Facts in DuckDB, decisions in Postgres.** | Each store fits its workload: scanning millions of rows for analysis vs small, concurrent transactional writes. Full history stays online at no hosting cost. | Two stores, joined in API code. That's cheap: a sub's scope is tens of keys. DuckDB has no trigram index, so candidate search uses a token-blocking table plus Jaro-Winkler. |
 | **Normalised facts; accidents ↔ inspections many-to-many.** | OSHA opens an inspection for *every* employer on a fatality site and copies the injury rows to each. Storing the accident once and linking it to each inspection avoids duplication and false attribution. | More joins; fine at this size. |
 | **Fatality is a status per inspection, not a boolean:** `fatality_cited` / `fatality_inspected_not_cited` / `fatality_pending` / `fatcat_cited` / `fatcat_not_cited` / `fatcat_no_inspection` / `accident_outcome_unknown`. | Being on a site where someone died isn't the same as causing it. Only *cited* fatalities drive a High verdict. OSHA's accident detail lags (it ends 2025-03-28 in this load), so an investigation without published detail is still flagged: *pending* while citations can still come (OSHA must cite within 6 months), *cited* / *not cited* after that, *no inspection* when OSHA opened the file but didn't inspect this employer. | Extra logic in the pipeline. A build check fails if any fatality/catastrophe investigation without detail has no flag. |
@@ -570,7 +570,7 @@ cd web && npm run build && cd .. && make api   # http://localhost:8000
 
 `uv run python -m scripts.add_user you@example.com --reset` sets a new password, and `--disable` blocks an account; both sign it out everywhere.
 
-After a build with changed cleaning or matching rules, `uv run python -m scripts.rematch` shows, per sub, the decisions that move to new establishment keys and the rule decisions that change; `--apply` writes them ([ssi/matching/remap.py](ssi/matching/remap.py) has the details). A decision saved before inspections were stored with it is followed through its old build, if `data/build` still has it.
+A build moves every sub's decisions onto itself once it's live (rules only, no AI; a local build only when `DATABASE_URL` is a local database, as a hosted app's decisions follow Modal's refresh; `uv run python -m ssi.matching.remap` or `make follow` does it again for subs that couldn't move). To see what a rule change does first, `uv run python -m scripts.rematch` shows, per sub, the decisions that move to new establishment keys and the rule decisions that change; `--apply` writes them, with the M3 web check and the adjudicator ([ssi/matching/remap.py](ssi/matching/remap.py) has the details). A decision saved before inspections were stored with it is followed through its old build, if `data/build` still has it.
 
 **Optional manual downloads:**
 - OSHA ITA files from <https://www.osha.gov/Establishment-Specific-Injury-and-Illness-Data>, saved to `data/raw/reference/osha_ita/utf8/`

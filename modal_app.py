@@ -1,8 +1,10 @@
 """Modal deployment: the data build and the web app (API + SPA) share one Volume.
 
-    uv run modal run modal_app.py::refresh      # download + build on Modal (first time: ~10 min)
+    make refresh                                # download + build on Modal (first time: ~10 min), then move the
+                                                # app's decisions onto the new build (needs ssi-db)
     make deploy                                 # deploy the web app with its secrets (the nightly build is off)
     SSI_NIGHTLY=1 make deploy                   # ... and rebuild the data daily at 13:00 UTC
+    make follow                                 # move decisions again, for subs a refresh couldn't
 
 Secrets (created by you, never committed):
     modal secret create ssi-db DATABASE_URL=postgresql://...      (Postgres for the app layer)
@@ -59,15 +61,20 @@ web_secrets = [modal.Secret.from_name(name) for name, flag in SECRET_FLAGS if fl
 
 
 # No ephemeral_disk: the default 512 GiB is the smallest Modal accepts, and the build needs about 15 GB
-@app.function(volumes={VOL_PATH: volume}, cpu=8, memory=32768, timeout=2 * 3600,
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=8, memory=32768, timeout=2 * 3600,
               # daily, after DOL's ~11:00 UTC refresh; off unless deployed with SSI_NIGHTLY=1 (else `make refresh`)
               schedule=modal.Cron("0 13 * * *") if os.environ.get("SSI_NIGHTLY") == "1" else None)
 def refresh(download: bool = True) -> dict:
     """Download the latest OSHA files and rebuild the warehouse on the container's local disk, then copy only
-    the finished warehouse to the Volume. CURRENT is swapped only if every error-level check passed."""
+    the finished warehouse to the Volume. CURRENT is swapped only if every error-level check passed. Then the app's
+    decisions follow their records onto the new build (remap.follow_all; needs ssi-db), and the web containers switch
+    to it within a minute (warehouse.follow)."""
     import shutil
 
-    from ssi.pipeline import build, download as dl
+    from ssi.matching import remap
+    from ssi.pipeline import build
+    from ssi.pipeline import download as dl
+    from ssi.store import warehouse
     vol = Path(VOL_PATH)
     work = Path("/tmp/ssi")
     raw = work / "raw"
@@ -89,7 +96,40 @@ def refresh(download: bool = True) -> dict:
     for old in sorted((vol / "build").glob("warehouse-2*.duckdb"))[:-2]:  # keep two builds for rollback
         old.unlink()
     volume.commit()
-    return {k: report[k] for k in ("build_id", "ok", "seconds_total", "warehouse_mb", "data_as_of")}
+    out = {k: report[k] for k in ("build_id", "ok", "seconds_total", "warehouse_mb", "data_as_of")}
+    if not os.environ.get("DATABASE_URL"):  # no ssi-db: `modal run ::refresh` before the app's database exists
+        print("No DATABASE_URL (deploy with SSI_WITH_DB=1): the app's decisions weren't moved onto this build")
+        return {**out, "decisions": None}
+    warehouse.open_warehouse(wh)  # the new build, from this container's disk
+    out["decisions"] = remap.follow_all(vol / "build")  # earlier builds on the Volume, for decisions saved before activity_nrs
+    if out["decisions"]["busy"] or out["decisions"]["failed"]:
+        print(f"Not moved (Review in the app until `modal run modal_app.py::follow`): {out['decisions']}")
+    return out
+
+
+def latest_local() -> Path | None:
+    """The live build, copied to this container's disk once (DuckDB reads a local file much faster than a network
+    volume). The Volume is reloaded first, so a running container sees a refresh that finished after it started."""
+    import shutil
+
+    from ssi import config
+    from ssi.store import warehouse
+    try:
+        volume.reload()
+    except Exception as e:  # noqa: BLE001 - e.g. a file open on the Volume: look again next time
+        print(f"volume reload failed: {e}")
+    src = config.current_warehouse()
+    if src is None:
+        return None
+    local = Path("/tmp") / src.name
+    if not local.exists():
+        part = local.with_suffix(".part")
+        shutil.copy(src, part)
+        part.replace(local)  # a half-copied file is never opened
+        for old in Path("/tmp").glob("warehouse-*.duckdb"):  # an earlier copy still open finishes its queries
+            if old not in (local, warehouse._path):
+                old.unlink(missing_ok=True)
+    return local
 
 
 @app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192,
@@ -97,20 +137,24 @@ def refresh(download: bool = True) -> dict:
 @modal.concurrent(max_inputs=16)
 @modal.asgi_app()
 def web():
-    """FastAPI + SPA. The warehouse is copied from the Volume to local disk on cold start: DuckDB reads
-    a local file much faster than a network volume."""
-    import shutil
-
-    from ssi import config
-    src = config.current_warehouse()
-    if src:
-        local = Path("/tmp") / src.name
-        if not local.exists():
-            shutil.copy(src, local)
-        from ssi.store import warehouse
+    """FastAPI + SPA. The warehouse is copied from the Volume to local disk on cold start, and again when a refresh
+    makes a new build live (warehouse.follow)."""
+    from ssi.store import warehouse
+    local = latest_local()
+    if local:
         warehouse.open_warehouse(local)
+    warehouse.follow(latest_local)
     from ssi.api.app import app as fastapi_app
     return fastapi_app
+
+
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=3600)
+def follow() -> dict:
+    """Move the app's decisions onto the live build again: for subs a refresh couldn't move (busy or failed)."""
+    from ssi.matching import remap
+    from ssi.store import warehouse
+    warehouse.open_warehouse(latest_local())
+    return remap.follow_all(Path(VOL_PATH) / "build")
 
 
 @app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=1800)

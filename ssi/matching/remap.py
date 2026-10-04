@@ -17,10 +17,18 @@ Where records land on one new record, with any row the sub already has for it:
 - the AI's decisions and the holds from a company profile or the web check (methods 'profile' and 'web') carry over
   when every record landing there was decided the same way. If not, they're dropped and the rules (then the AI)
   decide the merged record again;
-- rule decisions aren't carried: the re-match that follows (scripts/rematch.py) runs the rules on the new keys."""
+- rule decisions aren't carried: the re-match that follows runs the rules on the new keys.
+
+Every build does this for every sub (follow_all, from the build and from Modal's refresh, once the new build is live):
+the decisions move and the rules run again, in one transaction a sub, with no model calls. Newly uncertain records
+wait for the adjudicator, which the app runs; red-flagged ones become GC questions there. scripts/rematch.py does the
+same with a dry run, the M3 web check and the adjudicator. Until a sub's decisions have moved, the app counts nothing
+from a record the build doesn't have and shows the sub as Review, never as clean (queries.core.compute)."""
 from __future__ import annotations
 
 import json
+import logging
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -31,6 +39,7 @@ from ssi.matching import adjudicate as ADJ
 from ssi.matching import candidates as C
 from ssi.store import pg, warehouse
 
+log = logging.getLogger(__name__)
 GC_LIKE = ("gc", "remap")  # 'remap': GC decisions that disagree, waiting for the GC's answer
 GC_SAID = {"matched": "you confirmed {} as your sub", "excluded": "you marked {} as a different company",
            "possible": "you left {} as possible"}
@@ -163,10 +172,12 @@ def changes(p: dict) -> bool:
     return bool(p["moves"] or p["splits"])
 
 
-def apply(sub: dict, p: dict) -> dict:
+def apply(sub: dict, p: dict, conn=None) -> dict:
     """Write the plan, before the re-match's run.persist: decisions onto their new keys, a question for each record
     whose GC decisions disagree, open questions pointed at the new keys, the gone keys' rows deleted. Every non-rule
-    row left on a current key gets its inspections stored, so a later remap doesn't need this build to be kept."""
+    row left on a current key gets its inspections stored, so a later remap doesn't need this build to be kept.
+    The gone keys' rule rows are deleted here and only written again by run.persist, so pass the transaction (`conn`)
+    that persist runs in: a failure between the two would otherwise leave the sub with its rule matches gone."""
     sub_id = str(sub["sub_id"])
     targets = p["targets"]
     stats = {"moved": len(p["moves"]), "split": len(p["splits"]), "carried": 0, "questions": 0, "released": 0}
@@ -175,7 +186,7 @@ def apply(sub: dict, p: dict) -> dict:
     nrs = C.members(list(targets) + held)
     ests = {e["establishment_key"]: e for e in C.establishments(list(targets))}
     build_id = warehouse.meta()["build_id"]
-    with pg.conn() as c:
+    with pg.conn(conn) as c:
         for t, x in targets.items():
             if x["action"] == "carry":
                 d = x["decision"]
@@ -265,3 +276,68 @@ def question_text(sub: dict, e: dict, x: dict) -> str:
     return (f"After a data update, OSHA records you answered differently are one record: {'; '.join(said)}. "
             f"OSHA's records now group them as '{e['clean_name']}' ({where or 'no address on file'}, "
             f"{n} inspection{'s' if n != 1 else ''}). Is this record your sub '{sub['entered_name']}'?")
+
+
+# --- after a build: every sub's decisions follow their records ---------------------------------------------------
+FOLLOW_RETRY_SECONDS = 30  # a sub the app is resolving is tried once more after this
+
+
+def follow(sub: dict, project_state: str | None, build_dir: Path | None = None) -> dict | None:
+    """One sub after a rebuild, under its claim: its decisions moved to the keys now holding their inspections and the
+    rules run again, in one transaction (a failure leaves the sub as it was, which the app shows as Review), then its
+    company profile and company-name questions applied again (adjudicate.apply_profile, cover_company_names). No model
+    calls. None when the app is resolving the sub right now."""
+    from ssi.llm import profile as P  # imported here: the matching package doesn't otherwise need it
+    from ssi.matching.run import match_sub, persist  # run imports this package's adjudicate, not this module
+    with ADJ.claim(str(sub["sub_id"])) as claimed:
+        if claimed is None:
+            return None
+        p = plan(claimed, build_dir)
+        result = match_sub(claimed, project_state)
+        with pg.conn() as c:
+            stats = apply(claimed, p, c)
+            persist(str(claimed["sub_id"]), result, c)
+        prof = P.load(claimed.get("profile_id"))
+        if prof:
+            ADJ.apply_profile(claimed, prof)
+        else:
+            with pg.conn() as c:
+                ADJ.cover_company_names(c, claimed)
+        return stats
+
+
+def follow_all(build_dir: Path | None = None, retry_after: float = FOLLOW_RETRY_SECONDS) -> dict:
+    """Every sub's decisions onto the build the warehouse module has open (follow). A sub the app is resolving is tried
+    again once after `retry_after` seconds; one that fails is logged and left as it was. Returns
+    {subs, moved, questions, busy: [sub names], failed: [sub names]}."""
+    with pg.conn() as c:
+        subs = c.execute("""SELECT s.*, p.state AS project_state FROM app.project_sub s
+                            JOIN app.project p USING (project_id) ORDER BY p.created_at, s.position""").fetchall()
+    out = {"subs": len(subs), "moved": 0, "questions": 0, "busy": [], "failed": []}
+    todo = subs
+    for attempt in range(2):
+        busy = []
+        for s in todo:
+            try:
+                st = follow(s, s["project_state"], build_dir)
+            except Exception:  # one sub's failure doesn't stop the others; it stays Review until rerun
+                log.exception("decisions not moved for sub %s (%s)", s["sub_id"], s["entered_name"])
+                out["failed"].append(s["entered_name"])
+                continue
+            if st is None:
+                busy.append(s)
+                continue
+            out["moved"] += st["moved"] + st["split"]
+            out["questions"] += st["questions"]
+        todo = busy
+        if not busy or attempt:
+            break
+        time.sleep(retry_after)
+    out["busy"] = [s["entered_name"] for s in todo]
+    return out
+
+
+if __name__ == "__main__":  # move every sub's decisions onto the current build: after a failed or skipped step
+    logging.basicConfig(level=logging.INFO)
+    warehouse.open_warehouse()
+    print(json.dumps(follow_all(), indent=2))

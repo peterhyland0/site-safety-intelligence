@@ -59,6 +59,11 @@ The data doesn't rebuild on its own: refresh it with `make refresh`, or deploy w
 rebuild daily at 13:00 UTC (after DOL's ~11:00 UTC update; about 3 minutes on 8 CPUs). A plain `make deploy` turns
 the daily rebuild off again.
 
+Once a refresh's build is live, it moves every sub's decisions onto it (a cleaning-rule change gives some records new
+keys; rules only, no AI) using `ssi-db`, and the running API switches to the new build within a minute. A first
+refresh before the database exists (the plain `modal run` above) just builds. A sub it couldn't move (busy, or an
+error in the log) reads Review in the app until `make follow` moves it.
+
 ## Deploy the website on Vercel
 Live at [site-safety-intelligence.vercel.app](https://site-safety-intelligence.vercel.app): project
 `site-safety-intelligence` in the `agent-mvp` team, linked to `peterhyland0/site-safety-intelligence`, so every push to
