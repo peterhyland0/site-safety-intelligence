@@ -160,4 +160,7 @@ export interface FxProject {
   lookback_years: number;
   created_at: string;
   subs: FxSub[];
+  /** the web check's settings (Project.auto_web_check, auto_web_match) */
+  auto_web_check?: boolean;
+  auto_web_match?: boolean;
 }

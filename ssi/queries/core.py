@@ -11,6 +11,7 @@ from urllib.parse import quote, urlencode
 from ssi import config
 from ssi.api import schemas as S
 from ssi.matching import candidates as C
+from ssi.matching import verify as V
 from ssi.matching.trades import NAICS4_LABELS, trade_naics4
 from ssi.scoring.verdict import (
     VERDICT_LABELS,
@@ -416,6 +417,7 @@ def match_status(sc: dict) -> str:
 def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
     d = data or compute(sub, project)
     bm = d["benchmark"]
+    web = V.info(list(d["scope"]["rows"].values()), d["scope"]["pending_questions"])
     return S.SubCard(
         sub_id=str(sub["sub_id"]), entered_name=sub["entered_name"], entered_city=sub.get("entered_city"),
         entered_state=sub.get("entered_state"), trade=sub.get("trade"), display_name=d["display_name"],
@@ -435,6 +437,7 @@ def card(sub: dict, project: dict, data: dict | None = None) -> S.SubCard:
         licence_status=(f"{d['licences'][0].source}: {d['licences'][0].status}" if d["licences"] else None),
         same_records_as=[S.SubRef(**r) for r in d["scope"]["same_records_as"]],
         profile_status=sub.get("profile_status"),
+        web_unchecked=web["unchecked"] if web["available"] else 0,
     )
 
 

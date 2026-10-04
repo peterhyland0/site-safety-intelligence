@@ -448,6 +448,55 @@ def test_web_questions_dont_hold_up_the_assistant(clark, no_budget_db):
         "pending_questions"] == ["Red flags: yours?"]
 
 
+# --- auto-match: the web's answer without the GC's, but never on a red-flagged record ------------------------------
+@local_db
+def test_auto_match_settles_what_the_web_answers_but_asks_about_red_flags(clark, no_budget_db, monkeypatch):
+    from ssi.matching import candidates as C
+    from ssi.matching import run
+    from ssi.store import warehouse
+    p, s, k = clark
+    stats = V.check_records(s, p, profile=PROFILE, lookup_fn=fake_lookups()[1], auto_match=True)
+    assert {x: stats[x] for x in ("same", "different", "unsure", "matched", "excluded", "questions")} == \
+        {"same": 2, "different": 1, "unsure": 1, "matched": 1, "excluded": 1, "questions": 1}
+    rows, qs = state(s["sub_id"])
+    assert (rows[k["k800"]]["bucket"], rows[k["k800"]]["method"]) == ("matched", "web")
+    assert rows[k["k800"]]["rationale"].endswith("Matched automatically: auto-match is on")
+    assert rows[k["k800"]]["evidence"]["web_check"]["verdict"] == "same"
+    assert (rows[k["klan"]]["bucket"], rows[k["klan"]]["method"]) == ("excluded", "web")
+    assert (rows[k["kmc"]]["bucket"], rows[k["kmc"]]["method"]) == ("excluded", "rule")  # unsure: as it was
+    # the red-flagged California record is the GC's: held as possible and asked about, alone
+    assert (rows[k["kca"]]["bucket"], rows[k["kca"]]["method"]) == ("possible", "web")
+    _red, same = qs
+    assert (same["kind"], same["ai_suggestion"], same["establishment_keys"]) == ("web", "same", [k["kca"]])
+    # a re-match keeps what auto-match decided, as it keeps every non-rule row
+    monkeypatch.setattr(warehouse, "meta", lambda: {"build_id": "test"})
+    monkeypatch.setattr(C, "members", lambda keys: {})
+    run.persist(str(s["sub_id"]), {"query": None, "decisions": []})
+    rows, _ = state(s["sub_id"])
+    assert (rows[k["k800"]]["bucket"], rows[k["klan"]]["bucket"]) == ("matched", "excluded")
+
+
+@local_db
+def test_switching_auto_match_on_settles_the_open_web_questions_without_red_flags(clark, no_budget_db, monkeypatch):
+    from ssi.matching import candidates as C
+    from ssi.store import pg
+    p, s, k = clark
+    V.check_records(s, p, profile=PROFILE, lookup_fn=fake_lookups()[1])  # asks: same (kca, red-flagged; k800), different
+    with pg.conn() as c:
+        assert V.accept_questions(c, s) == {"matched": 0, "excluded": 1}
+    rows, qs = state(s["sub_id"])
+    assert (rows[k["klan"]]["bucket"], rows[k["klan"]]["method"]) == ("excluded", "web")
+    assert rows[k["klan"]]["rationale"].endswith("Excluded automatically: auto-match is on")
+    assert [(x["kind"], x["ai_suggestion"]) for x in qs] == [("red_flag", "unsure"), ("web", "same")]
+    assert rows[k["k800"]]["bucket"] == rows[k["kca"]]["bucket"] == "possible"  # in the red-flagged question
+    monkeypatch.setattr(C, "red_flag_counts", lambda ks: {})
+    with pg.conn() as c:
+        assert V.accept_questions(c, s) == {"matched": 2, "excluded": 0}
+    rows, qs = state(s["sub_id"])
+    assert all((rows[k[x]]["bucket"], rows[k[x]]["method"]) == ("matched", "web") for x in ("k800", "kca"))
+    assert [x["kind"] for x in qs] == ["red_flag"]  # the other questions are left alone
+
+
 # --- the searches of a press: cache, cap and daily limit ------------------------------------------------------------
 @pytest.fixture
 def lookups_db(monkeypatch, no_budget_db):
@@ -527,7 +576,8 @@ def test_the_web_check_endpoint(client, make_user, clark, monkeypatch):
              "limit_reached": False, "questions": 2}
     pressed = []
     monkeypatch.setattr(V, "profile_first", lambda sub, project: PROFILE)
-    monkeypatch.setattr(V, "check_records", lambda sub, project, profile=None: pressed.append(profile) or stats)
+    monkeypatch.setattr(V, "check_records",
+                        lambda sub, project, profile=None, auto_match=False: pressed.append((profile, auto_match)) or stats)
     c = client(signed_in_as=make_user())
     url = f"/api/projects/{p['project_id']}/subs/{sid}/web-check"
     monkeypatch.setattr(W, "available", lambda: False)
@@ -537,8 +587,14 @@ def test_the_web_check_endpoint(client, make_user, clark, monkeypatch):
         r = c.post(url)
         assert r.status_code == 409 and "being resolved" in r.json()["detail"]
     r = c.post(url)
-    assert r.status_code == 200 and pressed == [PROFILE]
+    assert r.status_code == 200 and pressed == [(PROFILE, False)]
     body = r.json()
     assert {x: body[x] for x in ("searched", "same", "different", "left", "limit_reached")} == \
         {"searched": 3, "same": 2, "different": 1, "left": 4, "limit_reached": False}
     assert body["card"]["sub_id"] == sid
+    # the project's settings: a press with auto-match on settles what it can
+    r = c.patch(f"/api/projects/{p['project_id']}", json={"auto_web_check": True, "auto_web_match": True})
+    assert r.status_code == 200 and (r.json()["auto_web_check"], r.json()["auto_web_match"]) == (True, True)
+    assert c.post(url).status_code == 200 and pressed[-1] == (PROFILE, True)
+    r = c.patch(f"/api/projects/{p['project_id']}", json={"auto_web_match": False})
+    assert (r.json()["auto_web_check"], r.json()["auto_web_match"]) == (True, False)

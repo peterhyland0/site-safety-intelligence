@@ -191,3 +191,8 @@ CREATE TABLE IF NOT EXISTS app.web_lookup (
 );
 CREATE INDEX IF NOT EXISTS web_lookup_key ON app.web_lookup (lookup_key, created_at DESC);
 CREATE INDEX IF NOT EXISTS web_lookup_created ON app.web_lookup (created_at);
+-- A project's web check settings (docs/web-check.md): auto_web_check runs the check on its subs' undecided records
+-- without the button (the open project page presses it); auto_web_match takes the check's answer without asking,
+-- except about red-flagged records
+ALTER TABLE app.project ADD COLUMN IF NOT EXISTS auto_web_check boolean NOT NULL DEFAULT false;
+ALTER TABLE app.project ADD COLUMN IF NOT EXISTS auto_web_match boolean NOT NULL DEFAULT false;

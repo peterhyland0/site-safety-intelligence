@@ -11,12 +11,13 @@ import { InspectionBadges, InspectionList } from "../components/InspectionList";
 import { MatchBuckets } from "../components/MatchBuckets";
 import { ReasonLine } from "../components/SubCard";
 import { TrendChart } from "../components/TrendChart";
-import { WebCheck } from "../components/WebCheck";
+import { WebCheck, type WebCheckSettingsPatch } from "../components/WebCheck";
 import { EvidenceChip } from "../components/InspectionSheet";
 import { BackLink, ErrorBanner, InlineError, Loading, Section } from "../components/ui";
 import { VerdictChip } from "../components/VerdictChip";
 import { formatDate, formatMoney, formatRate, plural, yearRange } from "../lib/format";
 import { useAdjudication } from "../lib/useAdjudication";
+import { useAutoWebCheck } from "../lib/useAutoWebCheck";
 import { useTitle } from "../lib/useTitle";
 import { rateComparison, VERDICTS } from "../lib/verdict";
 
@@ -28,12 +29,23 @@ export function SubDetailPage() {
   const [lookingUp, setLookingUp] = useState(false);
   const [checkingWeb, setCheckingWeb] = useState(false);
   const [webResult, setWebResult] = useState<WebCheckResult | null>(null);
+  const [savingWebSettings, setSavingWebSettings] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const location = useLocation();
   useTitle(detail.data?.card.entered_name ?? "Sub");
 
   const cards = useMemo(() => (detail.data ? [detail.data.card] : undefined), [detail.data]);
   const adjudication = useAdjudication(projectId, cards, () => {}, () => void detail.reload());
+  // the project's automatic web check presses the button here too
+  const autoWeb = useAutoWebCheck(
+    projectId,
+    cards,
+    !!detail.data?.web_check?.available && !!detail.data.web_check.auto_check,
+    (_subId, res) => {
+      setWebResult(res);
+      void detail.reload();
+    },
+  );
 
   // Honour #questions (and other section anchors) once content is first on screen. Only once per
   // hash, so later reloads (after answering a question) don't yank the page.
@@ -101,6 +113,20 @@ export function SubDetailPage() {
     }
   }
 
+  async function saveWebSettings(patch: WebCheckSettingsPatch) {
+    setSavingWebSettings(true);
+    setActionError(null);
+    try {
+      await api.updateProject(projectId, patch);
+      if (patch.auto_web_match) setWebResult(null); // the questions it reported are settled now
+      await detail.reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setSavingWebSettings(false);
+    }
+  }
+
   async function move(key: string, bucket: Bucket) {
     setBusyEst(key);
     setActionError(null);
@@ -127,7 +153,7 @@ export function SubDetailPage() {
   // questions from the company's pages or the web check aren't only about red flags
   const fromTheWeb = d.questions.some((q) => q.kind === "profile" || q.kind === "web");
   const web = d.web_check;
-  const showWebCheck = !!web?.available && c.match_status !== "needs_adjudication" && (web.unchecked > 0 || !!webResult);
+  const showWebCheck = !!web?.available && c.match_status !== "needs_adjudication";
   const nav = [
     d.questions.length ? ["questions", "Questions"] : null,
     ["reasons", "Why"],
@@ -369,7 +395,15 @@ export function SubDetailPage() {
 
       <Section id="matches" title="How we found this company in OSHA's records" className="scroll-mt-20">
         {showWebCheck && web ? (
-          <WebCheck info={web} busy={checkingWeb} result={webResult} onCheck={() => void checkWeb()} />
+          <WebCheck
+            info={web}
+            busy={checkingWeb || autoWeb.checking === subId}
+            result={webResult}
+            onCheck={() => void checkWeb()}
+            error={autoWeb.errors[subId]}
+            onSettings={(patch) => void saveWebSettings(patch)}
+            savingSettings={savingWebSettings}
+          />
         ) : null}
         <MatchBuckets
           matched={d.matched}

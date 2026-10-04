@@ -38,6 +38,8 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     name: str | None = None
     lookback_years: Literal[3, 5, 10] | None = None
+    auto_web_check: bool | None = None
+    auto_web_match: bool | None = None
 
 
 class Project(BaseModel):
@@ -47,6 +49,10 @@ class Project(BaseModel):
     lookback_years: int
     created_at: str
     sub_count: int = 0
+    # the web check (docs/web-check.md): run on the subs' undecided records without the button; take its answer
+    # without asking, except about red-flagged records
+    auto_web_check: bool = False
+    auto_web_match: bool = False
 
 
 class SubInput(BaseModel):
@@ -108,6 +114,8 @@ class SubCard(BaseModel):
     same_records_as: list[SubRef] = []
     # company profile lookup: None (added before profiles: a button looks it up) | pending | done | skipped | error
     profile_status: str | None = None
+    # records the web check would check (WebCheckInfo.unchecked); 0 where it can't run
+    web_unchecked: int = 0
 
 
 class ProjectDetail(BaseModel):
@@ -115,6 +123,7 @@ class ProjectDetail(BaseModel):
     subs: list[SubCard]  # sorted by concern
     data_as_of: str
     history_since: str | None = None  # first inspection date kept by the build (None = every year)
+    web_check: bool = False  # the web check can run on this server (its settings are shown)
 
 
 # --- matching ------------------------------------------------------------------------------------
@@ -188,6 +197,8 @@ class WebCheckInfo(BaseModel):
     available: bool
     unchecked: int  # undecided possible and excluded records not checked in the last 90 days
     checked: int  # records with a web check result
+    auto_check: bool = False  # the project's settings (Project.auto_web_check, auto_web_match)
+    auto_match: bool = False
 
 
 class WebCheckResult(BaseModel):
@@ -200,6 +211,8 @@ class WebCheckResult(BaseModel):
     left: int  # records still to check: press again
     limit_reached: bool  # the daily web-check limit stopped it
     questions: int = 0  # questions asked about them
+    matched: int = 0  # records matched, and excluded, on the web's answer alone (auto-match)
+    excluded: int = 0
 
 
 class MatchOverride(BaseModel):

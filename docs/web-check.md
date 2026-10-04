@@ -11,8 +11,10 @@ GC, with the page and a quote under each record:
 > Group, clarkconstruction.com; … Are these the same company as your sub 'Clark Construction Group'?
 
 It only suggests. Nothing is matched or excluded until the GC answers, and a Yes or No is a GC decision that survives
-data refreshes. Code: [ssi/llm/web_check.py](../ssi/llm/web_check.py) (the search, the checks, the comparison, the
-cache) and [ssi/matching/verify.py](../ssi/matching/verify.py) (which records, what's written, the questions).
+data refreshes. A project can switch on auto-match, and the check itself running without the button (see
+[Automatic](#automatic-the-two-settings)). Code: [ssi/llm/web_check.py](../ssi/llm/web_check.py) (the search, the
+checks, the comparison, the cache) and [ssi/matching/verify.py](../ssi/matching/verify.py) (which records, what's
+written, the questions).
 
 ## Why
 
@@ -54,6 +56,24 @@ rows as it keeps every non-rule row.
 **Web questions don't hold anything up.** Questions about red-flagged records keep a sub's verdict at Review and stop
 the foreman assistant from answering about it until the GC confirms. Web questions do neither: they're suggestions
 about records that don't count yet.
+
+## Automatic: the two settings
+
+Each project has two switches, on the scorecard and in a sub's Matches section (`app.project.auto_web_check`,
+`auto_web_match`; both off by default):
+
+- **Check leftover records on the web automatically.** The open project page (or sub page) presses the button for
+  each resolved sub with records left to check ([web/src/lib/useAutoWebCheck.ts](../web/src/lib/useAutoWebCheck.ts)),
+  one sub at a time, and again while a press checks something and leaves records. It stops at the day's limit, and
+  for a sub whose press checked nothing (its searches are running elsewhere) or failed, until the page is loaded
+  again. It runs only while a page of the project is open: nothing runs on the server by itself.
+- **Auto-match from the web check.** A press takes the web's answer instead of asking: same → matched, different →
+  excluded (a possible record; an excluded one stays as it is), method `web`, with "Matched automatically" or
+  "Excluded automatically" in the rationale. **Never a red-flagged record**: as with the adjudicator, those are the
+  GC's, so they're held and asked about as above. Switching it on also settles the web questions already open that
+  have no red-flagged record, with their suggestion (`verify.accept_questions`). What auto-match decides isn't a GC
+  decision: a re-match keeps it as it keeps every non-rule row, and the GC can move the record or answer about its
+  company name (C1) over it.
 
 ## Limits and cost
 

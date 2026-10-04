@@ -14,7 +14,12 @@ that failed is tried again on the next press. Web questions don't hold up the ve
 suggestions, unlike the questions about red-flagged records.
 
 Records the GC has decided, ones waiting for the adjudicator, and ones in an open question are left alone; a record
-the GC moves while the check runs keeps the GC's bucket. A person's name (a sole proprietor) is never searched."""
+the GC moves while the check runs keeps the GC's bucket. A person's name (a sole proprietor) is never searched.
+
+A project can switch on auto-match (app.project.auto_web_match): then the web's answer settles a record without a
+question: same -> matched, different -> excluded (a possible record; an excluded one stays as it is), method 'web'.
+Never a red-flagged record: as with the adjudicator, those are always the GC's, so they're asked about as above.
+Switching it on also settles the web questions already open that have no red-flagged record (accept_questions)."""
 from __future__ import annotations
 
 import json
@@ -110,10 +115,13 @@ def _short(quote: str, n: int = 160) -> str:
     return quote if len(quote) <= n else quote[:n].rsplit(" ", 1)[0] + "…"
 
 
-def rationale(check: dict) -> str:
+def rationale(check: dict, decided: str | None = None) -> str:
+    """The record's rationale from its check; `decided`: the bucket auto-match put it in."""
     found = f"{check['owner']} (“{_short(check['quote'])}”, {_host(check['url'])})" if check.get("quote") else None
     if check["verdict"] == "unsure":
         return f"Web search: {check['why']}" + (f"; found {found}" if found else "")
+    if decided:
+        return f"Web search: {found}; {check['why']}. {decided.capitalize()} automatically: auto-match is on"
     return f"Web search: {found}; {check['why']}. Waiting for your answer"
 
 
@@ -166,16 +174,16 @@ def web_questions(sub: dict, items: list[tuple[str, dict, dict]], flags: dict[st
 
 def check_records(sub: dict, project: dict, profile: dict | None = None,
                   lookup_fn: Callable[[list[dict]], dict] | None = None,
-                  compare_fn: Callable[[dict, dict], dict] | None = None) -> dict:
+                  compare_fn: Callable[[dict, dict], dict] | None = None, auto_match: bool = False) -> dict:
     """One press of the button, under the sub's claim: look up its candidate groups (up to web_check.PER_PRESS new
-    searches), compare each with the sub, write what was found and ask the GC. Returns the press's counts:
-    {searched, checked_groups, same, different, unsure (records), left (records still to check), limit_reached,
-    questions}."""
+    searches), compare each with the sub, write what was found and ask the GC, or with `auto_match` settle the
+    records that have no red flags. Returns the press's counts: {searched, checked_groups, same, different, unsure
+    (records), left (records still to check), limit_reached, questions, matched, excluded (records auto-match moved)}."""
     lookup_fn = lookup_fn or W.lookup_many
     compare_fn = compare_fn or W.compare
     sub_id = str(sub["sub_id"])
     stats = {"searched": 0, "checked_groups": 0, "same": 0, "different": 0, "unsure": 0, "left": 0,
-             "limit_reached": False, "questions": 0}
+             "limit_reached": False, "questions": 0, "matched": 0, "excluded": 0}
     with pg.conn() as c:
         rows = c.execute("SELECT * FROM app.sub_match WHERE sub_id = %s", [sub_id]).fetchall()
         open_qs = ADJ._open_questions(c, sub_id)
@@ -226,6 +234,20 @@ def check_records(sub: dict, project: dict, profile: dict | None = None,
             why = rationale(ck)
             # the guard: a record the GC (or anything else) moved meanwhile isn't touched
             guard = "sub_id = %s AND establishment_key = ANY(%s) AND method = ANY(%s) AND NOT needs_adjudication"
+            moved = []
+            if auto_match and ck["verdict"] != "unsure":
+                # the web's answer settles the record, but never a red-flagged one: those wait for the GC (below).
+                # "different" only takes a record out of possible; an excluded one keeps its row, with the finding
+                bucket = "matched" if ck["verdict"] == "same" else "excluded"
+                moved = [r["establishment_key"] for r in c.execute(
+                    f"""UPDATE app.sub_match SET bucket = %s, method = 'web', confidence = NULL, rationale = %s,
+                               decided_by = %s, decided_at = now(),
+                               evidence = coalesce(evidence, '{{}}'::jsonb) || jsonb_build_object('web_check', %s::jsonb)
+                        WHERE {guard} AND (%s = 'matched' OR bucket = 'possible') RETURNING establishment_key""",
+                    [bucket, rationale(ck, bucket), by, mark, sub_id, [k for k in keys if not flags.get(k)],
+                     list(ELIGIBLE), bucket]).fetchall()]
+                stats[bucket] += len(moved)
+                keys = [k for k in keys if k not in moved]
             if ck["verdict"] == "same":
                 done = c.execute(f"""UPDATE app.sub_match SET bucket = 'possible', method = 'web', confidence = NULL,
                                             rationale = %s, decided_by = %s, decided_at = now(),
@@ -246,7 +268,7 @@ def check_records(sub: dict, project: dict, profile: dict | None = None,
                                             evidence = coalesce(evidence, '{{}}'::jsonb) || jsonb_build_object('web_check', %s::jsonb)
                                      WHERE {guard} RETURNING establishment_key""",
                                  [mark, sub_id, keys, list(ELIGIBLE)]).fetchall()
-            stats[ck["verdict"]] += len(done)
+            stats[ck["verdict"]] += len(done) + len(moved)
             asked = [r["establishment_key"] for r in done
                      if ck["verdict"] == "same" or (ck["verdict"] == "different" and r["method"] == "web")]
             items += [(k, est[k], ck) for k in asked]
@@ -255,3 +277,33 @@ def check_records(sub: dict, project: dict, profile: dict | None = None,
         if stats["questions"]:
             ADJ.cover_company_names(c, sub)
     return stats
+
+
+def accept_questions(c, sub: dict) -> dict:
+    """Auto-match switched on: the web check's open questions take their suggestion, as a press with auto-match on
+    would have settled them, the records they cover by company name (rule C1) included. Not a question with a
+    red-flagged record: the GC answers those. Returns {matched, excluded} (records)."""
+    sub_id = str(sub["sub_id"])
+    out = {"matched": 0, "excluded": 0}
+    qs = [q for q in ADJ._open_questions(c, sub_id)
+          if q.get("kind") == "web" and q["ai_suggestion"] in ("same", "different")]
+    if not qs:
+        return out
+    flags = C.red_flag_counts(sorted({k for q in qs for k in q["establishment_keys"]}))
+    by = f"web:{W.model()}"
+    for q in qs:
+        if any(flags.get(k) for k in q["establishment_keys"]):
+            continue
+        bucket = "matched" if q["ai_suggestion"] == "same" else "excluded"
+        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND establishment_key = ANY(%s)
+                            AND method = 'web' AND bucket = 'possible'""", [sub_id, q["establishment_keys"]]).fetchall()
+        for r in rows:
+            ck = _ev(r).get("web_check") or {}
+            why = (rationale(ck, bucket) if r["rule_id"] != "C1" and ck.get("verdict") == q["ai_suggestion"] else
+                   f"{(r['rationale'] or '').removesuffix('; waiting for your answer')}; {bucket} with it: auto-match is on")
+            c.execute("""UPDATE app.sub_match SET bucket = %s, rationale = %s, decided_by = %s, decided_at = now()
+                         WHERE sub_id = %s AND establishment_key = %s""", [bucket, why, by, sub_id, r["establishment_key"]])
+        c.execute("UPDATE app.match_question SET answer = %s, answered_at = now() WHERE question_id = %s",
+                  ["yes" if bucket == "matched" else "no", q["question_id"]])
+        out[bucket] += len(rows)
+    return out

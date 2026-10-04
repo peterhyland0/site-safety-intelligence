@@ -32,12 +32,16 @@ const METHOD_HINT: Record<Method, string> = {
 
 // A hint and label for the record itself where its method alone would mislead: a profile record that's matched
 // (M4: the sub's own name at an address its website lists) isn't held, and a decision carried from the GC's answer
-// about the same company name (C1) wasn't made on this record.
+// about the same company name (C1) wasn't made on this record, and a web record auto-match settled isn't held.
 function methodHint(est: MatchedEstablishment): string {
   if (est.method === "profile" && est.bucket === "matched")
     return "Matched: your sub's own name at an address its website lists, with no red flags (rule M4)";
   if (est.method === "gc" && est.rule_id === "C1")
     return "Carried from your answer about another record under the same company name";
+  if (est.method === "web" && est.bucket !== "possible")
+    return est.bucket === "matched"
+      ? "Matched by the project's auto-match: a web search tied this record to your sub. Move it if that's wrong"
+      : "Excluded by the project's auto-match: a web search tied this record to another company. Move it if that's wrong";
   return METHOD_HINT[est.method];
 }
 

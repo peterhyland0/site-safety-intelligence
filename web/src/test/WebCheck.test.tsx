@@ -44,5 +44,47 @@ describe("Web check", () => {
       "Nothing new found. 30 records still to check: press the button again.",
     );
     expect(webCheckSummary(result({ left: 5, limit_reached: true }))).toMatch(/Today's web-check limit is reached/);
+    expect(webCheckSummary(result({ same: 0, different: 0, unsure: 0, left: 30, questions: 0 }), true)).toBe(
+      "Nothing new found. 30 records still to check.",
+    );
+  });
+
+  it("says what auto-match settled, and that red-flagged records still come back as a question", () => {
+    expect(webCheckSummary(result({ matched: 2, excluded: 1, questions: 1 }))).toBe(
+      "Checked on the web: 2 records tied to this sub, 1 record to another company, 1 record not settled. " +
+        "Auto-match matched 2 records and excluded 1 record. A question about them is at the top of the page.",
+    );
+    render(
+      <WebCheck
+        info={{ available: true, unchecked: 3, checked: 0, auto_check: true, auto_match: true }}
+        busy={true}
+        result={null}
+        onCheck={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/auto-match takes its answer/)).toHaveTextContent("Records with red flags come back as a question.");
+    expect(screen.getByRole("button", { name: /Checking records on the web automatically/ })).toBeDisabled();
+  });
+
+  it("switches the project's automatic check and auto-match", async () => {
+    const user = userEvent.setup();
+    const onSettings = vi.fn();
+    render(
+      <WebCheck
+        info={{ available: true, unchecked: 0, checked: 4, auto_check: false, auto_match: true }}
+        busy={false}
+        result={null}
+        onCheck={vi.fn()}
+        onSettings={onSettings}
+      />,
+    );
+    const check = screen.getByRole("checkbox", { name: "Check leftover records on the web automatically" });
+    const match = screen.getByRole("checkbox", { name: "Auto-match from the web check" });
+    expect(check).not.toBeChecked();
+    expect(match).toBeChecked();
+    expect(match).toHaveAccessibleDescription(/Records with red flags still come to you as a question/);
+    await user.click(check);
+    await user.click(match);
+    expect(onSettings.mock.calls).toEqual([[{ auto_web_check: true }], [{ auto_web_match: false }]]);
   });
 });

@@ -75,6 +75,8 @@ export interface ProjectCreate {
 export interface ProjectUpdate {
   name?: string | null;
   lookback_years?: LookbackYears | null;
+  auto_web_check?: boolean | null;
+  auto_web_match?: boolean | null;
 }
 
 export interface Project {
@@ -84,6 +86,10 @@ export interface Project {
   lookback_years: number;
   created_at: string;
   sub_count: number;
+  /** the web check runs on the subs' undecided records without the button (the open project page presses it) */
+  auto_web_check?: boolean;
+  /** the web check's answer is taken without asking, except about red-flagged records */
+  auto_web_match?: boolean;
 }
 
 export interface SubInput {
@@ -150,6 +156,8 @@ export interface SubCard {
   same_records_as?: SubRef[];
   /** company profile lookup: null (added before profiles: a button looks it up), pending, done, skipped, error */
   profile_status?: ProfileStatus | null;
+  /** records the web check would check (WebCheckInfo.unchecked); 0 where it can't run */
+  web_unchecked?: number;
 }
 
 export type ProfileStatus = "pending" | "done" | "skipped" | "error";
@@ -166,6 +174,8 @@ export interface ProjectDetail {
   data_as_of: string;
   /** first inspection date the data holds (the last 10 years by default); null = every year */
   history_since?: string | null;
+  /** the web check can run on this server (its settings are shown) */
+  web_check?: boolean;
 }
 
 // --- matching ------------------------------------------------------------------------------------
@@ -413,6 +423,9 @@ export interface WebCheckInfo {
   unchecked: number;
   /** records with a web check result */
   checked: number;
+  /** the project's settings (Project.auto_web_check, auto_web_match) */
+  auto_check?: boolean;
+  auto_match?: boolean;
 }
 
 export interface WebCheckResult {
@@ -433,6 +446,9 @@ export interface WebCheckResult {
   limit_reached: boolean;
   /** questions asked about them */
   questions: number;
+  /** records matched, and excluded, on the web's answer alone (auto-match) */
+  matched?: number;
+  excluded?: number;
 }
 
 // --- accounts ------------------------------------------------------------------------------------

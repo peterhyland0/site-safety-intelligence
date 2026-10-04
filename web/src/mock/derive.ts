@@ -401,6 +401,7 @@ export function toCard(sub: FxSub, lookback: number): SubCard {
     trir_latest: sub.injury_rates.find((r) => !r.flagged)?.trir ?? null,
     licence_status: sub.licence_status,
     profile_status: sub.profile_status ?? null,
+    web_unchecked: webCandidates(sub).length,
   };
 }
 
@@ -434,7 +435,7 @@ function toEstablishments(sub: FxSub, bucket: "matched" | "possible" | "excluded
 
 export const FIRST_PAGE = 5;
 
-export function toDetail(sub: FxSub, lookback: number): SubDetail {
+export function toDetail(sub: FxSub, lookback: number, project?: FxProject): SubDetail {
   const card = toCard(sub, lookback);
   const { reasons } = reasonsFor(sub, lookback);
   const matched = inBucket(sub, "matched");
@@ -460,6 +461,8 @@ export function toDetail(sub: FxSub, lookback: number): SubDetail {
       available: true,
       unchecked: webCandidates(sub).length,
       checked: sub.establishments.filter((e) => e.web_checked || e.method === "web").length,
+      auto_check: !!project?.auto_web_check,
+      auto_match: !!project?.auto_web_match,
     },
   };
 }
@@ -471,6 +474,11 @@ export function webCandidates(sub: FxSub): FxEstablishment[] {
   return sub.establishments.filter(
     (e) => ["rule", "llm", "llm_rejected"].includes(e.method) && e.bucket !== "matched" && !e.web_checked && !asked.has(e.key),
   );
+}
+
+/** Whether a record carries a red flag (fatality, willful, repeat, failure to abate): auto-match leaves it to the GC. */
+export function redFlagged(sub: FxSub, key: string): boolean {
+  return flagFacts(sub.inspections.filter((i) => i.est === key)).length > 0;
 }
 
 export function matchedInspectionRows(sub: FxSub): InspectionRow[] {
@@ -485,6 +493,8 @@ export function toProject(p: FxProject): Project {
     lookback_years: p.lookback_years,
     created_at: p.created_at,
     sub_count: p.subs.length,
+    auto_web_check: !!p.auto_web_check,
+    auto_web_match: !!p.auto_web_match,
   };
 }
 
@@ -497,5 +507,5 @@ export function toProjectDetail(p: FxProject): ProjectDetail {
       (b.serious_plus_rate ?? -1) - (a.serious_plus_rate ?? -1) ||
       a.entered_name.localeCompare(b.entered_name),
   );
-  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF, history_since: "2016-09-23" };
+  return { project: toProject(p), subs: cards, data_as_of: DATA_AS_OF, history_since: "2016-09-23", web_check: true };
 }

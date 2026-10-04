@@ -81,7 +81,8 @@ def _sub(project_id: str, sub_id: str) -> dict:
 
 def _project_model(p: dict) -> S.Project:
     return S.Project(project_id=str(p["project_id"]), name=p["name"], state=p["state"], lookback_years=p["lookback_years"],
-                     created_at=p["created_at"].isoformat(), sub_count=p.get("sub_count") or 0)
+                     created_at=p["created_at"].isoformat(), sub_count=p.get("sub_count") or 0,
+                     auto_web_check=p["auto_web_check"], auto_web_match=p["auto_web_match"])
 
 
 def _cards(project: dict) -> list[S.SubCard]:
@@ -150,7 +151,8 @@ def _detail(sub: dict, project: dict) -> S.SubDetail:
         red_flags=d["flags"][:100], trend=Q.trend(keys), hazards=d["hazards"],
         open_cases=Q.inspections(keys, limit=50, provisional_only=True), inspections=Q.inspections(keys, limit=25),
         injury_rates=d["rates"], licences=d["licences"], dq_warnings=dq, profile=_profile(sub),
-        web_check=S.WebCheckInfo(**V.info([r for k, r in sc["rows"].items() if k in shown], sc["pending_questions"])))
+        web_check=S.WebCheckInfo(**V.info([r for k, r in sc["rows"].items() if k in shown], sc["pending_questions"]),
+                                 auto_check=project["auto_web_check"], auto_match=project["auto_web_match"]))
 
 
 def _profile(sub: dict) -> S.CompanyProfile | None:
@@ -200,8 +202,9 @@ def create_project(body: S.ProjectCreate):
 def get_project(project_id: str):
     p = _project(project_id)
     m = warehouse.meta()
+    from ssi.llm import web_check as W
     return S.ProjectDetail(project=_project_model(p), subs=_cards(p), data_as_of=m["data_as_of"],
-                           history_since=m.get("history_since"))
+                           history_since=m.get("history_since"), web_check=W.available())
 
 
 @app.patch("/api/projects/{project_id}", response_model=S.Project)
@@ -212,6 +215,13 @@ def update_project(project_id: str, body: S.ProjectUpdate):
             c.execute("UPDATE app.project SET name = %s WHERE project_id = %s", [body.name, project_id])
         if body.lookback_years is not None:
             c.execute("UPDATE app.project SET lookback_years = %s WHERE project_id = %s", [body.lookback_years, project_id])
+        if body.auto_web_check is not None:
+            c.execute("UPDATE app.project SET auto_web_check = %s WHERE project_id = %s", [body.auto_web_check, project_id])
+        if body.auto_web_match is not None:
+            c.execute("UPDATE app.project SET auto_web_match = %s WHERE project_id = %s", [body.auto_web_match, project_id])
+        if body.auto_web_match:  # the web questions already waiting take their suggestion too, as a press now would
+            for s in c.execute("SELECT * FROM app.project_sub WHERE project_id = %s", [project_id]).fetchall():
+                V.accept_questions(c, s)
     return _project_model(_project(project_id))
 
 
@@ -301,9 +311,10 @@ def lookup_profile(project_id: str, sub_id: str):
 
 @app.post("/api/projects/{project_id}/subs/{sub_id}/web-check", response_model=S.WebCheckResult)
 def web_check(project_id: str, sub_id: str):
-    """The "Check records on the web" button: who the web says the sub's undecided records belong to, as questions
-    to the GC (ssi/matching/verify.py). Looks the company up first if it has no profile. Up to 25 new searches a
-    press; the rest wait for the next press."""
+    """The "Check records on the web" button, and the open project page's automatic presses: who the web says the
+    sub's undecided records belong to, as questions to the GC, or settled with the project's auto-match
+    (ssi/matching/verify.py). Looks the company up first if it has no profile. Up to 25 new searches a press; the rest
+    wait for the next press."""
     p, _ = _project(project_id), _sub(project_id, sub_id)
     from ssi.llm import web_check as W
     if not W.available():
@@ -311,7 +322,7 @@ def web_check(project_id: str, sub_id: str):
     with ADJ.claim(sub_id) as s:
         if s is None:
             raise HTTPException(409, "This sub's records are being resolved right now. Try again in a minute.")
-        stats = V.check_records(s, p, profile=V.profile_first(s, p))
+        stats = V.check_records(s, p, profile=V.profile_first(s, p), auto_match=p["auto_web_match"])
     return S.WebCheckResult(card=Q.card(_sub(project_id, sub_id), p),
                             **{k: v for k, v in stats.items() if k in S.WebCheckResult.model_fields})
 

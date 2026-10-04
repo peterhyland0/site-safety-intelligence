@@ -24,12 +24,17 @@ export function SubCard({
   projectId,
   resolveError,
   onRetryResolve,
+  webChecking = false,
+  webCheckError,
 }: {
   card: SubCardT;
   projectId: string;
   /** Set when the adjudicate call failed; the card offers a retry. */
   resolveError?: string | null;
   onRetryResolve?: () => void;
+  /** The project's automatic web check is pressing this sub's button now, or its press failed. */
+  webChecking?: boolean;
+  webCheckError?: string | null;
 }) {
   const meta = VERDICTS[card.verdict];
   const href = `/projects/${encodeURIComponent(projectId)}/subs/${encodeURIComponent(card.sub_id)}`;
@@ -86,6 +91,15 @@ export function SubCard({
           <IconSpinner size={16} />
           {card.profile_status === "pending" ? "Looking up the company, then resolving " : "Resolving "}
           {card.possible_inspections > 0 ? `${plural(card.possible_inspections, "uncertain record")}…` : "uncertain records…"}
+        </p>
+      ) : webChecking ? (
+        <p role="status" className="mt-3 flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">
+          <IconSpinner size={16} />
+          Checking {plural(card.web_unchecked ?? 0, "leftover record")} on the web…
+        </p>
+      ) : webCheckError ? (
+        <p role="alert" className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">
+          Couldn't check the leftover records on the web. {webCheckError}
         </p>
       ) : null}
 

@@ -17,7 +17,16 @@ import type {
   WebCheckResult,
 } from "../api/types";
 import { answerQuestion as askAnswer } from "./ask";
-import { matchedInspectionRows, toCard, toDetail, toInspectionDetail, toProject, toProjectDetail, webCandidates } from "./derive";
+import {
+  matchedInspectionRows,
+  redFlagged,
+  toCard,
+  toDetail,
+  toInspectionDetail,
+  toProject,
+  toProjectDetail,
+  webCandidates,
+} from "./derive";
 import { DATA_AS_OF, seedProjects } from "./fixtures";
 import type { FxEstablishment, FxProject, FxSub, FxWebResult } from "./model";
 
@@ -150,11 +159,17 @@ function applyProfile(s: FxSub): Set<string> {
   return held;
 }
 
+/** Auto-match's rationale for a record: what the web found, and that it settled the record. */
+function autoRationale(rationale: string, bucket: "matched" | "excluded"): string {
+  const found = rationale.replace(/\.? Waiting for your answer$/, "");
+  return `${found}. ${bucket === "matched" ? "Matched" : "Excluded"} automatically: auto-match is on`;
+}
+
 /** One press of the web check (mock of ssi/matching/verify.check_records): what the web says about each undecided
- * record, asked as at most two questions; nothing is matched or excluded. */
-function webCheck(s: FxSub, lookback: number): WebCheckResult {
+ * record, asked as at most two questions; with auto-match, a record without red flags is settled instead. */
+function webCheck(s: FxSub, lookback: number, autoMatch = false): WebCheckResult {
   const todo = webCandidates(s);
-  const counts = { same: 0, different: 0, unsure: 0 };
+  const counts = { same: 0, different: 0, unsure: 0, matched: 0, excluded: 0 };
   const asked: Record<"same" | "different", [FxEstablishment, FxWebResult][]> = { same: [], different: [] };
   for (const e of todo) {
     const r = s.web_lookup?.find((x) => x.key === e.key);
@@ -164,6 +179,12 @@ function webCheck(s: FxSub, lookback: number): WebCheckResult {
       continue;
     }
     counts[r.verdict] += 1;
+    if (autoMatch && !redFlagged(s, e.key) && (r.verdict === "same" || e.bucket === "possible")) {
+      const bucket = r.verdict === "same" ? "matched" : "excluded";
+      Object.assign(e, { bucket, method: "web", confidence: null, rule_id: null, rationale: autoRationale(r.rationale, bucket) });
+      counts[bucket] += 1;
+      continue;
+    }
     if (r.verdict === "same" || e.bucket === "possible") { // a "different" excluded record stays excluded
       Object.assign(e, { bucket: "possible", method: "web", confidence: null, rationale: r.rationale });
       asked[r.verdict].push([e, r]);
@@ -191,6 +212,20 @@ function webCheck(s: FxSub, lookback: number): WebCheckResult {
   }
   return { card: toCard(s, lookback), searched: todo.length, checked_groups: todo.length, ...counts, left: 0,
     limit_reached: false, questions };
+}
+
+/** Auto-match switched on (mock of verify.accept_questions): the open web questions without a red-flagged record take
+ * their suggestion. */
+function acceptWebQuestions(s: FxSub): void {
+  for (const q of s.questions.filter((x) => x.kind === "web" && (x.ai_suggestion === "same" || x.ai_suggestion === "different"))) {
+    if (q.establishment_keys.some((k) => redFlagged(s, k))) continue;
+    const bucket = q.ai_suggestion === "same" ? "matched" : "excluded";
+    for (const e of s.establishments) {
+      if (q.establishment_keys.includes(e.key) && e.method === "web" && e.bucket === "possible")
+        Object.assign(e, { bucket, rationale: autoRationale(e.rationale ?? "Web search", bucket) });
+    }
+    s.questions = s.questions.filter((x) => x !== q);
+  }
 }
 
 function csvFor(p: FxProject): string {
@@ -283,6 +318,9 @@ const routes: Route[] = [
       const b = body as ProjectUpdate;
       if (b.name != null) p.name = b.name;
       if (b.lookback_years != null) p.lookback_years = b.lookback_years;
+      if (b.auto_web_check != null) p.auto_web_check = b.auto_web_check;
+      if (b.auto_web_match != null) p.auto_web_match = b.auto_web_match;
+      if (b.auto_web_match) p.subs.forEach(acceptWebQuestions);
       return toProject(p);
     },
   },
@@ -314,7 +352,7 @@ const routes: Route[] = [
     pattern: /^\/api\/projects\/([^/]+)\/subs\/([^/]+)$/,
     run: (m) => {
       const p = findProject(decodeURIComponent(m[1]));
-      return toDetail(findSub(p, decodeURIComponent(m[2])), p.lookback_years);
+      return toDetail(findSub(p, decodeURIComponent(m[2])), p.lookback_years, p);
     },
   },
   {
@@ -364,7 +402,7 @@ const routes: Route[] = [
       const s = findSub(p, decodeURIComponent(m[2]));
       await sleep(2600); // a web search per record group
       if (s.profile_status !== "done") applyProfile(s); // the company is looked up first
-      return webCheck(s, p.lookback_years);
+      return webCheck(s, p.lookback_years, !!p.auto_web_match);
     },
   },
   {
