@@ -19,12 +19,12 @@ MAX_CANDIDATES = 400
 
 
 def describe_query(name: str) -> dict:
+    # clean_name once: each call is a large expression to bind (7 calls took 160 ms, one takes 10)
     return warehouse.one(
-        """SELECT clean_name(?) AS clean, name_core(clean_name(?)) AS core,
-                  initials_only(clean_name(?)) AS initials_only, sibling_suffix(clean_name(?)) AS sibling,
-                  legal_part(clean_name(?)) AS legal, dba_part(clean_name(?)) AS dba,
-                  is_placeholder(clean_name(?)) AS placeholder""",
-        [name] * 7,
+        """SELECT clean, name_core(clean) AS core, initials_only(clean) AS initials_only, sibling_suffix(clean) AS sibling,
+                  legal_part(clean) AS legal, dba_part(clean) AS dba, is_placeholder(clean) AS placeholder
+           FROM (SELECT clean_name(?) AS clean)""",
+        [name],
     )
 
 
@@ -34,24 +34,43 @@ def describe_clean(clean: str) -> dict:
                          [clean] * 3)
 
 
-@cache
-def given_names() -> frozenset[str]:
-    path = config.REF_DIR / "given_name.csv"
+def _ref_names(file: str) -> frozenset[str]:
+    path = config.REF_DIR / file
     if not path.exists():
         return frozenset()
     with path.open() as f:
         return frozenset(r["name"].strip().upper() for r in csv.DictReader(f) if r["name"].strip())
 
 
+@cache
+def given_names() -> frozenset[str]:
+    return _ref_names("given_name.csv")
+
+
+@cache
+def surnames() -> frozenset[str]:
+    return _ref_names("surname.csv")
+
+
+# First words of place names: SAN ANTONIO, ST GEORGE and FORT WAYNE end in a given name but are companies' names.
+# The same list as the ssi_place_prefixes() macro.
+PLACE_PREFIXES = frozenset({"SAN", "SANTA", "SANTO", "ST", "SAINT", "FORT", "FT", "MOUNT", "MT", "PORT", "LOS", "LAS",
+                            "LAKE", "CAPE"})
+
+
 def is_person_core(core: str) -> bool:
-    """A name core that is a person's name: "JUAN GARCIA", "JOSE A HERNANDEZ", "HERNANDEZ JOSE".
-    Sole proprietors appear in OSHA's data under the owner's name, and the same name is usually many
-    different people. Mirrors entity.core_stats.is_person (42_name_stats.sql)."""
+    """A name core that is a person's name: "JUAN GARCIA", "JOSE A HERNANDEZ" (core JOSE HERNANDEZ), "HERNANDEZ JOSE",
+    "MORALES JAVIER M", "J LOPEZ". Sole proprietors appear in OSHA's data under the owner's name, and the same name
+    is usually many different people. Mirrors the is_person_name macro (entity.core_stats.is_person)."""
     t = core.split()
     if not 2 <= len(t) <= 4 or not re.fullmatch(r"[A-Z]+( [A-Z]+)*", core):
         return False
     g = given_names()
-    return t[0] in g or (len(t) == 2 and t[1] in g)
+    if t[0] in g:
+        return True
+    if t[0] not in PLACE_PREFIXES and t[1] in g and (len(t) == 2 or (len(t) == 3 and len(t[2]) == 1)):
+        return True
+    return len(t) == 2 and len(t[0]) == 1 and t[1] in surnames()
 
 
 def core_tier(core: str, initials: bool) -> str:

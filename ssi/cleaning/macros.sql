@@ -8,33 +8,49 @@
 
 -- n1: uppercase, unicode-normalise, fold accents (MUÑOZ -> MUNOZ: OSHA's names are typed without them, and
 --     n6 would otherwise cut "MU OZ"), collapse whitespace. Letters strip_accents leaves are spelled out
---     (Ø Ł Đ Æ Œ ß). OSHA's own lost accents ("BERM?DEZ", "BERM�DEZ": two markers for one company) stay
---     punctuation, so both still clean to BERM DEZ.
+--     (Ø Ł Đ Ð Þ Æ Œ ß). OSHA's own lost accents ("BERM?DEZ", "BERM�DEZ": two markers for one company) stay
+--     punctuation, so both still clean to BERM DEZ. A name pasted from a PDF can carry ligatures (ﬁ ﬂ) or
+--     full-width letters; DuckDB has no NFKC, so they are folded here (n6 would otherwise delete them:
+--     "ﬂoor" -> "OOR").
 CREATE OR REPLACE MACRO ssi_n1_upper(s) AS
   trim(regexp_replace(
-    replace(replace(replace(translate(upper(strip_accents(nfc_normalize(coalesce(s, '')))), 'ØŁĐ', 'OLD'),
-      'Æ', 'AE'), 'Œ', 'OE'), 'ẞ', 'SS'),
+    replace(replace(replace(replace(translate(upper(strip_accents(nfc_normalize(
+      replace(replace(replace(replace(replace(translate(coalesce(s, ''),
+        'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ０１２３４５６７８９＆',
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&'),
+        'ﬃ', 'ffi'), 'ﬄ', 'ffl'), 'ﬀ', 'ff'), 'ﬁ', 'fi'), 'ﬂ', 'fl')))), 'ØŁĐÐ', 'OLDD'),
+      'Æ', 'AE'), 'Œ', 'OE'), 'ẞ', 'SS'), 'Þ', 'TH'),
     '\s+', ' ', 'g'));
 
 -- n2: strip per-inspection ID prefixes ("WA317965935 - ", "105314 - ", "1234 - "): 5+ digits and a dash,
 -- or 3+ digits and a spaced dash. Also the case numbers Arizona (since 2021: "FCX2024XEG419X0079 - ") and
 -- Iowa (since 2026: "A09CS000013UQXVAA4 - ") put in front of the name: letters, a digit, 8+ more letters
--- or digits, a spaced dash. "84 LUMBER", "1ST CHOICE ROOFING" and "561-ROOFING" (a company number)
--- are untouched.
+-- or digits with 4+ digits in all (the build check's test), a spaced dash. "84 LUMBER", "1ST CHOICE ROOFING",
+-- "561-ROOFING" (a company number) and "START2FINISHNJ - ROOFING" (a name with one digit) are untouched.
+-- (A macro's argument is pasted in wherever it is used, so a step that needs its input twice takes it through a
+-- lambda: written out three times, each step multiplies the size of every step before it.)
 CREATE OR REPLACE MACRO ssi_n2_strip_id(s) AS
-  regexp_replace(s, '^([A-Z]{0,3}([0-9]{5,}\s*-\s*|[0-9]{3,}\s+-\s+)|[A-Z]+[0-9][A-Z0-9]{8,}\s+-\s+)', '');
+  list_transform([s], lambda x:
+    CASE WHEN regexp_matches(x, '^[A-Z]+[0-9][A-Z0-9]{8,}\s+-\s+')
+              AND length(regexp_replace(split_part(x, ' ', 1), '[^0-9]', '', 'g')) >= 4
+         THEN regexp_replace(x, '^[A-Z]+[0-9][A-Z0-9]{8,}\s+-\s+', '')
+         ELSE regexp_replace(x, '^[A-Z]{0,3}([0-9]{5,}\s*-\s*|[0-9]{3,}\s+-\s+)', '') END)[1];
 
--- n3: delete apostrophes and periods without a space (L.L.C. -> LLC, O'BRIEN -> OBRIEN, J.R. -> JR)
+-- n3: delete apostrophes and periods without a space (L.L.C. -> LLC, O'BRIEN -> OBRIEN, J.R. -> JR). Every
+--     apostrophe a keyboard or word processor makes counts (' ’ ‘ ` ´ ʼ): "O´BRIEN" was "O BRIEN".
 CREATE OR REPLACE MACRO ssi_n3_dots(s) AS
-  regexp_replace(s, '[''’.`]', '', 'g');
+  regexp_replace(s, '[''’‘`´ʼ.]', '', 'g');
 
--- n4: canonical DBA marker (D/B/A, D B A, DBA, DOING BUSINESS AS, T/A, TRADING AS, A/K/A, AKA)
+-- n4: canonical DBA marker (D/B/A, D B A, DBA, DOING BUSINESS AS, T/A, TRADING AS, A/K/A, AKA) after a name.
+--     A name that starts with one keeps it: AKA ELECTRIC and A.K.A. CONSTRUCTION are companies called AKA
+--     (they were "DBA ELECTRIC", a name with no core).
 CREATE OR REPLACE MACRO ssi_n4_dba(s) AS
-  regexp_replace(s, '\s*\b(D\s*/?\s*B\s*/?\s*A|DOING BUSINESS AS|T\s*/\s*A|TRADING AS|A\s*/?\s*K\s*/?\s*A)\b\s*', ' DBA ', 'g');
+  regexp_replace(s, '(\S)\s*\b(D\s*/?\s*B\s*/?\s*A|DOING BUSINESS AS|T\s*/\s*A|TRADING AS|A\s*/?\s*K\s*/?\s*A)\b\s*', '\1 DBA ', 'g');
 
--- n5: trailing state-of-incorporation note, e.g. "(DELAWARE)", "(TX)"
+-- n5: trailing state-of-incorporation note, e.g. "(DELAWARE)", "(TX)". Not "(JV)": a joint venture is
+--     its own company and must stay flagged as one (is_jv), never merged into a member.
 CREATE OR REPLACE MACRO ssi_n5_state_note(s) AS
-  regexp_replace(s, '\s*\((ALABAMA|ALASKA|ARIZONA|ARKANSAS|CALIFORNIA|COLORADO|CONNECTICUT|DELAWARE|FLORIDA|GEORGIA|HAWAII|IDAHO|ILLINOIS|INDIANA|IOWA|KANSAS|KENTUCKY|LOUISIANA|MAINE|MARYLAND|MASSACHUSETTS|MICHIGAN|MINNESOTA|MISSISSIPPI|MISSOURI|MONTANA|NEBRASKA|NEVADA|NEW HAMPSHIRE|NEW JERSEY|NEW MEXICO|NEW YORK|NORTH CAROLINA|NORTH DAKOTA|OHIO|OKLAHOMA|OREGON|PENNSYLVANIA|RHODE ISLAND|SOUTH CAROLINA|SOUTH DAKOTA|TENNESSEE|TEXAS|UTAH|VERMONT|VIRGINIA|WASHINGTON|WEST VIRGINIA|WISCONSIN|WYOMING|[A-Z]{2})\)\s*$', '');
+  regexp_replace(regexp_replace(s, '\(\s*JV\s*\)\s*$', ' JV'), '\s*\((ALABAMA|ALASKA|ARIZONA|ARKANSAS|CALIFORNIA|COLORADO|CONNECTICUT|DELAWARE|FLORIDA|GEORGIA|HAWAII|IDAHO|ILLINOIS|INDIANA|IOWA|KANSAS|KENTUCKY|LOUISIANA|MAINE|MARYLAND|MASSACHUSETTS|MICHIGAN|MINNESOTA|MISSISSIPPI|MISSOURI|MONTANA|NEBRASKA|NEVADA|NEW HAMPSHIRE|NEW JERSEY|NEW MEXICO|NEW YORK|NORTH CAROLINA|NORTH DAKOTA|OHIO|OKLAHOMA|OREGON|PENNSYLVANIA|RHODE ISLAND|SOUTH CAROLINA|SOUTH DAKOTA|TENNESSEE|TEXAS|UTAH|VERMONT|VIRGINIA|WASHINGTON|WEST VIRGINIA|WISCONSIN|WYOMING|[A-Z]{2})\)\s*$', '');
 
 -- n6: every other non-alphanumeric character (& + - / , ( ) …) becomes a space; then drop the word AND
 --     so "BRASFIELD & GORRIE" = "BRASFIELD - GORRIE" = "BRASFIELD AND GORRIE" = "BRASFIELD GORRIE"
@@ -46,30 +62,38 @@ CREATE OR REPLACE MACRO ssi_n6_separators(s) AS
 CREATE OR REPLACE MACRO ssi_n7_the(s) AS
   regexp_replace(regexp_replace(s, '^THE\s+', ''), '\s+THE$', '');
 
--- n8: join spaced-out legal forms (L L C -> LLC, L P -> LP, G P -> GP, P L L C -> PLLC, L L P -> LLP)
+-- n8: join spaced-out legal forms (L L C -> LLC, L P -> LP, G P -> GP, P L L C -> PLLC, L L P -> LLP).
+--     L P and G P only after a word, not after another single letter: in "R G P INC" and "J L P CONSTRUCTION"
+--     they are initials (RGP, JLP); joining them first left "R GP INC", which n9 cut down to "R".
 CREATE OR REPLACE MACRO ssi_n8_join_legal(s) AS
-  regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(s,
-    '\bP L L C\b', 'PLLC', 'g'), '\bL L C\b', 'LLC', 'g'), '\bL L P\b', 'LLP', 'g'), '\bL P\b', 'LP', 'g'), '\bG P\b', 'GP', 'g');
+  regexp_replace(regexp_replace(regexp_replace(regexp_replace(s,
+    '\bP L L C\b', 'PLLC', 'g'), '\bL L C\b', 'LLC', 'g'), '\bL L P\b', 'LLP', 'g'), '(^|[A-Z0-9]{2,} )([LG]) P\b', '\1\2P', 'g');
 
 -- n9: strip legal forms ONLY at the end of the name, and at the end of the legal name before a DBA.
---     Never strips a name down to nothing.
+--     Never strips a name down to nothing. Besides the usual forms: Iowa's and Virginia's L.C., LLLP, PLC,
+--     the spelt-out LIMITED LIABILITY COMPANY, the LCC slip, CO.INC, and the cut-off INCORPORA… / CORPORATIO…
+--     of names that hit a field's length limit (each was a second establishment of the same company, and
+--     "ADELPHI CONSTRUCTION LC" was excluded as a different name, LC, from ADELPHI CONSTRUCTION).
+--     A THE between the name and its legal form goes too ("ANDREWS GROUP THE LLC"), and so does a DBA
+--     with nothing after it ("CRAIG HANES, INC, DBA").
 CREATE OR REPLACE MACRO ssi_n9_legal_core(s) AS
-  trim(regexp_replace(regexp_replace(s,
-    '(\s+(INC|INCORPORATED|LLC|CORP|CORPORATION|CO|COMPANY|LTD|LIMITED|LP|LLP|GP|PLLC|PC))+\s+DBA\b', ' DBA', 'g'),
-    '(\s+(INC|INCORPORATED|LLC|CORP|CORPORATION|CO|COMPANY|LTD|LIMITED|LP|LLP|GP|PLLC|PC))+\s*$', ''));
+  trim(regexp_replace(regexp_replace(regexp_replace(s, '\s+DBA$', ''),
+    '(\s+(INC|INCORPORATED|INCORPORATION|INCORPORATE|INCORPORAT|INCORPORA|INCORPOR|INCORP|LLC|LCC|LC|CORP|CORPORATION|CORPORATIO|CORPORATI|CORPORAT|CO|COINC|COMPANY|LTD|LIMITED LIABILITY|LIMITED|LP|LLP|LLLP|GP|PLLC|PLC|PC))+\s+DBA\b', ' DBA', 'g'),
+    '(\s+(THE|INC|INCORPORATED|INCORPORATION|INCORPORATE|INCORPORAT|INCORPORA|INCORPOR|INCORP|LLC|LCC|LC|CORP|CORPORATION|CORPORATIO|CORPORATI|CORPORAT|CO|COINC|COMPANY|LTD|LIMITED LIABILITY|LIMITED|LP|LLP|LLLP|GP|PLLC|PLC|PC))+\s*$', ''));
 CREATE OR REPLACE MACRO ssi_n9_legal(s) AS
-  CASE WHEN ssi_n9_legal_core(s) = '' THEN s ELSE ssi_n9_legal_core(s) END;
+  list_transform([s], lambda x: coalesce(nullif(ssi_n9_legal_core(x), ''), x))[1];
 
--- n10: join runs of single letters (J R JOHNSON -> JR JOHNSON, M M MASONRY -> MM MASONRY).
---      Single letters are marked first so a run of any length up to 5 joins consistently.
+-- n10: join runs of single letters of any length (J R JOHNSON -> JR JOHNSON, H V A C -> HVAC), the way the
+--      dotted spelling (H.V.A.C.) already joins in n3. Each single letter is wrapped in markers and the marks
+--      between two neighbours are deleted in one pass (pairwise joining left "A B C D" as "AB CD").
+--      Then a single letter and a number join (A-1 ROOFING = A 1 ROOFING = A1 ROOFING, D-7 = D7).
 CREATE OR REPLACE MACRO ssi_n10_mark_singles(s) AS
   array_to_string(list_transform(string_split(s, ' '),
-    lambda t: CASE WHEN regexp_full_match(t, '[A-Z]') THEN t || '§' ELSE t END), ' ');
+    lambda t: CASE WHEN regexp_full_match(t, '[A-Z]') THEN '¶' || t || '§' ELSE t END), ' ');
 CREATE OR REPLACE MACRO ssi_n10_initials(s) AS
-  replace(
-    regexp_replace(regexp_replace(regexp_replace(regexp_replace(ssi_n10_mark_singles(s),
-      '§ ([A-Z]§)', '\1', 'g'), '§ ([A-Z]§)', '\1', 'g'), '§ ([A-Z]§)', '\1', 'g'), '§ ([A-Z]§)', '\1', 'g'),
-    '§', '');
+  regexp_replace(
+    replace(replace(replace(ssi_n10_mark_singles(s), '§ ¶', ''), '¶', ''), '§', ''),
+    '(^| )([A-Z]) ([0-9]{1,3})( |$)', '\1\2\3\4', 'g');
 
 -- The full name rule, in order. clean_name() is what establishment keys and matching use.
 CREATE OR REPLACE MACRO clean_name(s) AS
@@ -137,6 +161,26 @@ CREATE OR REPLACE MACRO initials_only(clean) AS
   name_core(clean) <> '' AND
   len(list_filter(string_split(name_core(clean), ' '), lambda t: length(t) > 3)) = 0
   AND regexp_full_match(name_core(clean), '[A-Z]{1,3}( [A-Z]{1,3})*');
+
+-- A person's name (sole proprietors appear in OSHA's data under the owner's name, and the same name is usually
+-- many different people). A core of 2-4 plain words that is:
+--   a given name first (JUAN GARCIA, JOSE A HERNANDEZ -> JOSE HERNANDEZ);
+--   surname first, then a given name (HERNANDEZ JOSE), or a given name and a middle initial (MORALES JAVIER M),
+--     unless the first word starts a place name (SAN ANTONIO, ST GEORGE, FORT WAYNE are companies' names);
+--   an initial and a common surname (J LOPEZ: 8 records in 7 states, rated distinctive before).
+-- `given` and `surnames` are the lists in ref/given_name.csv and ref/surname.csv. Mirrors
+-- ssi.matching.candidates.is_person_core, which rates the GC's own entry at query time.
+CREATE OR REPLACE MACRO ssi_place_prefixes() AS [
+  'SAN','SANTA','SANTO','ST','SAINT','FORT','FT','MOUNT','MT','PORT','LOS','LAS','LAKE','CAPE'
+];
+CREATE OR REPLACE MACRO ssi_person_tokens(tok, given, surnames) AS
+  (list_contains(given, tok[1])
+   OR (NOT list_contains(ssi_place_prefixes(), tok[1]) AND list_contains(given, tok[2])
+       AND (len(tok) = 2 OR (len(tok) = 3 AND length(tok[3]) = 1)))
+   OR (len(tok) = 2 AND length(tok[1]) = 1 AND list_contains(surnames, tok[2])));
+CREATE OR REPLACE MACRO is_person_name(core, given, surnames) AS
+  coalesce(len(string_split(core, ' ')) BETWEEN 2 AND 4 AND regexp_full_match(core, '[A-Z]+( [A-Z]+)*')
+           AND ssi_person_tokens(string_split(core, ' '), given, surnames), false);
 
 -- Addresses ------------------------------------------------------------------------------------
 -- USPS abbreviations and directionals (WEST left alone: often a street name)

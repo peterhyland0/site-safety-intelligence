@@ -1,6 +1,6 @@
 # Matching evaluation (silver labels from ITA EINs)
 
-300 pairs (150 positive, 150 negative), 462 s.
+300 pairs (150 positive, 150 negative), 114 s.
 
 | Metric | Value |
 |---|---|
@@ -16,8 +16,8 @@
 | Pair type | matched | uncertain | excluded | not found |
 |---|---|---|---|---|
 | different_name | 0 | 5 | 2 | 8 |
-| same_core_different_ein | 12 | 43 | 89 | 0 |
-| same_name_different_ein | 6 | 0 | 0 | 0 |
+| same_core_different_ein | 12 | 42 | 89 | 0 |
+| same_name_different_ein | 6 | 1 | 0 | 0 |
 | same_name_other_address | 98 | 37 | 0 | 0 |
 
 ## Disagreements with the silver label (first 20)
@@ -47,20 +47,21 @@
 
 ## Typos
 
-381 slips in distinctive OSHA names, searched with the name's city and state.
+383 slips in distinctive OSHA names, searched with the name's city and state.
 
 | Outcome | Count |
 |---|---|
-| same matches as the correct spelling | 325 |
-| fewer (the rest left for the AI reviewer and the GC) | 56 |
+| same matches as the correct spelling | 356 |
+| fewer (the rest left for the AI reviewer and the GC) | 27 |
 | a match the correct spelling doesn't make | 0 |
 
 Licensed contractors with no OSHA record, one letter from an OSHA name in the same city:
 
 | Case | Matched automatically |
 |---|---|
-| same address (a slip) | 19 of 72 |
-| another address (usually another company) | 4 of 130 |
+| same address (a slip) | 22 of 66 |
+| another address (usually another company) | 5 of 119 |
+- ALPHA ROOFING EXPERTS LLC (Monitor, WA) matched ALPHA EXPERT
 - COLUMBIA CROSSING CONSTRUCTION LLC (Portland, OR) matched COLUMBIA CROSSINGS
 - HUIZENGA BROS CONST INC (Deming, WA) matched HUIZENGA CONSTR
 - PLUMBING TECH REPIPE SPECIALISTS INC (San Jose, CA) matched REPIPE SPECIALIST

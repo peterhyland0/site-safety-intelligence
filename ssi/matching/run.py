@@ -15,6 +15,7 @@ from ssi.matching.rules import (
     decide,
     norm_city,
     one_slip,
+    tokens,
     typo_equal,
 )
 from ssi.store import pg, warehouse
@@ -33,7 +34,7 @@ def _candidate(r: dict, at_address: bool = False) -> Candidate:
         legal_name=r["legal_name"], dba_name=r["dba_name"], state=r["state"], city=r["city"], zip5=r["zip5"],
         addr_key=r["addr_key"], primary_naics4=r["primary_naics4"], sibling_suffix=r["sibling_suffix"],
         initials_only=bool(r["initials_only"]), at_matched_address=at_address,
-        related_only=bool(r.get("related_only")),
+        related_only=bool(r.get("related_only")), is_jv=bool(r.get("is_jv")),
     )
 
 
@@ -59,26 +60,44 @@ def alias_queries(q: Query) -> dict[str, Query]:
 
 
 def correct_spelling(q: Query, rows: list[dict]) -> tuple[Query, str | None]:
-    """Search OSHA's spelling when the GC's spelling is a slip of a distinctive name. Either test is enough:
+    """Search OSHA's spelling when the GC's spelling is a slip of a distinctive name. Either test is enough, and
+    the place is tried first:
 
+    - place: the GC's spelling has no records of its own, and exactly one name a single slip away
+      (rules.one_slip: MCKENNYS vs MCKENNEYS, 9 inspections) has a record in the GC's city. A local company
+      beats a bigger one elsewhere: "Brinkmman Construction, Wheat Ridge" is BRINKMAN (a record in Wheat
+      Ridge), not BRINKMANN (25 inspections, a St. Louis builder);
     - volume: a near-identical core (BRASFIELD GORRIE vs BRASFEILD GORRIE) carries at least
       SPELLING_MIN_INSPECTIONS inspections and SPELLING_RATIO times those of the GC's spelling, including
-      when OSHA's data contains the same slip on a stray record;
-    - place: the GC's spelling has no records of its own, and exactly one name a single slip away
-      (rules.one_slip: MCKENNYS vs MCKENNEYS, 9 inspections) has a record in the GC's city.
+      when OSHA's data contains the same slip on a stray record.
 
     Only the misspelt word changes. The GC's other words stay, so the rules still compare trades:
     "Aboe Board Contracting" is searched as ABOVE BOARD CONTRACTING, not as the most-inspected ABOVE
     BOARD record (a roofer in another state). Returns the note shown to the GC."""
     if not q.core:
         return q, None
-    best, note = _dominant_spelling(q, rows)
+    best, note = _spelling_in_city(q, rows)
     if not best:
-        best, note = _spelling_in_city(q, rows)
+        best, note = _dominant_spelling(q, rows)
     if not best:
         return q, None
-    clean = q.clean.replace(q.core, best, 1) if q.core in q.clean else best
-    return replace(q, clean=clean, core=best, tier="distinctive", initials_only=False, aliases={clean, q.clean}), note
+    clean = respell(q.clean, q.core, best) or best
+    # the sub's other names (legal name, DBA, licence names) stay searchable, with the slip fixed where they have it
+    fixed = {respell(a, q.core, best) or a for a in q.aliases} | {part.strip() for part in clean.split(" DBA ")}
+    return replace(q, clean=clean, core=best, tier="distinctive", initials_only=False,
+                   aliases=q.aliases | fixed | {clean, q.clean}), note
+
+
+def respell(clean: str, core: str, best: str) -> str | None:
+    """The name with its core's words spelt as OSHA spells them, word for word ("SERVICES ICE" with core ICE -> ACE
+    is "SERVICES ACE", not "SERVACES ICE"). A core whose word count changed (NORTH CREEK / NORTHCREEK) is replaced
+    where its words stand together; None when they don't."""
+    ct, kt, bt = tokens(clean), tokens(core), tokens(best)
+    if len(kt) == len(bt):
+        swap = dict(zip(kt, bt))
+        return " ".join(swap.get(t, t) for t in ct)
+    i = next((i for i in range(len(ct) - len(kt) + 1) if ct[i:i + len(kt)] == kt), None)
+    return " ".join(ct[:i] + bt + ct[i + len(kt):]) if i is not None else None
 
 
 def _dominant_spelling(q: Query, rows: list[dict]) -> tuple[str | None, str | None]:
@@ -157,10 +176,12 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
             d = decide(q, _candidate(r, at_address=True), generic, descriptors)
             if d.bucket == EXCLUDED:
                 excluded_at_address[k] = prev[0] if prev else r
-            if d.bucket == MATCHED or not prev:
-                if d.bucket == MATCHED or d.bucket == UNCERTAIN:
-                    decided[k] = (prev[0] if prev else r, d)
-                    changed = changed or d.bucket == MATCHED
+            # the address is evidence the name-only decision didn't have: it raises a record to matched, or an
+            # excluded one to uncertain (a JV, a relative or a sister company at this company's own address), the
+            # same whether or not the name search had found the record first
+            if d.bucket == MATCHED or (d.bucket == UNCERTAIN and (not prev or prev[1].bucket == EXCLUDED)):
+                decided[k] = (prev[0] if prev else r, d)
+                changed = changed or d.bucket == MATCHED
         if not changed:
             break
     # Red-flag safety net: a rule may not throw away a red-flagged record at an address this company uses

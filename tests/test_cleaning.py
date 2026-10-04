@@ -1,3 +1,6 @@
+import re
+import unicodedata
+
 import duckdb
 import pytest
 
@@ -37,6 +40,40 @@ SAME = [
     ["Søren Ølsen Builders", "SOREN OLSEN BUILDERS"],
     # OSHA's lost accents come as ? or U+FFFD for one company; folding accents mustn't split them
     ["BERM?DEZ, LONGO, D?AZ-MASS?, LLC", "BERM�DEZ, LONGO, D�AZ-MASS�, LLC"],
+    # legal forms that were left on: each was a second establishment of one company (55 such pairs in the data),
+    # and the rules excluded "ADELPHI CONSTRUCTION LC" as a different name (LC) from ADELPHI CONSTRUCTION
+    ["ADELPHI CONSTRUCTION, L.C.", "ADELPHI CONSTRUCTION LLC", "Adelphi Construction"],
+    ["65594 - CRAFTMASTERS LIMITED LIABILITY COMPANY", "CRAFTMASTERS LLC", "CRAFTMASTERS LIMITED LIABILITY CO"],
+    ["THE DRYWALL COMPANY LLLP", "DRYWALL COMPANY, LLC"],
+    ["GOODSELL CONCRETE LCC", "GOODSELL CONCRETE LLC"],  # a slip for LLC
+    ["CRH PLC", "CRH"],
+    ["DECKER BUILDING CO.INC", "DECKER BUILDING CO., INC."],
+    ["PENCZ BROTHERS, INCORPORATION", "PENCZ BROTHERS INC"],
+    # cut off at a field's length limit (WA's records)
+    ["WA317981341 - PIONEER DEVELOPMENT CORPORATIO", "PIONEER DEVELOPMENT CORPORATION"],
+    ["WA317982128 - PROVIDENT ELECTRIC INCORPORATE", "PROVIDENT ELECTRIC INC"],
+    ["COMMERCIAL DRYWALL & CONSTRUCTION COMPANY INCORPOR", "COMMERCIAL DRYWALL AND CONSTRUCTION CO"],
+    # a THE between the name and its legal form, and a DBA with nothing after it
+    ["WA317955263 - ANDREWS GROUP THE LLC", "THE ANDREWS GROUP, LLC", "ANDREWS GROUP LLC THE"],
+    ["CRAIG HANES, INC, DBA", "CRAIG HANES INC"],
+    ["CHARLES DETWILER, DBA", "CHARLES DETWILER"],
+    # initials of any length, however they are written (H V A C was HV AC; V I S E was VI SE)
+    ["V I S E COMPANY", "V.I.S.E. CO", "VISE CO."],
+    ["TOTAL ENERGY MANAGEMENT/H V A C SVCS INC", "TOTAL ENERGY MANAGEMENT HVAC SVCS"],
+    ["R D M S INC", "R.D.M.S., INC.", "RDMS"],
+    # a letter and a number: A-1 ROOFING and A1 ROOFING were two names (30 such pairs in the data)
+    ["A-1 ROOFING, INC.", "A1 ROOFING", "A 1 Roofing LLC"],
+    ["D-7 ROOFING", "D7 ROOFING"],
+    # the initials L P / G P are not a legal form after other initials
+    ["J L P CONSTRUCTION", "J.L.P. CONSTRUCTION", "JLP CONSTRUCTION LLC"],
+    ["R G P INC", "R.G.P., INC.", "RGP"],
+    # every kind of apostrophe a keyboard or word processor makes
+    ["O'BRIEN ELECTRIC", "O’BRIEN ELECTRIC", "O‘BRIEN ELECTRIC", "O´BRIEN ELECTRIC", "OʼBRIEN ELECTRIC", "O`BRIEN ELECTRIC"],
+    # a name pasted from a PDF (ligatures) or typed in full-width letters
+    ["ﬂoor ﬁnishers", "FLOOR FINISHERS"],
+    ["ＢＲＡＳＦＩＥＬＤ ＆ ＧＯＲＲＩＥ", "BRASFIELD & GORRIE"],
+    ["Ðór Construction", "DOR CONSTRUCTION"],
+    ["Þórsson Builders", "THORSSON BUILDERS"],
 ]
 
 DIFFERENT = [
@@ -47,6 +84,28 @@ DIFFERENT = [
     ("SMITH ROOFING", "SMITH ELECTRIC"),
     ("CLARK CONCRETE CONTRACTORS", "CLARK CONSTRUCTION GROUP"),
     ("561-ROOFING, INC", "ROOFING INC"),  # 561 is part of the company name, not an inspection ID
+    # a joint venture is its own company: "(JV)" is not a state of incorporation
+    ("ABC CONSTRUCTION (JV)", "ABC CONSTRUCTION"),
+    ("ABC CONSTRUCTION (J.V.)", "ABC CONSTRUCTION, INC."),
+    # initials that look like a legal form
+    ("R G P INC", "R INC"),
+    ("J L P CONSTRUCTION", "J CONSTRUCTION"),
+    ("A G P GLASS", "GLASS"),
+    # a company called AKA is not a DBA marker with no name before it
+    ("AKA ELECTRIC, LLC", "D/B/A ELECTRIC"),
+    ("AKA ELECTRIC, LLC", "ELECTRIC"),
+    # one digit in a company name is not an Arizona case number
+    ("START2FINISHNJ - ROOFING LLC", "ROOFING LLC"),
+    # a number joins only the single letter before it
+    ("A-1 ROOFING", "A ROOFING"),
+    ("AB 1 ROOFING", "AB1 ROOFING"),
+    ("A 2020 CONSTRUCTION", "A2020 CONSTRUCTION"),  # a year is not part of A-1 style names
+    # a first name, a middle initial, a family name: the initial is not part of a run of initials
+    ("JOSE A HERNANDEZ", "JOSE HERNANDEZ"),
+    ("JOHN SMITH JR", "JOHN SMITH SR"),
+    ("JOHN SMITH JR", "JOHN SMITH"),
+    # a state that is the company's name, not a note
+    ("ARSENAL SCAFFOLD OF PA INC.", "ARSENAL SCAFFOLD INC."),
 ]
 
 EXACT = {
@@ -70,6 +129,28 @@ EXACT = {
     "A1 ROOFING - DIVISION 2": "A1 ROOFING DIVISION 2",
     "B2B CONTRACTING - NORTH": "B2B CONTRACTING NORTH",
     "Łukasz Straße Bau": "LUKASZ STRASSE BAU",
+    "R G P INC": "RGP",  # was "R": n8 joined G P into a legal form and n9 stripped it
+    "J L P CONSTRUCTION": "JLP CONSTRUCTION",
+    "M K G L L C": "MKG",  # a spaced LLC after initials is still a legal form
+    "TRIPLE B SERVICES L L P": "TRIPLE B SERVICES",
+    "SMITH ROOFING L P": "SMITH ROOFING",
+    "A B C D E F G ROOFING": "ABCDEFG ROOFING",
+    "ABC CONSTRUCTION (JV)": "ABC CONSTRUCTION JV",
+    "AKA ELECTRIC, LLC": "AKA ELECTRIC",
+    "A.K.A. CONSTRUCTION INC": "AKA CONSTRUCTION",
+    "SMITH HOLDINGS AKA SMITH ROOFING": "SMITH HOLDINGS DBA SMITH ROOFING",
+    "SMITH HOLDINGS, LLC D/B/A JONES ROOFING, INC.": "SMITH HOLDINGS DBA JONES ROOFING",
+    "SMITH HOLDINGS LLC Doing Business As JONES ROOFING": "SMITH HOLDINGS DBA JONES ROOFING",
+    "SMITH HOLDINGS T/A JONES ROOFING": "SMITH HOLDINGS DBA JONES ROOFING",
+    "START2FINISHNJ - ROOFING LLC": "START2FINISHNJ ROOFING",
+    "1121 - 1125 CLEMENT STREET, LLC": "1125 CLEMENT STREET",  # an address-named LLC; the only 3-4 digit "ID" seen
+    "I-5 EXTERIORS": "I5 EXTERIORS",
+    "SMITH ROOFING LIMITED LIABILITY COMPANY": "SMITH ROOFING",
+    "NELSON CONSTRUCTION LIMITED LIABILITY COMPANY DBA": "NELSON CONSTRUCTION",
+    "SMITH ROOFING INC OF DELAWARE": "SMITH ROOFING INC OF DELAWARE",  # OF ... is a sibling note, kept (sibling_suffix)
+    "BAKER WEST INC (FN)": "BAKER WEST",
+    "THE": "THE", "INC": "INC", "LLC": "LLC", "DBA": "DBA",  # never stripped down to nothing
+    "": "", "   ": "", "&": "",
 }
 
 
@@ -168,3 +249,106 @@ def test_temp_macros_on_read_only(tmp_path):
     ro = duckdb.connect(str(path), read_only=True)
     install_macros(ro, temp=True)
     assert ro.execute("SELECT clean_name('BRASFIELD & GORRIE, LLC')").fetchone()[0] == "BRASFIELD GORRIE"
+
+
+# --- properties over many spellings of one name ------------------------------------------------------------
+# Names a GC might type, with no legal form of their own (one ends in initials, one is a person's name)
+BASES = ["BRASFIELD & GORRIE", "Whiting-Turner Contracting", "Juan García Roofing", "J R Johnson", "84 Lumber",
+         "Hoffman Construction Company of Oregon", "A-1 Roofing", "Muñoz & Sons Framing", "Smith-Jones Builders",
+         "O'Brien Electric", "XYZ Holdings dba ABC Roofing", "Barnhart Crane & Rigging", "J & J Drywall"]
+LEGAL_FORMS = [", Inc.", " Inc", " INCORPORATED", ", LLC", " L.L.C.", " L L C", " LLC.", " Co.", " Company", " Corp.",
+               " Corporation", ", Ltd.", " Limited", " LP", " L.P.", " LLP", " LLLP", " PLLC", " P.L.L.C.", " PC",
+               " L.C.", " LC", " PLC", " Limited Liability Company", " Co., Inc.", " Company, LLC", ", Inc., The",
+               " Incorpora", " Corporatio", " LCC", " (Delaware)", " (TX)", ", LLC (Georgia)"]
+
+
+@pytest.mark.parametrize("base", BASES)
+def test_legal_forms_never_split_a_company(con, base):
+    want = clean(con, base)
+    got = {form: clean(con, base + form) for form in LEGAL_FORMS}
+    assert {f: g for f, g in got.items() if g != want} == {}, want
+
+
+@pytest.mark.parametrize("base", BASES)
+@pytest.mark.parametrize("prefix", ["WA317965935 - ", "317725037 - ", "136200 - ", "105314-", "NC105314 - ",
+                                    "FCX2024XEG419X0079 - ", "A09CS000013UQXVAA4 - ", "The ", "THE "])
+def test_inspection_ids_and_the_never_split_a_company(con, base, prefix):
+    assert clean(con, prefix + base) == clean(con, base)
+
+
+@pytest.mark.parametrize("base", BASES)
+def test_case_accents_and_spacing_dont_matter(con, base):
+    want = clean(con, base)
+    folded = "".join(ch for ch in unicodedata.normalize("NFKD", base) if not unicodedata.combining(ch))
+    for variant in (base.upper(), base.lower(), folded, "  " + base.replace(" ", "   ") + "\t", base.replace(" ", " ")):
+        assert clean(con, variant) == want, variant
+
+
+@pytest.mark.parametrize("letters", ["JR", "ABC", "HVAC", "VISEX", "ABCDEF", "ABCDEFGH"])
+def test_initials_join_however_they_are_written(con, letters):
+    # "A.B.C.D." always joined in n3; the spaced and ampersand forms must reach the same name at any length
+    forms = [".".join(letters) + ". CONSTRUCTION", " ".join(letters) + " CONSTRUCTION",
+             " & ".join(letters) + " CONSTRUCTION", "-".join(letters) + " CONSTRUCTION", letters + " CONSTRUCTION"]
+    assert {clean(con, f) for f in forms} == {letters + " CONSTRUCTION"}
+
+
+def test_initials_stay_apart_from_words(con):
+    assert clean(con, "J SMITH CONSTRUCTION") == "J SMITH CONSTRUCTION"
+    assert clean(con, "JOHN A B SMITH") == "JOHN AB SMITH"
+    assert clean(con, "A PLUS ROOFING") == "A PLUS ROOFING"
+
+
+@pytest.mark.parametrize("raw", [
+    "", "&&&", "Ｆｕｌｌ ｗｉｄｔｈ", "ﬁﬂ", "Søren's Ø-Bygg", "BERM?DEZ", "BERM�DEZ", "A\u200bB", "　SMITH　",
+    "émoji 🚧 builders", "Ελληνική Κατασκευή", "Строитель LLC", "中文建筑", "x" * 300, "A" + " B" * 40,
+    "(((JV)))", "D/B/A", "- - -", "  THE  ", "LLC LLC LLC", "SMITH DBA DBA JONES", "12345-", "WA317965935 - ",
+])
+def test_output_is_upper_letters_digits_and_single_spaces(con, raw):
+    out = clean(con, raw)
+    assert out == "" or re.fullmatch(r"[A-Z0-9]+( [A-Z0-9]+)*", out), out
+
+
+@pytest.mark.parametrize("raw", BASES + [b + f for b in BASES[:3] for f in LEGAL_FORMS[:8]] + [
+    "136200 - The Brasfield & Gorrie, L.L.C. (Delaware)", "WA317955263 - ANDREWS GROUP THE LLC", "R G P INC",
+    "AKA ELECTRIC, LLC", "CRAIG HANES, INC, DBA", "TOTAL ENERGY MANAGEMENT/H V A C SVCS INC", "ﬂoor ﬁnishers",
+])
+def test_steps_compose_to_clean_name_for_every_kind_of_name(con, raw):
+    # the build's per-rule merge counts apply the steps one by one; they must add up to clean_name
+    expr = "?"
+    for step in NAME_STEPS:
+        expr = f"{step}({expr})"
+    assert q(con, f"trim(regexp_replace({expr}, '\\s+', ' ', 'g'))", raw) == clean(con, raw)
+
+
+@pytest.mark.parametrize("raw", BASES + ["WA317955263 - ANDREWS GROUP THE LLC", "CRAIG HANES, INC, DBA",
+                                         "65594 - CRAFTMASTERS LIMITED LIABILITY COMPANY", "R G P INC", "V I S E COMPANY"])
+def test_cleaning_a_clean_name_changes_nothing(con, raw):
+    once = clean(con, raw)
+    assert clean(con, once) == once
+
+
+def test_joint_ventures_stay_flagged(con):
+    for raw in ("ABC CONSTRUCTION (JV)", "ABC CONSTRUCTION (J.V.)", "ABC CONSTRUCTION (J V)", "ABC-XYZ JV",
+                "CLARK, SMOOT, CONSIGLI, A JOINT VENTURE", "TUTOR PERINI ZACHRY PARSONS JOINT VENTURE"):
+        assert q(con, "is_jv(clean_name(?))", raw) is True, raw
+    for raw in ("ABC CONSTRUCTION", "JV ELECTRIC"[3:], "JOVI CONSTRUCTION"):
+        assert q(con, "is_jv(clean_name(?))", raw) is False, raw
+
+
+def test_dba_markers(con):
+    for marker in ("D/B/A", "d/b/a", "D.B.A.", "DBA", "D B A", "Doing Business As", "T/A", "Trading As", "A/K/A", "AKA",
+                   "a.k.a."):
+        c = clean(con, f"Smith Holdings, LLC {marker} Jones Roofing, Inc.")
+        assert c == "SMITH HOLDINGS DBA JONES ROOFING", marker
+        assert (q(con, "legal_part(?)", c), q(con, "dba_part(?)", c)) == ("SMITH HOLDINGS", "JONES ROOFING")
+    # words that only contain the letters aren't markers
+    assert clean(con, "DBAKER ROOFING") == "DBAKER ROOFING"
+    assert clean(con, "TACO ROOFING") == "TACO ROOFING"
+    assert clean(con, "ALASKA ROOFING") == "ALASKA ROOFING"
+
+
+def test_name_core_never_keeps_a_generic_word(con):
+    generic = set(q(con, "ssi_generic_tokens()"))
+    for raw in BASES + list(EXACT) + [s for group in SAME for s in group]:
+        core = q(con, "name_core(clean_name(?))", raw)
+        assert not set(core.split()) & generic, (raw, core)

@@ -63,16 +63,16 @@ FROM insp_key WHERE NOT is_placeholder AND core <> '' GROUP BY 1;
 
 CREATE OR REPLACE TABLE related_cores AS
 WITH g AS (SELECT list(upper(trim(name))) AS names FROM ref_given_name),
+s AS (SELECT list(upper(trim(name))) AS names FROM ref_surname),
 c AS (SELECT DISTINCT k.core, string_split(k.core, ' ') AS tok
       FROM insp_key k JOIN construction_keys USING (establishment_key)
       WHERE NOT k.is_placeholder AND k.core <> '')
 SELECT c.core
-FROM c JOIN core_variety v USING (core), g
+FROM c JOIN core_variety v USING (core), g, s
 WHERE v.variety <= {{DISTINCTIVE_MAX_VARIETY}}
   AND v.construction_share >= {{RELATED_MIN_CONSTRUCTION_SHARE}}
   AND CASE WHEN len(c.tok) = 1 THEN length(c.core) >= 6 ELSE length(c.core) >= 5 END
-  AND NOT (len(c.tok) BETWEEN 2 AND 4 AND regexp_full_match(c.core, '[A-Z]+( [A-Z]+)*')
-           AND (list_contains(g.names, c.tok[1]) OR (len(c.tok) = 2 AND list_contains(g.names, c.tok[2]))));
+  AND NOT is_person_name(c.core, g.names, s.names);
 
 -- same_establishment: coded as construction on another in-window inspection;
 -- construction_history: coded as construction only before the window;

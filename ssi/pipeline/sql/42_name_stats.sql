@@ -3,24 +3,21 @@
 -- Counting establishments instead would wrongly mark a big multi-office firm as generic.
 -- A core that is a person's name (sole proprietors) gets tier 'person': the same name is usually many
 -- different people (JOSE HERNANDEZ: 49 records in 17 states), so only a city or address can tie a record
--- to a sub. Mirrors ssi.matching.candidates.is_person_core (same list: ref/given_name.csv).
+-- to a sub. The rule is the is_person_name macro (ssi/cleaning/macros.sql), mirrored by
+-- ssi.matching.candidates.is_person_core (same lists: ref/given_name.csv, ref/surname.csv).
 CREATE OR REPLACE TABLE wh.entity.core_stats AS
 WITH c AS (
   SELECT name_core,
          count(DISTINCT clean_name) AS variety,
          count(*) AS establishment_n,
          count(DISTINCT state) AS state_n,
-         initials_only(min(clean_name)) AS initials_only,
-         string_split(name_core, ' ') AS tok
+         initials_only(min(clean_name)) AS initials_only
   FROM wh.entity.establishment
   WHERE NOT is_placeholder
   GROUP BY 1
 ), g AS (SELECT list(upper(trim(name))) AS names FROM ref_given_name),
-p AS (
-  SELECT c.*, (len(tok) BETWEEN 2 AND 4 AND regexp_full_match(name_core, '[A-Z]+( [A-Z]+)*')
-               AND (list_contains(g.names, tok[1]) OR (len(tok) = 2 AND list_contains(g.names, tok[2])))) AS is_person
-  FROM c, g
-)
+s AS (SELECT list(upper(trim(name))) AS names FROM ref_surname),
+p AS (SELECT c.*, is_person_name(name_core, g.names, s.names) AS is_person FROM c, g, s)
 SELECT name_core, variety, establishment_n, state_n, initials_only, is_person,
        CASE WHEN name_core = '' OR initials_only THEN 'generic'
             WHEN is_person THEN 'person'

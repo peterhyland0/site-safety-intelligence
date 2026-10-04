@@ -20,6 +20,7 @@ Supporting docs:
 - [docs/data-profile.md](docs/data-profile.md): how messy the data is, with numbers
 - [docs/data-flow.html](docs/data-flow.html): a diagram of every step from raw OSHA files to a sub's verdict, with the problem each step fixes (open it in a browser)
 - [docs/domain-cheat-sheet.md](docs/domain-cheat-sheet.md): construction safety terms
+- [docs/name-matching-audit.md](docs/name-matching-audit.md): how company and person names were checked against the whole warehouse, what was wrong, and the tests that hold each fix
 
 ---
 
@@ -110,7 +111,7 @@ I profiled every row before designing anything; the full profile is in [docs/dat
 | No company ID | 266k distinct names across 377k construction inspections since 2015 | Establishments + matching (§3) |
 | Per-inspection IDs inside names | 17.6% of names, e.g. `WA317965935 - BARNHART CRANE`; mostly WA, NC and OR. Arizona (since 2021) and Iowa (since 2026) prefix a case number with letters: `FCX2024XEG419X0079 - VALLEYCARE LANDSCAPING` | Stripped by a cleaning rule; measured per rule each build. A build check fails if a case number is left in a name: each became a one-inspection company no search found, including 50 Arizona fatality/catastrophe investigations |
 | Industry codes drift | 44% of firms with 5+ inspections carry several NAICS codes; SIC→NAICS changed in the 2000s | Scope = every inspection of any establishment with ≥1 construction-coded inspection **in any year** (+175k inspections recovered) |
-| A construction company's plant, yard or shop is coded under another industry | Tindall's Conley GA precast plant (concrete manufacturing) had an open fatality/catastrophe investigation from Aug 2026 that no construction scope could see | **Related facilities**: records sharing a company name that is distinctive across *all* industries (≤5 variants, long enough, not a person's name), of a company with ≥20% of its inspections coded as construction, come in as `related_name` (10,713 inspections). They are shown as "facility not coded as construction" and only count once confirmed. Without the 20% rule, US Postal, Amazon and Dollar Tree came in too (28,726) |
+| A construction company's plant, yard or shop is coded under another industry | Tindall's Conley GA precast plant (concrete manufacturing) had an open fatality/catastrophe investigation from Aug 2026 that no construction scope could see | **Related facilities**: records sharing a company name that is distinctive across *all* industries (≤5 variants, long enough, not a person's name), of a company with ≥20% of its inspections coded as construction, come in as `related_name` (10,689 inspections). They are shown as "facility not coded as construction" and only count once confirmed. Without the 20% rule, US Postal, Amazon and Dollar Tree came in too (28,726) |
 | Accident detail is stale | Accident records end 2025-03-28. Coverage of accident-type inspections falls from 85% (2017–19) to 0% (2026) | Fatality status from the inspection type when there's no detail; the coverage note says so |
 | Shared-site duplication | 32% of construction inspections share a site and date with another employer | `accident_inspection` M:N; "cited vs not cited" |
 | Recent data is provisional | 65% of 2026 and 49% of 2025 citations are from open cases; settlements cut penalties 18–36% | Cases whose citations aren't final orders yet are "provisional"; initial *and* current penalty shown |
@@ -143,7 +144,7 @@ GC enters: name, city, state (+ optional trade, licence #)
      (past 3 questions for a sub, one question per OSHA name, so none is dropped)
 ```
 
-**Cleaning** ([ssi/cleaning/macros.sql](ssi/cleaning/macros.sql)). It only removes noise that never distinguishes companies: case, accents (a GC's `Muñoz` is OSHA's `MUNOZ`), punctuation, legal forms at the end, ID prefixes, `&`/`AND`/`-`, and runs of initials. It keeps trade words, initials, numbers and place words. 42 trap tests cover the edge cases: `C AND A` ≠ `C AND S`, `BRASFIELD CONSTRUCTION` ≠ `BRASFIELD & GORRIE`, `84 LUMBER` unchanged. The cleanup cuts distinct names since 2015 from 265,936 to 195,124 (−27%).
+**Cleaning** ([ssi/cleaning/macros.sql](ssi/cleaning/macros.sql)). It only removes noise that never distinguishes companies: case, accents (a GC's `Muñoz` is OSHA's `MUNOZ`), punctuation, legal forms at the end, ID prefixes, `&`/`AND`/`-`, and runs of initials. It keeps trade words, initials, numbers and place words. Trap tests cover the edge cases: `C AND A` ≠ `C AND S`, `BRASFIELD CONSTRUCTION` ≠ `BRASFIELD & GORRIE`, `84 LUMBER` unchanged, `A-1` = `A1`, `H V A C` = `H.V.A.C.`, `R G P INC` stays `RGP` (not `R`), `(JV)` stays a joint venture. Property tests check that no legal form, ID prefix, THE, accent, case or spacing ever splits a company. The cleanup cuts distinct names since 2015 from 265,936 to 194,358 (−27%). The name-matching audit ([docs/name-matching-audit.md](docs/name-matching-audit.md)) ran the rules over every name in the warehouse.
 
 **Rules** ([ssi/matching/rules.py](ssi/matching/rules.py)):
 
@@ -151,13 +152,15 @@ GC enters: name, city, state (+ optional trade, licence #)
 |---|---|---|
 | M1 | Same full name, same state, and the name is *distinctive* (or the same city) | Matched |
 | M1b | Same distinctive core, differing only by descriptor words (GENERAL, CONTRACTORS…) | Matched |
-| M2 | At an already-matched address, name differs only by spelling | Matched |
+| M2 | At an already-matched address, name differs only by spelling (not a JV, a swapped trade word or another person: J1, U3, P2) | Matched |
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
 | L1 | Linked to the licence number the GC entered | Matched |
 | S1 | Differs only by `OF <STATE>` / `AT <project>` (HOFFMAN CONSTRUCTION vs HOFFMAN CONSTRUCTION CO OF OREGON): usually a sibling company. A common name only in the same state | Uncertain |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
-| P1 / X5 | A person's name (sole proprietors: "JOSE HERNANDEZ" is 49 records in 17 states): matches only on the same city or a matched address; another city or state is excluded; no city is uncertain | Matched / Excluded / Uncertain |
-| U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE) | Uncertain |
+| P1 / X5 | A person's name (sole proprietors: "JOSE HERNANDEZ" is 49 records in 17 states): matches only on the same city or a matched address; another city or state is excluded; no city is uncertain. A person's name is a given name first (JUAN GARCIA), surname first (HERNANDEZ JOSE, MORALES JAVIER M) or an initial and a common surname (J LOPEZ); a place name (SAN ANTONIO, ST GEORGE) isn't one | Matched / Excluded / Uncertain |
+| P2 | At a matched address, another person's name: no given name in common (MARIO / MAURICIO CONTRERAS) or another generation (… SR) | Uncertain |
+| J1 | A joint venture at an address of one of its members (or the reverse): a JV is its own company | Uncertain |
+| U3 | Same family name, different *trade* word (WAUSAU HOMES vs WAUSAU TILE), also at a matched address | Uncertain |
 | X1–X4 | Different real name word; different common name; common name in another state | Excluded |
 | R1 | Safety net: a red-flagged record at an address this company uses is never excluded by a rule; it goes to the GC | Uncertain |
 | N1 | A related facility (in scope by company name, not coded as construction) is never counted on the name alone; at an address the company uses it counts like any record | Uncertain |
@@ -168,11 +171,11 @@ GC enters: name, city, state (+ optional trade, licence #)
 
 A sub's other names (the legal name and DBA it was entered with, names on its licence) are rated on their own, so a generic DBA can't borrow a distinctive legal name's rarity: a test sub "… Holdings LLC dba Quality Roofing" in Nashville once auto-matched 15 QUALITY ROOFING records in 11 states.
 
-Common names and people's names need a city match to auto-match. A GC's typo is searched by OSHA's spelling in two cases, and the GC is told which spelling was searched:
+Common names and people's names need a city match to auto-match. A GC's typo is searched by OSHA's spelling in two cases, and the GC is told which spelling was searched. The city is tried first: "Brinkmman Construction, Wheat Ridge" is BRINKMAN, with a record in Wheat Ridge, not BRINKMANN (25 inspections, a St. Louis builder), which volume alone chose.
 - **OSHA's spelling clearly dominates** (`Brasfeild`): ≥10 inspections and ≥10× the GC's spelling. A lower bar "corrected" COLMEX (a real Florida company) to COMEX (an Iowa one).
 - **A one-letter slip with a record in the GC's city** (`McKennys, Atlanta` → MCKENNEY'S, 9 inspections). The GC's spelling has no records of its own, one letter is dropped, added or swapped past the third letter of a 7+ letter name, and exactly one such name has a record in that city. A *replaced* letter doesn't count: among 141,727 licensed contractors (WA, CA, OR) with no OSHA record, a name one replaced letter from an OSHA name in the same city was usually another company (BORA/KORA, AECON/AECOM, HB/SB STRUCTURES).
 
-Only the misspelt word changes; the GC's other words stay, so trades are still compared. Until this was tested, the correction took the most-inspected record's whole name: "Aboe Board Contracting, Portsmouth RI" auto-matched a California roofer and left the Portsmouth company "possible".
+Only the misspelt word changes, word for word; the GC's other words and other names (DBA, legal name, licence names) stay, so trades are still compared. Until this was tested, the correction took the most-inspected record's whole name: "Aboe Board Contracting, Portsmouth RI" auto-matched a California roofer and left the Portsmouth company "possible".
 
 **What the GC sees:** *Matched* (counted) · *Possible* ("+N inspections if these are yours", not counted) · *Excluded lookalikes* (collapsed). The GC can move any record between buckets; that's stored as `method = 'gc'` and always wins.
 
@@ -283,9 +286,12 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 298 test cases:
-- the cleaning traps
-- every matching rule
+**Tests:** `uv run pytest`, 735 test cases:
+- the cleaning traps, and properties over many spellings of each name (legal forms, ID prefixes, case, accents, initials never split a company)
+- people's names: who is and isn't one, and the Python and SQL copies of the rule agreeing on ~40,000 names
+- every matching rule, and what the rules must never do (a person matched outside the GC's city, another real word matched without an address)
+- 19 GC entries matched end to end on a small warehouse built by the pipeline's own SQL from hand-written OSHA records
+- invariants over every name in the built warehouse (skipped until it's built from the current rules)
 - verdict thresholds
 - the adjudicator validator, and Jev's thresholds, routing and reason line
 - the grounding checker
@@ -313,14 +319,14 @@ The person-name, branch and red-flag rules added after the pipeline review chang
 
 **Typos.** The pairs above search with OSHA's own spellings, so two more checks cover a GC's slips (same file):
 
-| Check | Before the city-anchored fix | After |
-|---|---|---|
-| 381 slips in distinctive OSHA names: same matches as the correct spelling | 25 | 324 |
-| … a match the correct spelling doesn't make | 1 (Aboe Board, above) | **0** |
-| Licensed contractors with no OSHA record, one letter from an OSHA name in the same city, at the same address (a slip): auto-matched | 2 of 75 | 19 of 75 |
-| … at another address (usually another company): auto-matched | 0 of 128 | 4 of 128 |
+| Check | Before the city-anchored fix | After | After the name audit |
+|---|---|---|---|
+| Slips in distinctive OSHA names (381; 383 after the audit): same matches as the correct spelling | 25 | 324 | 356 |
+| … a match the correct spelling doesn't make | 1 (Aboe Board, above) | **0** | **0** |
+| Licensed contractors with no OSHA record, one letter from an OSHA name in the same city, at the same address (a slip): auto-matched | 2 of 75 | 19 of 75 | 22 of 66 |
+| … at another address (usually another company): auto-matched | 0 of 128 | 4 of 128 | 5 of 119 |
 
-The 4 are SANDESSEE/SANDESSE ELECTRIC (Pasco), HUIZENGA BROS/BROTHERS (Deming), PLUMBING TECH REPIPE SPECIALIST(S) (San Jose), all the same company at another address, and COLUMBIA CROSSING CONSTRUCTION / COLUMBIA CROSSINGS (Portland), which may not be. Slips the fix leaves alone go to the AI reviewer, as before.
+The 5 are SANDESSEE/SANDESSE ELECTRIC (Pasco), HUIZENGA BROS/BROTHERS (Deming), PLUMBING TECH REPIPE SPECIALIST(S) (San Jose), ALPHA ROOFING EXPERT(S) (Monitor, a town of 600: a PO box), all the same company at another address, and COLUMBIA CROSSING CONSTRUCTION / COLUMBIA CROSSINGS (Portland), which may not be. The audit's cleaning fixes moved a few licensed names onto their OSHA name exactly, which takes them out of these "one letter off" counts. Slips the fix leaves alone go to the AI reviewer, as before.
 
 **Reading the precision honestly.** I reviewed the disagreements by hand. The auto-matches the labels call "different" are corporate families filing under several tax IDs, not different businesses that happen to share a name:
 - D.R. Horton's regional divisions in NC, TX and CA

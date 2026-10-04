@@ -5,6 +5,7 @@ a wrong split costs a little review, a wrong merge attaches someone else's histo
 """
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -19,6 +20,8 @@ GENERIC_TOKENS: frozenset[str] = frozenset()  # filled from the warehouse macro 
 
 # A record filed as a branch or division of the sub ("BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH")
 BRANCH_WORDS = frozenset({"BRANCH", "DIVISION", "DIV", "OFFICE", "REGION", "REGIONAL", "DISTRICT"})
+# A generation suffix tells a father from a son (SERGIO CAZARES vs SERGIO CAZARES SR)
+GENERATIONS = frozenset({"JR", "SR", "II", "III", "IV"})
 
 
 def jw(a: str, b: str) -> float:
@@ -57,6 +60,7 @@ class Candidate:
     initials_only: bool
     at_matched_address: bool = False  # filled by the address-expansion pass
     related_only: bool = False  # a facility in scope only by company name (not coded as construction)
+    is_jv: bool = False  # a joint venture (entity.establishment.is_jv)
 
 
 @dataclass
@@ -122,6 +126,35 @@ def one_slip(a: str, b: str) -> bool:
     else:
         return False
     return pos >= 3 and " " not in chars
+
+
+def is_jv_name(clean: str) -> bool:
+    """A joint venture's name; the is_jv macro."""
+    return bool(re.search(r"\b(JV|JOINT VENTURE)\b", clean or ""))
+
+
+def trade_swap(a: str, b: str, generic: frozenset[str], descriptors: frozenset[str]) -> list[str]:
+    """The trade words of two names when each has one the other lacks (EENIGENBURG FRAMING vs EENIGENBURG ROOFING):
+    usually sister companies, as in U3. Forms of one word (PAINTING / PAINTERS, ROOF / ROOFING) are not a swap,
+    and neither is a name with a trade word added (SMITH ROOFING SIDING). [] when there is no swap."""
+    ta, tb = set(tokens(a)), set(tokens(b))
+    trade = generic - descriptors
+    xa, xb = sorted(t for t in ta - tb if t in trade), sorted(t for t in tb - ta if t in trade)
+    if xa and xb and not any(x[:4] == y[:4] for x in xa for y in xb):
+        return xa + xb
+    return []
+
+
+def different_people(a: str, b: str, given: frozenset[str]) -> bool:
+    """Two people's names that can't be one person: another generation (SERGIO CAZARES vs SERGIO CAZARES SR) or
+    no given name in common (MARIO vs MAURICIO CONTRERAS), unless the given names are one spelt or shortened
+    differently (MARCOS / MARCUS, STEVE / STEVEN)."""
+    ta, tb = tokens(a), tokens(b)
+    if set(ta) & GENERATIONS != set(tb) & GENERATIONS:
+        return True
+    ga, gb = {t for t in ta if t in given}, {t for t in tb if t in given}
+    return bool(ga) and bool(gb) and not any(x == y or near_spelling(x, y) or x.startswith(y) or y.startswith(x)
+                                             for x in ga for y in gb)
 
 
 def only_generic_difference(a: str, b: str, generic: frozenset[str]) -> bool:
@@ -194,6 +227,18 @@ def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozens
     if c.at_matched_address and (same_full or descriptor_diff or jw(q.clean, c.clean_name) >= 0.93
                                  or (typo_equal(q.core, c.name_core) and only_generic_difference(c.clean_name, q.clean, generic)
                                      and not core_equal)):
+        # the address ties the record to the company, but a similar name isn't always the same company or person
+        if is_jv_name(q.clean) != c.is_jv:
+            return Decision(UNCERTAIN, "J1", "A joint venture at an address this company uses; a JV is its own company")
+        if not (same_full or descriptor_diff):
+            if swap := trade_swap(q.clean, c.clean_name, generic,
+                                   descriptors if descriptors is not None else DESCRIPTORS):
+                return Decision(UNCERTAIN, "U3", "Same address as a matched record but a different trade ("
+                                + ", ".join(swap[:4]) + "); often a sister company")
+            from ssi.matching.candidates import given_names, is_person_core
+            if (q.tier == "person" or is_person_core(c.name_core)) and different_people(q.clean, c.clean_name, given_names()):
+                return Decision(UNCERTAIN, "P2", "Same address as a matched record but another person's name "
+                                f"({c.clean_name.title()}): a relative, or the same person?")
         return matched("M2", "Same address as a matched record; name differs only by spelling")
     # P1 / X5: a person's name (a sole proprietor) is usually many different people; only a place ties it
     if q.tier == "person" and (same_full or core_equal):
