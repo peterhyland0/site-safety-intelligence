@@ -95,7 +95,7 @@ class Facts:
     red_flags: list[RedFlagFact]
     hazards: list[HazardFact]
     open_serious_cases: list[int]  # activity_nr of open inspections with serious+ citations
-    pending_questions: int
+    pending_questions: int  # open match questions whose answer can add a red flag
     benchmark_p75: float | None = None
     benchmark_p90: float | None = None
     benchmark_peers: int = 0
@@ -106,6 +106,9 @@ class Facts:
     visits_without_inspection: int = 0  # OSHA files with no inspection conducted; not in inspections_all
     # (year, deaths) self-reported on OSHA 300A summaries, in years with no OSHA fatality investigation (±1 year)
     ita_deaths: list[tuple[int, int]] = field(default_factory=list)
+    # open questions with no red flag at stake: records at locations the company's profile lists, and the rest
+    pending_profile_records: int = 0
+    pending_other_questions: int = 0
 
 
 def _years(flags: list[RedFlagFact]) -> str:
@@ -200,9 +203,16 @@ def evaluate(f: Facts) -> tuple[str, list[Reason]]:
     if f.open_serious_cases:  # serious citations not final yet; open cases whose citations are final don't count
         add("R_open", f"{len(f.open_serious_cases)} open case(s) with serious citations not yet final (still provisional)",
             "review", evidence=f.open_serious_cases[:20], count=len(f.open_serious_cases))
-    if f.pending_questions:
+    if f.pending_questions:  # a red flag is never counted or dropped without the GC's answer
         add("R_questions", f"{f.pending_questions} possible match(es) with red flags need your confirmation", "review",
             count=f.pending_questions)
+    # no red flag at stake: the held records are possible, counted neither way, like any other possible record
+    if f.pending_profile_records:
+        add("I_profile_questions", f"{f.pending_profile_records} record(s) at locations the company lists need your "
+            "confirmation", "info", count=f.pending_profile_records)
+    if f.pending_other_questions:
+        add("I_questions", f"{f.pending_other_questions} possible match(es) need your confirmation", "info",
+            count=f.pending_other_questions)
     if f.ita_dart_above_p75_years:
         add("R_ita", "Self-reported injury rate (DART) above most peers in " +
             ", ".join(map(str, f.ita_dart_above_p75_years)), "review")

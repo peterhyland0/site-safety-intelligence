@@ -12,6 +12,7 @@ from conftest import local_db
 from ssi.api import schemas as S
 from ssi.matching import adjudicate as ADJ
 from ssi.queries import core as Q
+from ssi.scoring.verdict import Facts, evaluate
 from ssi.store import pg
 
 pytestmark = local_db
@@ -235,6 +236,41 @@ def test_a_profile_another_request_is_building_is_waited_for_not_marked_failed(m
     finally:
         with pg.conn() as c:
             c.execute("DELETE FROM app.company_profile WHERE profile_key = %s", [pkey])
+
+
+def test_an_open_question_makes_the_verdict_review_only_when_a_red_flag_is_at_stake(make_sub, flags):
+    # A company profile's question holds records at locations the company lists: possible until answered, counted
+    # neither way, and often without red flags. It used to make the verdict Review, labelled "with red flags".
+    red, listed, also_listed, regrouped, found = key(), key(), key(), key(), key()
+    _, s = make_sub({red: "ACME ELECTRIC CO OF TEXAS"})
+    sid = str(s["sub_id"])
+    with pg.conn() as c:
+        ADJ._ask(c, sid, [{"text": "Acme Electric lists these addresses on acme.example, and OSHA has records there",
+                           "keys": [listed, also_listed], "suggestion": "same", "rationale": "Listed on acme.example",
+                           "sources": []}], set())
+
+    def verdict():
+        f = Facts(as_of_year=2026, window_years=5, matched_establishments=0, inspections_all=0, inspections_window=0,
+                  rated_window=0, serious_plus_window=0, red_flags=[], hazards=[], open_serious_cases=[],
+                  **Q.question_facts(Q.scope(sid)["pending_questions"]))
+        v, reasons = evaluate(f)
+        return v, [(r.code, r.label) for r in reasons]
+
+    assert verdict() == ("no_record", [("I_profile_questions", "2 record(s) at locations the company lists need your confirmation")])
+
+    flags[also_listed] = 1  # a listed record with a red flag: the answer can add one
+    assert verdict() == ("review", [("R_questions", "1 possible match(es) with red flags need your confirmation")])
+
+    flags[red] = 2
+    ADJ.adjudicate(s)  # rules only: the red-flagged record is a red-flag question
+    with pg.conn() as c:  # a data update regrouped records the GC answered differently (no red flags), and the web
+        # check suggests a record (a suggestion about a record that doesn't count yet: no reason at all)
+        for k, kind in ((regrouped, "remap"), (found, "web")):
+            c.execute("INSERT INTO app.match_question (sub_id, establishment_keys, text, kind) VALUES (%s, %s, 'x', %s)",
+                      [sid, [k], kind])
+    assert [q["kind"] for q in questions(sid)].count("red_flag") == 1
+    assert verdict() == ("review", [("R_questions", "2 possible match(es) with red flags need your confirmation"),
+                                    ("I_questions", "1 possible match(es) need your confirmation")])
 
 
 def stub_card(sub, project, data=None) -> S.SubCard:

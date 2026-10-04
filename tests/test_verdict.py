@@ -145,3 +145,20 @@ def test_a_fatality_is_one_event_per_visit():
     assert one_event_per_visit([site, own], {5: "v3", 6: "v3"}) == [own]
     # without a known visit, each inspection is its own
     assert one_event_per_visit([site, own], {}) == [site, own]
+
+
+def test_a_match_question_makes_review_only_when_a_red_flag_is_at_stake():
+    v, r = evaluate(facts(pending_questions=2))
+    assert v == "review" and (r[0].code, r[0].label) == ("R_questions", "2 possible match(es) with red flags need your confirmation")
+    # records at locations the company's profile lists, none red-flagged: possible, counted neither way, so they're
+    # shown but don't decide the verdict, and the label doesn't claim red flags
+    v, r = evaluate(facts(pending_profile_records=3))
+    assert v == "no_flags" and [(x.code, x.severity, x.label) for x in r] == [
+        ("I_profile_questions", "info", "3 record(s) at locations the company lists need your confirmation")]
+    v, r = evaluate(facts(pending_other_questions=1))
+    assert v == "no_flags" and [(x.code, x.severity) for x in r] == [("I_questions", "info")]
+    v, r = evaluate(facts(matched_establishments=0, inspections_all=0, inspections_window=0, rated_window=0,
+                          serious_plus_window=0, pending_profile_records=1))
+    assert v == "no_record" and r[0].code == "I_profile_questions"
+    v, r = evaluate(facts(pending_questions=1, pending_profile_records=2))
+    assert v == "review" and [x.code for x in r] == ["R_questions", "I_profile_questions"]

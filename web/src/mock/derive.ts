@@ -294,10 +294,22 @@ function reasonsFor(sub: FxSub, lookback: number): { verdict: Verdict; reasons: 
   if (openSerious.length) {
     add("R_open", `${openSerious.length} open case(s) with serious citations not yet final (still provisional)`, "review", openSerious.map((i) => i.nr), { count: openSerious.length });
   }
-  // the web check's questions are suggestions about records that don't count yet: they don't make it Review
-  const blocking = sub.questions.filter((q) => q.kind !== "web").length;
-  if (blocking) {
-    add("R_questions", `${blocking} possible match(es) with red flags need your confirmation`, "review", [], { count: blocking });
+  // as ssi/queries/core.py question_facts: only a question with a red flag at stake makes the verdict Review, and the
+  // web check's questions are suggestions about records that don't count yet
+  const asked = sub.questions.filter((q) => q.kind !== "web");
+  const atStake = (q: FxSub["questions"][number]) =>
+    (q.kind ?? "red_flag") === "red_flag" || flagFacts(sub.inspections.filter((i) => q.establishment_keys.includes(i.est))).length > 0;
+  const redQs = asked.filter(atStake);
+  const profileRecords = asked.filter((q) => !atStake(q) && q.kind === "profile").reduce((a, q) => a + q.establishment_keys.length, 0);
+  const otherQs = asked.filter((q) => !atStake(q) && q.kind !== "profile").length;
+  if (redQs.length) {
+    add("R_questions", `${redQs.length} possible match(es) with red flags need your confirmation`, "review", [], { count: redQs.length });
+  }
+  if (profileRecords) {
+    add("I_profile_questions", `${profileRecords} record(s) at locations the company lists need your confirmation`, "info", [], { count: profileRecords });
+  }
+  if (otherQs) {
+    add("I_questions", `${otherQs} possible match(es) need your confirmation`, "info", [], { count: otherQs });
   }
 
   let verdict: Verdict;
