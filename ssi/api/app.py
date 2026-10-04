@@ -272,7 +272,8 @@ def adjudicate_sub(project_id: str, sub_id: str):
     from ssi.llm import adjudicator  # imported lazily: optional dependency on the LLM provider
     from ssi.llm import profile as P
     ADJ.resolve(sub_id, p, llm=adjudicator.decide if adjudicator.available() else None,
-                packet_fn=ADJ.evidence_packet, profile_fn=P.for_sub)
+                packet_fn=ADJ.evidence_packet, profile_fn=P.for_sub,
+                m3_fn=(lambda s, prof: ADJ.check_m3(s, prof, P.build)) if P.m3_check_enabled() else None)
     return Q.card(_sub(project_id, sub_id), p)
 
 
@@ -287,6 +288,8 @@ def lookup_profile(project_id: str, sub_id: str):
             raise HTTPException(409, "This sub's records are being resolved right now. Try again in a minute.")
         prof = P.for_sub(s, p, force=True)
         if prof:
+            if P.m3_check_enabled():  # an M3 match it sends back waits for the adjudicator ("Resolving…" picks it up)
+                ADJ.check_m3(s, prof, P.build)
             ADJ.apply_profile(s, prof)
     return Q.card(_sub(project_id, sub_id), p)
 

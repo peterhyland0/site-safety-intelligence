@@ -78,6 +78,11 @@ RECS = [
       ("ZEPHYR", "ACORN", "BIRCHWOOD", "CEDARLINE", "DUNMORE", "ELKHORN", "FALCONER")],
     Rec("ZEPHYR BUILDERS", "1209 Orange St", "Wilmington", "DE", "19801"),
     Rec("ZEPHIR BUILDERS", "1209 Orange St", "Wilmington", "DE", "19801"),
+    # the same name in another state (M3): a collision under another trade, and a real branch under the same one
+    Rec("QUINN CONSTRUCTION INC", "1 Industrial Hwy", "Essington", "PA", "19029", n=2, naics="236220"),
+    Rec("QUINN CONSTRUCTION", "300 Main St", "Parsons", "TN", "38363", naics="238910"),
+    Rec("HELIX ELECTRIC INC", "6 Harbor Way", "Oakland", "CA", "94607", n=2, naics="238210"),
+    Rec("HELIX ELECTRIC", "9 Wellington Rd", "Manassas", "VA", "20109", naics="238210"),
 ]
 
 
@@ -258,3 +263,22 @@ def test_a_company_named_after_a_city_is_not_a_person():
     got, q, _ = outcome("San Antonio Roofing", "San Antonio", "TX")
     assert q.tier != "person"
     assert buckets(got, "matched") == {("SAN ANTONIO ROOFING", "SAN ANTONIO", "TX"), ("SAN ANTONIO ROOFING", "BOERNE", "TX")}
+
+
+# --- the same name in another state (M3) ------------------------------------------------------------------
+def test_a_colliding_name_under_another_trade_in_another_state_is_left_for_the_adjudicator():
+    # Quinn Construction of Essington PA (general building) and of Parsons TN (another trade): two companies
+    got, _, _ = outcome("Quinn Construction Inc", "Essington", "PA")
+    assert got[("QUINN CONSTRUCTION", "ESSINGTON", "PA")] == ("matched", "M1")
+    assert got[("QUINN CONSTRUCTION", "PARSONS", "TN")] == ("uncertain", "M3u")
+
+
+def test_a_branch_under_the_same_trade_in_another_state_stays_matched():
+    got, _, _ = outcome("Helix Electric", "Oakland", "CA")
+    assert got[("HELIX ELECTRIC", "MANASSAS", "VA")] == ("matched", "M3")
+
+
+def test_without_a_record_in_the_subs_state_the_guard_has_no_trade_to_compare():
+    got, _, _ = outcome("Quinn Construction", "Columbus", "OH")
+    assert {k: v for k, v in got.items() if k[0] == "QUINN CONSTRUCTION"} == {
+        ("QUINN CONSTRUCTION", "ESSINGTON", "PA"): ("matched", "M3"), ("QUINN CONSTRUCTION", "PARSONS", "TN"): ("matched", "M3")}

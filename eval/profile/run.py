@@ -16,12 +16,18 @@ GC types. Profiles cost money (Sonnet 5.5 with web search by default, SSI_PROFIL
 pilot first.
 
     uv run python -m eval.profile.run --seed 7 --limit 40 [--workers 4]
+    uv run python -m eval.profile.run --seed 7 --backend tavily --searches-of claude --limit 0   # Tavily on Claude's searches
+
+--backend tavily builds the profiles with ssi.llm.profile's Tavily backend (one search, the adjudicator LLM reads the
+pages) instead of Claude; --searches-of claude takes exactly the searches that already have a Claude profile, so the
+two backends are compared on the same companies.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import os
 import re
 import threading
 import time
@@ -40,22 +46,31 @@ from ssi.store import warehouse
 
 OUT = Path(__file__).parent
 PROFILES = OUT / "profiles.jsonl"
-# per million tokens, by model family; $10 per 1,000 searches
-PRICES = {"claude-opus": (4.0, 20.0), "claude-sonnet": (2.0, 10.0), "claude-haiku": (1.0, 5.0)}
-SEARCH_USD = 0.01
+# per million tokens, by model family (tavily: DeepSeek V4.1 Flash reads the pages); per search: Claude's web search
+# $10 per 1,000, a basic Tavily search 1 credit at $0.008
+PRICES = {"claude-opus": (4.0, 20.0), "claude-sonnet": (2.0, 10.0), "claude-haiku": (1.0, 5.0), "tavily": (0.30, 1.20)}
 
 
 def price(model: str) -> tuple[float, float]:
     return next((v for k, v in PRICES.items() if model.startswith(k)), (0.0, 0.0))
+
+
+def search_usd(model: str) -> float:
+    return 0.008 if model.startswith("tavily") else 0.01
 NOT_LISTED = "A place this list doesn't include is not evidence of a different company: websites list today's sites."
 
 
-def searches(cases: list[dict], limit: int | None) -> list[tuple]:
-    """Distinct searches A, in a stable order; a pilot takes half from cases about the same company."""
+def searches(cases: list[dict], limit: int | None, of: str | None = None) -> list[tuple]:
+    """Distinct searches A, in a stable order; a pilot takes half from cases about the same company. `of`: only the
+    searches with a cached profile from a model starting with it (e.g. "claude"), the first `limit` of them."""
     by = {}
     for c in cases:
         by.setdefault((c["query_name"], c["query_city"], c["query_state"]), []).append(c)
     keys = sorted(by, key=lambda k: hashlib.md5("|".join(str(x) for x in k).encode()).hexdigest())
+    if of:
+        done = {tuple(e["search"]) for e in load_profiles().values() if (e.get("model") or "").startswith(of)}
+        keys = [k for k in keys if k in done]
+        return keys[:limit] if limit else keys
     if not limit:
         return keys
     pos = [k for k in keys if any(c["label"] for c in by[k])]
@@ -160,13 +175,16 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=40, help="distinct searches (0 = all; each one is a profile to pay for)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--cached-only", action="store_true", help="grade only searches with a cached profile: no new Claude calls")
+    ap.add_argument("--backend", choices=["claude", "tavily"], default="claude", help="how profiles are built (ssi.llm.profile)")
+    ap.add_argument("--searches-of", metavar="MODEL", help="only searches already profiled by this model family, e.g. claude")
     a = ap.parse_args()
+    os.environ["SSI_PROFILE_BACKEND"] = a.backend
     config.TRACING = False
     cases_file = AR.OUT / f".cases-{a.seed}.json"
     if not cases_file.exists():
         raise SystemExit(f"Run `uv run python -m eval.adjudication.run --seed {a.seed}` first (it caches the cases).")
     cases = json.loads(cases_file.read_text())["cases"]
-    keys = searches(cases, a.limit or None)
+    keys = searches(cases, a.limit or None, a.searches_of)
     profiles = build_profiles(cases, keys, a.workers, a.cached_only)
     keys = [k for k in keys if k in profiles] if a.cached_only else keys
     cases = [c for c in cases if (c["query_name"], c["query_city"], c["query_state"]) in profiles]
@@ -231,7 +249,7 @@ def report(a, rows: list[dict], profiles: dict, keys: list) -> None:
     usage = {"input": sum(e["usage"]["input_tokens"] for e in built), "output": sum(e["usage"]["output_tokens"] for e in built),
              "search": sum(e.get("searches") or 0 for e in built)}
     cost = sum(e["usage"]["input_tokens"] * price(e["model"])[0] / 1e6 + e["usage"]["output_tokens"] * price(e["model"])[1] / 1e6
-               + (e.get("searches") or 0) * SEARCH_USD for e in built)
+               + (e.get("searches") or 0) * search_usd(e["model"]) for e in built)
     models = sorted({e["model"] for e in built})
     secs = sorted(e.get("seconds") or 0 for e in built)
     variants = ["llm today", "llm context", "jev today", "jev context", "question"]
@@ -274,7 +292,8 @@ def report(a, rows: list[dict], profiles: dict, keys: list) -> None:
     lines += [f"| {'same' if r['label'] else 'different'} | {r['a']} | {r['b']} | {r['listed'] or '-'} | "
               f"{r['llm today']['bucket']} → {r['llm context']['bucket']} | {r['jev today']['bucket']} → {r['jev context']['bucket']} |"
               for r in changed[:40]]
-    stem = f"results-seed{a.seed}{'-pilot' if a.limit else '-cached' if a.cached_only else ''}"
+    stem = (f"results-seed{a.seed}{'-tavily' if a.backend == 'tavily' else ''}"
+            f"{'-pilot' if a.limit else '-cached' if a.cached_only else ''}")
     (OUT / f"{stem}.md").write_text("\n".join(lines) + "\n")
     (OUT / f"{stem}.json").write_text(json.dumps({"rows": rows, "usage": usage, "cost_usd": round(cost, 2)}, indent=1, default=str))
     print("\n".join(lines[:40]))

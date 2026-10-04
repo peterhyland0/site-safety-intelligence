@@ -59,7 +59,7 @@ class SubInput(BaseModel):
 
 class SubsCreate(BaseModel):
     rows: list[SubInput]
-    # look each company up on the web before its uncertain records are resolved (ssi/llm/profile.py); costs Claude
+    # look each company up on the web before its uncertain records are resolved (ssi/llm/profile.py); costs web-search
     # credits, so it's the GC's choice per batch. Without it, the sub page offers the lookup later.
     lookup_profiles: bool = False
 
@@ -403,4 +403,4 @@ class Health(BaseModel):
     build_id: str | None
     llm_enabled: bool
     db_ok: bool
-    profile_lookup: bool = False  # a Claude key is set, so adding subs can offer the company lookup
+    profile_lookup: bool = False  # a profile backend is configured (Claude or Tavily), so adding subs can offer the lookup

@@ -1,0 +1,1818 @@
+{
+ "rows": [
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "NVR (BRECKSVILLE, OH)",
+   "b": "NVR (BLUE BELL, PA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The sub is in Brecksville OH (E1, E2), but all candidates are initials-only 'NVR' records in Pennsylvania (E3-E5), and the rule note warns such names are easily confused."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The sub is NVR INC. in Brecksville OH (E2, E3), while all candidates are 'NVR' in Pennsylvania cities with no shared address; the initials-only name and same trade code 2361 make them easily confused, so identity is uncertain."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.09"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.33"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.09"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": false,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (NEW YORK, NY)",
+   "b": "TURNER CONSTRUCTION (ALBANY, NY)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": true,
+    "note": "unsure 0.00: AI answer rejected by validation (mentions 'Manhattan', which is not in the evidence)"
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: All candidate records share the identical name 'TURNER CONSTRUCTION' (similarity 1.0) and trade code 2362 in New York State, and E8's address 66 HUDSON BLVD matches the company's HQ listed in E2, confirming the candidates are the same New York-based firm."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.75"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.83"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.75"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (BOSTON, MA)",
+   "b": "TURNER CONSTRUCTION (SOMERSET, NJ)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: Candidates share the exact name 'TURNER CONSTRUCTION' and trade code 2362, but are all in New Jersey while the sub and matched records are in Boston MA with no shared address, and Turner is a common name."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.75: Turner Construction Company is a large national GC (E1, E2), and the candidates share the identical name 'TURNER CONSTRUCTION' with the same trade code 2362 and overlapping years as the Boston records (E3-E6). The NJ addresses are consistent with branch offices of a national firm, making these likely the same company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.29"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (BOSTON, MA)",
+   "b": "TURNER CONSTRUCTION (RESTON, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The matched records (E2, E3) place Turner Construction in Boston MA, while candidates E6-E8 are in Reston and Arlington VA with no shared address. Turner is a large national firm with many locations, so the identical name and trade code alone are thin evidence for the same entity versus a regional office or sibling company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: The candidate records share the exact same name 'TURNER CONSTRUCTION' and trade code 2362 as the already-matched Boston records, and the same name matching 1.0. Although the candidates are in Reston and Arlington VA rather than Boston MA, Turner Construction is a large firm with multiple offices, making the same-company match plausible."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.27"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.41"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.27"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "PERFORMANCE CONTRACTING (CARMEL, IN)",
+   "b": "PERFORMANCE CONTRACTING (TEMPE, AZ)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The sub is in CARMEL IN (E1), and the matched record shares that CARMEL IN address (E2), but the candidate is the same name and trade code in TEMPE AZ with no shared address (E3), so location alone cannot confirm identity."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The sub has a Carmel, IN location (E1, E2, E3) while the candidate is in Tempe, AZ with no shared address (E4); both use trade code 2381, but the only link is the common name, so more evidence is needed to confirm the same company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.19"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.22"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.19"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (DETROIT, MI)",
+   "b": "TURNER CONSTRUCTION (BOSTON, MA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub and matched record (E1, E2) are in Detroit, MI, while all candidates (E3-E6) are at Seaport Ln addresses in Boston, MA, with no shared address despite the identical name."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: The GC's sub is Turner Construction Company in Detroit (E1-E3), and the candidates share the identical name 'TURNER CONSTRUCTION' and trade codes 2361/2362, with the Boston Seaport address matching Turner's known office location; the name match and same trade support same company despite the different office branch."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.21"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.44"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.21"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "NPL CONSTRUCTION (TULSA, OK)",
+   "b": "NPL CONSTRUCTION (LAS VEGAS, NV)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in Tulsa, OK (E1, E2), while the candidates are both in Las Vegas, NV (E3, E4) with no shared address, and 'NPL CONSTRUCTION' is a confusable name without a company ID. Same trade code alone is weak."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The known NPL Construction record is in Tulsa, OK (E2, E3), while the candidates are at Cameron St, Las Vegas NV (E4, E5); the identical name and trade code 2371 are not enough to confirm the same company across different states."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.05"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "NVR (FREDERICK, MD)",
+   "b": "NVR (CHARLOTTE, NC)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.60: The sub's matched records are in Frederick, MD (E2, E3), while all candidates are in North Carolina with a shared trade code but no shared address or state; NVR is a common initials-only name that the evidence warns is easily confused."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.70: The matched sub is NVR, Inc. (homebuilder, trade 2361, Frederick MD), and the NC candidates share the identical abbreviated name 'NVR' and the same trade code 2361 under the parent company's regional offices, so they are plausibly the same company despite the different state."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.13"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": false,
+   "found": true,
+   "a": "MCCARTHY BUILDING COMPANIES (ROSEVILLE, CA)",
+   "b": "MCCARTHY BUILDING COMPANIES (NEWPORT BEACH, CA)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.60: The candidates share the exact trade code and a similar/same name as the sub, but they are located in different cities (e.g., E5/E8 at Newport Beach, E6 at Santa Clara) rather than the sub's Roseville address in E2-E4, and these address differences may indicate sibling offices or different companies."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.90: Candidate records share the exact name 'MCCARTHY BUILDING COMPANIES' and trade code 2362, and their addresses (Newport Beach, Santa Clara, San Diego, San Francisco) appear on the company's own website office list, matching the same firm as the Roseville sub."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.40"
+   },
+   "jev context": {
+    "bucket": "matched",
+    "note": "P(same) 0.96"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "NVR (VIRGINIA BEACH, VA)",
+   "b": "NVR (OWINGS MILLS, MD)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The matched record E2 places the sub at a Virginia Beach VA address, while all candidate records E3-E7 are at Maryland addresses with the ambiguous initials-only name 'NVR'. A shared trade code and identical short name are weak given the different state and no shared address."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The matched record (E3) is at a Virginia Beach address consistent with the GC's sub (E1), and NVR Inc is a large national homebuilder (E2), but the candidates are all 'NVR' at distinct Maryland addresses (E4-E8) with no shared address and only generic initials-based name matches."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.27"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "HELIX ELECTRIC (OAKLAND, CA)",
+   "b": "HELIX ELECTRIC (MANASSAS, VA)",
+   "listed": "address",
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub and the matched record are in Oakland, CA, while the candidate 'HELIX ELECTRIC' is at a Manassas, VA address with different trade codes (2382 vs 2389), so it is a different company despite the identical name."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: The candidate's address 9555 Discovery Blvd, Manassas VA is one of Helix Electric's listed offices (E2), and the Oakland sub address matches the already-matched record and listed Oakland office (E1, E2, E3). Shared name and shared multi-office network indicate the same company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.12"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.78"
+   },
+   "question": {
+    "bucket": "asked same"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "PERFORMANCE CONTRACTING (PORTLAND, OR)",
+   "b": "PERFORMANCE CONTRACTING (CARMEL, IN)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub and the already-matched record are in Portland, OR (E1, E2), while the candidate is in Carmel, IN with a different trade code (2381 vs 2383) and no shared address (E3). A common name in a different state with no shared location is a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The candidate shares the exact name 'PERFORMANCE CONTRACTING' and trade family with the already-matched Portland record, but sits in CARMEL, IN with no shared address, and the web profile lists no Indiana branch (E2, E4). E2 warns that absent branches are not proof of a different company, so the out-of-state location alone is too thin."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.15"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.23"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.15"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "STANDARD DRYWALL (JACKSON, WY)",
+   "b": "STANDARD DRYWALL (DEL VALLE, TX)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.80: The sub and its matched record are in Jackson, WY (E1, E2), while the candidate is in Del Valle, TX with no shared address and a different trade code (2381 vs 2383) (E3)."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.75: The web profile (E2) lists both a Del Valle TX office at 4308 Burch Drive and a Jackson WY office, matching the candidate's Del Valle TX address (E4) and the sub's Jackson WY location (E3). Multiple shared locations under the same 'Standard Drywall' name indicate one multi-site company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.76"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": false,
+   "found": true,
+   "a": "AWT ENVIRONMENTAL SERVICES (SAYREVILLE, NJ)",
+   "b": "AWT ENVIRONMENTAL SERVICES (OLD BRIDGE, NJ)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.80: The candidate has an identical name (similarity 1.0) and the same trade code 2389 as the already-matched AWT record, both in NJ; the different address (OLD BRIDGE vs SAYREVILLE PO Box) is consistent with a company relocation over 2019\u20132021."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: The candidate 'AWT ENVIRONMENTAL SERVICES' at 3220 Bordentown Ave, Old Bridge NJ (E4) matches the sub's exact name (E1) and shares the same trade code 2389 and region as the already-matched OSHA record in Sayreville NJ (E3); E2 confirms this company operates in both Old Bridge and Sayreville."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.68"
+   },
+   "jev context": {
+    "bucket": "matched",
+    "note": "P(same) 0.95"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": false,
+   "a": "SUNRUN INSTALLATION SERVICES (SOMERSET, NJ)",
+   "b": "SUNRUN (MARLBOROUGH, MA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: Candidates are named 'SUNRUN' (shorter than the sub's 'SUNRUN INSTALLATION SERVICES INC') at Massachusetts addresses in a 2211 trade, and the GC's sub (E1) is in Somerset NJ, matching only the already-matched E3 record there. The differing name and state with no shared address leave the link thin."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: Candidates are named 'SUNRUN' (shorter than the sub's 'SUNRUN INSTALLATION SERVICES INC') at Massachusetts addresses in a 2211 trade, and the GC's sub (E1) is in Somerset NJ, matching only the already-matched E3 record there. The differing name and state with no shared address leave the link thin."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (DETROIT, MI)",
+   "b": "TURNER CONSTRUCTION (DALLAS, TX)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub is matched to a Detroit, MI address (E2), while all candidates are at Texas addresses (E3-E7) with no shared city or address; a common name in a different state is usually a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The sub is in Detroit MI (E1-E3), while all candidates are at Texas addresses, with no shared address or region shown; identical name 'TURNER CONSTRUCTION' and trade code 2362 alone are thin, since Turner is a large multi-office firm whose name alone cannot confirm the same legal entity."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.34"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.48"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.34"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TEAM INDUSTRIAL SERVICES (SYLVANIA, OH)",
+   "b": "TEAM INDUSTRIAL SERVICES (PASADENA, TX)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The matched record (E2) is in Sylvania OH, while all candidates (E3-E6) are at Texas addresses with no shared location, though some share trade code 2382; name alone is too common to confirm the same company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.70: E5's address 13131 Dairy Ashford, Sugar Land TX 77478 matches the headquarters in E2, and E7's 200 Hermann Dr, Alvin TX 77511 matches another E2 site, confirming these OSHA records belong to the same company as the sub."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.83"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (NEW YORK, NY)",
+   "b": "TURNER CONSTRUCTION (HUNTSVILLE, AL)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.60: The sub's matched records place Turner Construction in New York (E1-E3), while the candidate is in Huntsville, Alabama (E4); a common name in a different state with no shared address is usually a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.60: The candidate shares the exact name and trade code 2362, and Turner is a large general contractor that could work in Huntsville AL, but it is in a different state with no shared address, while the confirmed records are in New York (E3, E4) and the HQ is New York (E2)."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.30"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.51"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.30"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "TURNER CONSTRUCTION (CINCINNATI, OH)",
+   "b": "TURNER CONSTRUCTION (SOMERSET, NJ)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The sub and already-matched records are in Cincinnati, OH (E1-E3), while all candidates are in New Jersey (E4-E7) with no shared address or region; a common name in a different state is likely a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: Candidates share the identical name 'TURNER CONSTRUCTION' and trade code 2362 with the already-matched records, and E2 shows Turner Construction Company is a large national general contractor with sites in many states, so the out-of-state New Jersey addresses are not disqualifying."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.27"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.60"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.27"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "NVR (VIRGINIA BEACH, VA)",
+   "b": "NVR (FRANKLIN, TN)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The sub and an already-matched NVR record are in Virginia Beach, VA (E1, E2), while the candidate 'NVR' is at a Franklin, TN address (E3) with no shared address. Despite matching trade code 2361 and the ambiguous initials-only name, the different state and address indicate a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.55: NVR's matched history and HQ are in Virginia (E2, E3), while the candidate is a same-named 'NVR' in Franklin TN with only a one-day 2023 record; the name matches exactly and shares trade code 2361, but the state differs and no address is shared, so identity is unconfirmed."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.37"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.18"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "SUMMIT CONTRACTING GROUP (ATLANTA, GA)",
+   "b": "SUMMIT CONTRACTING GROUP (JACKSONVILLE, FL)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The matched record E2 and the sub E1 share the exact name and an Atlanta GA address, while all candidates share the identical name and trade code 2361 but are located in Jacksonville FL with no shared address, so they could be a same-named Florida company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.75: The matched record (E3) and all candidates share the exact name 'SUMMIT CONTRACTING GROUP' and trade code 2361, and E2's web profile ties the company to both the Atlanta GA office and Jacksonville FL, matching the candidate addresses."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.16"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.80"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "SAK CONSTRUCTION (ROCKLIN, CA)",
+   "b": "SAK CONSTRUCTION (O FALLON, MO)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in ROCKLIN, CA (E1, E2), while the candidate is in O FALLON, MO with no shared address (E3); a common name in a different state is usually a different company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The sub is in Rocklin CA (E1, E3) while the candidate is in O Fallon MO (E4), the same Missouri HQ listed on the sakcon.com profile (E2); the shared trade code 2371 and identical name do not outweigh the different states and addresses."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.08"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.57"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": false,
+   "found": true,
+   "a": "JEM GROUP (CAMP HILL, PA)",
+   "b": "JEM GROUP (HARRISBURG, PA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: E2's matched record and both candidates share the name 'JEM GROUP', PA location, and trade code 2362, but the candidates are in Harrisburg while the matched record and GC sub are in Camp Hill, so the same company is plausible but not confirmed."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: JEM GROUP at 509 N 2ND ST in Harrisburg shares the same trade code 2362 and exact name with the matched JEM Group records, and Harrisburg is near the sub's Camp Hill PA base; the earlier Harrisburg address likely reflects a prior office before the Camp Hill headquarters."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.66"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.54"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.66"
+   }
+  },
+  {
+   "label": 1,
+   "other_state": true,
+   "found": true,
+   "a": "LANE CONSTRUCTION (RALEIGH, NC)",
+   "b": "LANE CONSTRUCTION (HAMPTON, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The matched records show LANE CONSTRUCTION at Raleigh NC addresses (E2, E3) in trade code 2373, while candidates E4-E6 share the same name and trade code but are in different Virginia cities with no shared address, so it is unclear whether they are the same company."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: Candidates share the identical name 'LANE CONSTRUCTION' and trade code 2373 with the already-matched OSHA records at Raleigh addresses, and E2's Lane Construction has a Virginia office in Herndon, consistent with candidate sites in VA. Name is generic and candidate addresses differ, so confidence is moderate."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.26"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.60"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.26"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "FOCUS PLUMBING (LAS VEGAS, NV)",
+   "b": "FOCUS CONCRETE (LAS VEGAS, NV)",
+   "listed": "address",
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.80: The candidate is 'FOCUS CONCRETE' (trade code 2381) while the sub and matched record are 'FOCUS PLUMBING' (trade code 2382), and the linked records share the same suite address, indicating a related sister company rather than the same plumbing business."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.60: The candidate 'FOCUS CONCRETE' shares the exact address 1220 S Commerce St Ste 120, Las Vegas NV with the sub and its matched record, but the names differ and trade codes differ (2381 vs 2382), so it may be a sibling company rather than the same firm."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.06"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.06"
+   },
+   "question": {
+    "bucket": "asked same"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "DESERT PLASTERING (NORTH LAS VEGAS, NV)",
+   "b": "DESERT FRAMING (NORTH LAS VEGAS, NV)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub's already-matched records are 'DESERT PLASTERING' (trade code 2381) at 2600/2602 LOSEE RD, while the candidate is 'DESERT FRAMING' (trade code 2361) at the same address but a different trade name and code, indicating a distinct sibling company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The candidate is 'DESERT FRAMING' with trade code 2361, whereas the sub is 'DESERT PLASTERING' (E1) whose matched records carry trade code 2381 (E3, E4); the shared 2600 Losee Rd address indicates a sibling/related company, not the same plastering business."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.10"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.08"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "GALLANT COMMERCIAL (HOUSTON, TX)",
+   "b": "GALLANT BUILDERS (HOUSTON, TX)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The candidate is 'GALLANT BUILDERS' at a different Houston address (6990 PORTWEST DR) with a prior 2018 inspection, distinct from the sub 'GALLANT COMMERCIAL, LLC' in E1; only a shared family name links them."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.45: The already-matched record E3 ties Gallant Commercial to 4321 Directors Row, Houston, while the candidate E4 is 'Gallant Builders' at a different Houston address (6990 Portwest Dr) in 2018; the web profile E2 links the Gallant Builders name to the same Directors Row HQ, but the differing name and address leave the match unclear."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.04"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.19"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "KASSELMAN SOLAR (ALBANY, NY)",
+   "b": "KASSELMAN ELECTRIC (MENANDS, NY)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.60: E3 is KASSELMAN ELECTRIC at 279 BROADWAY, MENANDS, not the KASSELMAN SOLAR of E1/E2 at 20 WALKER WAY, ALBANY, and the name differs by trade rather than being an exact match."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: KASSELMAN ELECTRIC shares the Kasselman family name and trade code 2382 with KASSELMAN SOLAR, but the name differs by trade word and the addresses differ (279 Broadway, Menands vs 20 Walker Way, Albany), though Menands is listed as a Kasselman Solar location."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.07"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.07"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "UNITED CONSTRUCTORS OF TEXAS (HOUSTON, TX)",
+   "b": "TEXAS EXTERIOR SYSTEMS (CYPRESS, TX)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The candidate 'TEXAS EXTERIOR SYSTEMS' in CYPRESS shares no name, address, city, or trade code with the sub 'UNITED CONSTRUCTORS OF TEXAS' in HOUSTON (E1, E2, E3)."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: E4's employer name 'TEXAS EXTERIOR SYSTEMS' and Cypress TX address do not match the sub's name 'UNITED CONSTRUCTORS OF TEXAS, INC.' or its Houston address in E1/E3, and the differing trade codes (2381 vs 2362) further indicate a different company."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "FOCUS PLUMBING (LAS VEGAS, NV)",
+   "b": "FOCUS FIRE PROTECTION (LAS VEGAS, NV)",
+   "listed": "address",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: E3 'FOCUS FIRE PROTECTION' shares the same Las Vegas address and trade code 2382 as the matched FOCUS PLUMBING record (E2), but the differing business name ('FIRE PROTECTION' vs 'PLUMBING') suggests a possible sister company rather than the same entity."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.60: E4 is named 'FOCUS FIRE PROTECTION', a distinct trade name from the sub 'FOCUS PLUMBING LLC' (E1), despite sharing the Las Vegas address and trade code with E3; a differing name at a shared address suggests a related but separate company."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.19"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.24"
+   },
+   "question": {
+    "bucket": "asked same"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA STEEL ERECTORS (RICHMOND, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is SERVICE CONTRACTING OF VIRGINIA INC. in Dublin VA (E1, E2), while the candidate is VIRGINIA STEEL ERECTORS in Richmond VA (E6); the names are unrelated beyond a shared state word, so they are different companies."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The sub is Service Contracting of Virginia Inc. in Dublin, VA (E1-E3), while the candidate is 'VIRGINIA STEEL ERECTORS,' a differently named company at a Richmond, VA address (E7), with no shared name, address, or location."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.02"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "AAT ROOFING (PORT ORANGE, FL)",
+   "b": "AAT RESTORATION GROUP (PORT ORANGE, FL)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: AAT ROOFING and AAT RESTORATION GROUP share a Port Orange FL city and similar Ridgewood Ave addresses (5629 vs 5929 S RIDGEWOOD AVE) but differ in name and trade code (2381 vs 2362), suggesting possible sister companies rather than the same firm."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: E4's 'AAT RESTORATION GROUP' differs in both name and address (5929 vs 5629 S Ridgewood Ave) from the sub's matched record E3, and its trade code 2362 differs from E3's 2381, so it appears to be a related but distinct company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.21"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.17"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "GRAYCOR INDUSTRIAL CONSTRUCTORS (OAKBROOK TERRACE, IL)",
+   "b": "GRAYCOR CONSTRUCTION (OAKBROOK TERRACE, IL)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.55: Candidates share the same address and trade code (2362) as the matched records, but the name differs as 'GRAYCOR CONSTRUCTION' versus 'GRAYCOR INDUSTRIAL CONSTRUCTORS', and the rule note flags it as a possible sister company. Shared address and trade support same-company, but the distinct name keeps this uncertain."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.60: Graycor Construction records share the exact address '2 Mid America Plaza Ste 400, Oakbrook Terrace IL' with the sub (E2, E6, E7) and the same trade code 2362 as already-matched records E3/E5. The name is a shortened family variant rather than a location/project sibling, so they appear to be the same firm."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.31"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.40"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "SERVICE ELECTRIC OF MICHIGAN (BRIGHTON, MI)",
+   "b": "MICHIGAN GLASS METALS (KALAMAZOO, MI)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The candidate 'MICHIGAN GLASS METALS' in Kalamazoo has a different name, city, address, and trade code (2381) than the sub 'SERVICE ELECTRIC OF MICHIGAN, L.L.C.' in Brighton (E1, E2, E3)."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The candidate record is 'MICHIGAN GLASS METALS' in Kalamazoo, MI, while the sub is 'SERVICE ELECTRIC OF MICHIGAN, L.L.C.' in Brighton, MI; different name, city, address, and trade code (2381 vs 2382)."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "DESERT PLASTERING (NORTH LAS VEGAS, NV)",
+   "b": "DESERT CONCRETE (NORTH LAS VEGAS, NV)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub DESERT PLASTERING (E1-E3) has trade code 2381, while the candidate DESERT CONCRETE (E4) has a different name and trade code 3273, despite sharing the address and city; this suggests a different company at the same location."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The candidate is 'DESERT CONCRETE' with a different trade code (3273 vs 2381), while the sub 'DESERT PLASTERING, LLC' at 2600/2602 Losee Rd in North Las Vegas is a plastering/stucco/drywall contractor (E2-E4). The shared address suggests a related or sibling company, not the same one."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.15"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.14"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "BONE DRY COMMERCIAL ROOFING (INDIANAPOLIS, IN)",
+   "b": "BONE DRY ROOFING (INDIANAPOLIS, IN)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.75: Candidates 'BONE DRY ROOFING' share the same trade code 2381 and the same Indianapolis address 7735 WINTON DR (E2, E5, with E4's typo 'WONTON DR'), and the name differs only by the dropped 'COMMERCIAL'."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.90: The candidate 'BONE DRY ROOFING' records share Indianapolis addresses with the already matched 'BONE DRY COMMERCIAL ROOFING' records (7735 WINTON/WONTON DR) and the same trade code 2381; E5's 7735 WONTON DR variant and E6's exact 7735 WINTON DR match confirm the same Indianapolis location."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.52"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.48"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "BONE DRY COMMERCIAL ROOFING (INDIANAPOLIS, IN)",
+   "b": "BONE DRY ROOFING (INDIANAPOLIS, IN)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.75: Candidates 'BONE DRY ROOFING' share the same trade code 2381 and the same Indianapolis address 7735 WINTON DR (E2, E5, with E4's typo 'WONTON DR'), and the name differs only by the dropped 'COMMERCIAL'."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.90: The candidate 'BONE DRY ROOFING' records share Indianapolis addresses with the already matched 'BONE DRY COMMERCIAL ROOFING' records (7735 WINTON/WONTON DR) and the same trade code 2381; E5's 7735 WONTON DR variant and E6's exact 7735 WINTON DR match confirm the same Indianapolis location."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.52"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.48"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "ZACHRY CONSTRUCTION (SAN ANTONIO, TX)",
+   "b": "ZACHRY INDUSTRIAL (SABINE PASS, TX)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.80: Candidates are all named 'ZACHRY INDUSTRIAL', a distinct entity from 'ZACHRY CONSTRUCTION CORPORATION' (E1), with a different trade code matching E4's 'ZACHRY GROUP' rather than the sub's construction trades E3/E5/E6. Note E8 shares the 527 LOGWOOD address with E4, but the consistent 'INDUSTRIAL' naming marks these as sister companies."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.80: Candidates are all 'ZACHRY INDUSTRIAL', not 'ZACHRY CONSTRUCTION CORPORATION' (E1), and consistently carry a different trade code (2362/2371/2373) versus the sub's civil/heavy profile (E2, E8-E12), indicating a sister company rather than the same entity."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.04"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.04"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.04"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA DRYWALL (VIRGINIA BEACH, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is in Dublin, VA (E1, E2), while the candidate 'VIRGINIA DRYWALL' is in Virginia Beach, VA with a different name (E6). No shared address, city, or naming similarity supports a match."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is based in Dublin VA (E1, E3), while the candidate 'VIRGINIA DRYWALL' is in Virginia Beach VA with no shared address, and the name 'VIRGINIA' is a state suffix, not the company's 'SERVICE CONTRACTING' identifier (E7)."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA PAVING (NORFOLK, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is SERVICE CONTRACTING OF VIRGINIA INC. in Dublin, VA (E1), while the candidates are VIRGINIA PAVING in Norfolk and Chantilly, VA with different trades (E6, E7); they share no name or address with the matched Dublin records."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The sub is a Dublin, VA commercial interior/drywall contractor (E1-E3), while the candidates are 'VIRGINIA PAVING' in Norfolk and Chantilly, VA with paving/asphalt trade codes 3241 and 2373 and no shared address."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "BONE DRY COMMERCIAL ROOFING (INDIANAPOLIS, IN)",
+   "b": "BONE DRY ROOFING (INDIANAPOLIS, IN)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: Candidates 'BONE DRY ROOFING' share the exact street address 7735 WINTON DR (E5, plus the WONTON DR typo variant E6) with the sub's already-matched record at the same Indianapolis address and same trade code 2381 (E2)."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: Candidates 'BONE DRY ROOFING' share the exact Indianapolis address 7735 WINTON DR (and its variant WONTON DR) with the already-matched 'BONE DRY COMMERCIAL ROOFING' records, all with trade code 2381, indicating the same company under a shortened name."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.52"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.56"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": false,
+   "a": "FRESNO CONCRETE CONSTRUCTION (FRESNO, CA)",
+   "b": "FRESNO PLUMBING HEATING (FRESNO, CA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The candidate is 'FRESNO PLUMBING HEATING', a different trade (plumbing/heating) than the concrete sub in E1, with only 0.631 name similarity and no shared address. Only the generic 'Fresno' name element is shared."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The candidate is 'FRESNO PLUMBING HEATING', a different trade (plumbing/heating) than the concrete sub in E1, with only 0.631 name similarity and no shared address. Only the generic 'Fresno' name element is shared."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "DESERT PLASTERING (NORTH LAS VEGAS, NV)",
+   "b": "DESERT FRAMING (NORTH LAS VEGAS, NV)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub's already-matched records are 'DESERT PLASTERING' (trade code 2381) at 2600/2602 LOSEE RD, while the candidate is 'DESERT FRAMING' (trade code 2361) at the same address but a different trade name and code, indicating a distinct sibling company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The candidate is 'DESERT FRAMING' with trade code 2361, whereas the sub is 'DESERT PLASTERING' (E1) whose matched records carry trade code 2381 (E3, E4); the shared 2600 Losee Rd address indicates a sibling/related company, not the same plastering business."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.10"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.08"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA DRYWALL (VIRGINIA BEACH, VA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is in Dublin, VA (E1, E2), while the candidate 'VIRGINIA DRYWALL' is in Virginia Beach, VA with a different name (E6). No shared address, city, or naming similarity supports a match."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is based in Dublin VA (E1, E3), while the candidate 'VIRGINIA DRYWALL' is in Virginia Beach VA with no shared address, and the name 'VIRGINIA' is a state suffix, not the company's 'SERVICE CONTRACTING' identifier (E7)."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "DESERT PLASTERING (NORTH LAS VEGAS, NV)",
+   "b": "DESERT CONCRETE (NORTH LAS VEGAS, NV)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub DESERT PLASTERING (E1-E3) has trade code 2381, while the candidate DESERT CONCRETE (E4) has a different name and trade code 3273, despite sharing the address and city; this suggests a different company at the same location."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The candidate is 'DESERT CONCRETE' with a different trade code (3273 vs 2381), while the sub 'DESERT PLASTERING, LLC' at 2600/2602 Losee Rd in North Las Vegas is a plastering/stucco/drywall contractor (E2-E4). The shared address suggests a related or sibling company, not the same one."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.15"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.14"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "HOEKSTRA ELECTRICAL SERVICES (HAMILTON, MI)",
+   "b": "HOEKSTRA ROOFING (KALAMAZOO, MI)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is HOEKSTRA ELECTRICAL SERVICES (trade code 2382) in Hamilton, while the candidates are HOEKSTRA ROOFING (trade code 2381) at a different Kalamazoo address, so they are a different trade and company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is Hoekstra Electrical Services (E3), while candidates are 'Hoekstra Roofing' at a Kalamazoo address with a different trade code (2381 vs 2382), indicating a separate roofing company."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "MEADE (WILLOWBROOK, IL)",
+   "b": "MEADE ELECTRIC (WILLOWBROOK, IL)",
+   "listed": "address",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": true,
+    "note": "unsure 0.00: AI answer rejected by validation (mentions 'McCook', which is not in the evidence)"
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "same 0.62: Meade Industries, Inc. (E2) is a multi-trade infrastructure contractor based in Willowbrook, and the candidate 'MEADE ELECTRIC' records share the exact addresses already matched to the sub at 625 Willowbrook Center Pkwy and 9550 W 55th St (E3, E4, E6, E7), indicating the same affiliated company under a trade name."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.11"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.21"
+   },
+   "question": {
+    "bucket": "asked same"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": false,
+   "found": true,
+   "a": "BONE DRY COMMERCIAL ROOFING (INDIANAPOLIS, IN)",
+   "b": "BONE DRY ROOFING (INDIANAPOLIS, IN)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": true,
+    "note": "unsure 0.00: AI answer rejected by validation (mentions 'ZIP', which is not in the evidence)"
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.85: The candidate 'BONE DRY ROOFING' records share the same Indianapolis addresses (7735 Winton Dr, 4825 W 79th St), same trade code 2381, and overlapping years with the already-matched 'BONE DRY COMMERCIAL ROOFING' records (E3/E4), so the name is just a shortened variant."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.41"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.46"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": false,
+   "a": "LEONARD CONTRACTING (SAN ANTONIO, TX)",
+   "b": "LEONARD ROOFING (TEMECULA, CA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in SAN ANTONIO, TX (E1), while the candidates are all 'LEONARD ROOFING' in TEMECULA, CA with no shared address or state (E4-E6). The different trade code (roofing, 2381) and lack of geographic overlap indicate a different company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in SAN ANTONIO, TX (E1), while the candidates are all 'LEONARD ROOFING' in TEMECULA, CA with no shared address or state (E4-E6). The different trade code (roofing, 2381) and lack of geographic overlap indicate a different company."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "EASTWOOD CONTRACTORS (BREWER, ME)",
+   "b": "EASTWOOD HOMES (CHARLOTTE, NC)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.80: The sub is EASTWOOD CONTRACTORS, INC. in BREWER ME (E1), matching E4's EASTWOOD CONTRACTORS at BREWER ME, while candidates E7/E8 are 'EASTWOOD HOMES' in CHARLOTTE/HIGH POINT NC, a differently named company in a different state with no shared address."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.45: The sub's matched record (E5) sits at 34 Night Rd, Brewer ME, while the candidates 'EASTWOOD HOMES' share NC addresses (2857 Westport Rd, Charlotte and High Point) with the NC 'EASTWOOD CONSTRUCTION' records, and the candidate name differs from EASTWOOD CONTRACTORS, INC. The shared family name and same trade code are too weak to establish sameness across states."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.05"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "PROGRESSIVE ELECTRIC (LIVONIA, MI)",
+   "b": "PROGRESSIVE ELECTRIC (CHARLESTON, WV)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The matched records (E2, E3) place the sub at Middlebelt Rd in Livonia, MI, while the candidate (E4) is in Charleston, WV with no shared address, so the matching name alone is insufficient."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The sub and matched records are in Livonia, MI (E2-E4), while the candidate is in Charleston, WV with no shared address, only a matching common name and trade code 2382 (E5); this is too thin to confirm the same company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "PROGRESSIVE ELECTRIC (LIVONIA, MI)",
+   "b": "PROGRESSIVE ELECTRIC (CHARLESTON, WV)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The matched records (E2, E3) place the sub at Middlebelt Rd in Livonia, MI, while the candidate (E4) is in Charleston, WV with no shared address, so the matching name alone is insufficient."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.50: The sub and matched records are in Livonia, MI (E2-E4), while the candidate is in Charleston, WV with no shared address, only a matching common name and trade code 2382 (E5); this is too thin to confirm the same company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.14"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "BYERS (NATURAL BRIDGE STATION, VA)",
+   "b": "BYERS INDUSTRIAL SERVICES (FRANKLINVILLE, NJ)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: The sub is BYERS INC. in Natural Bridge Station, VA, while the candidate BYERS INDUSTRIAL SERVICES is in Franklinville, NJ with a different trade code (2362 vs. the sub's records using 2381). No shared address, city, or state supports a match."
+   },
+   "llm context": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.75: Byers Inc. is a Virginia contractor with sites including Natural Bridge Station VA (E1, E2, E4), while the candidate 'BYERS INDUSTRIAL SERVICES' is in Franklinville NJ with trade code 2362, unlike the sub's trade 2381, and no shared address or region."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.06"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.03"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "WRIGHT CONSTRUCTION (MOUNT HOLLY, VT)",
+   "b": "WRIGHT CONSTRUCTION (COLLIERVILLE, TN)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub and matched record E2 are in Mount Holly, VT, while both candidates are in Tennessee (Collierville and Nashville) with no shared address; the shared name 'WRIGHT CONSTRUCTION' is common and the trade codes differ (2362 vs 2381)."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is a Mount Holly, VT company (E1-E3), while both candidates are in Tennessee with different trade codes (2381 vs 2362) and no shared address. A common name in a different state with no address overlap is usually a different company (E4, E5)."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.05"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.09"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.05"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "DELANEY CONCRETE CONSTRUCTION (MARION, IA)",
+   "b": "DELANEY ASSOCIATES (FLUSHING, NY)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in Marion, IA (E1/E3), while candidate 'DELANEY ASSOCIATES' is in Flushing, NY with a different name and trade (E4), matching the note about a different sister company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.90: The sub is Marlon, IA-based (E1, E2, E4), while candidate 'DELANEY ASSOCIATES' is in Flushing, NY with a different trade code (E5). Different name, state, address, and trade indicate a different company."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.02"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "UNITY ELECTRIC (EAST RUTHERFORD, NJ)",
+   "b": "UNITY ELECTRIC (SHORELINE, WA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "unsure 0.40: The candidate matches the sub's name and trade code 2382, but it is in Shoreline WA while the matched record E2 and the sub E1 are in East Rutherford NJ, with no shared address or overlapping years, so it may be a same-named company in another state."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub operates in East Rutherford NJ/New York metro (E1, E2), while the candidate record is in Shoreline WA with no shared address, which for a common name like 'Unity Electric' indicates a different company."
+   },
+   "jev today": {
+    "bucket": "possible",
+    "note": "P(same) 0.08"
+   },
+   "jev context": {
+    "bucket": "possible",
+    "note": "P(same) 0.07"
+   },
+   "question": {
+    "bucket": "possible",
+    "note": "P(same) 0.08"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "EASTWOOD HOMES (HIGH POINT, NC)",
+   "b": "EASTWOOD CONTRACTORS (BREWER, ME)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The candidate 'EASTWOOD CONTRACTORS' is in Brewer ME, while the sub is in High Point NC and its matched records cluster in NC; the ME entity has a different trade code (2389) and the rule note flags it as a likely sister company."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub Eastwood Homes is in High Point NC with matching OSHA records at Charlotte NC (E3), while the candidate is 'EASTWOOD CONTRACTORS' in Brewer ME with a different trade code 2389 and only partial name overlap (E6)."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.02"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.06"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.02"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA TILE (KANSAS CITY, KS)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The sub is in Dublin VA, while candidate E6 'VIRGINIA TILE' is in Kansas City KS with a different name and trade code (4233 vs 2383/2381), sharing no address or region."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The candidate 'VIRGINIA TILE' is in Kansas City KS with trade code 4233, while the sub 'SERVICE CONTRACTING OF VIRGINIA INC.' is in Dublin VA (E1, E2) with matching OSHA records at Stepp Pl, Dublin VA and trade codes 2381/2383. No shared name, address, state, or trade connects them."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "BIG D CONSTRUCTION (PLEASANTON, CA)",
+   "b": "BIG D CONSTRUCTION (SALT LAKE CITY, UT)",
+   "listed": "city",
+   "llm today": {
+    "bucket": "possible",
+    "rejected": false,
+    "note": "different 0.70: The sub and its matched record are in Pleasanton, CA (E1, E2), while all candidates are in Utah cities with no shared address (E3-E6); identical initials-only names are easily confused, so these are different companies."
+   },
+   "llm context": {
+    "bucket": "matched",
+    "rejected": false,
+    "note": "same 0.88: The candidate addresses in Salt Lake City, Ogden, and Lindon match the web profile's listed offices exactly, and all records share trade code 2362 with the already-matched Pleasanton record, indicating one multi-office firm."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "matched",
+    "note": "P(same) 0.92"
+   },
+   "question": {
+    "bucket": "asked unsure"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": false,
+   "a": "LEONARD CONTRACTING (SAN ANTONIO, TX)",
+   "b": "LEONARD ROOFING (TEMECULA, CA)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in San Antonio, TX (E1, E2), while all candidates are 'LEONARD ROOFING' in Temecula, CA, with no shared address or region (E4-E6), and the trade differs."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.85: The sub is in San Antonio, TX (E1, E2), while all candidates are 'LEONARD ROOFING' in Temecula, CA, with no shared address or region (E4-E6), and the trade differs."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   }
+  },
+  {
+   "label": 0,
+   "other_state": true,
+   "found": true,
+   "a": "SERVICE CONTRACTING OF VIRGINIA (DUBLIN, VA)",
+   "b": "VIRGINIA TILE (KANSAS CITY, KS)",
+   "listed": null,
+   "llm today": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The sub is in Dublin VA, while candidate E6 'VIRGINIA TILE' is in Kansas City KS with a different name and trade code (4233 vs 2383/2381), sharing no address or region."
+   },
+   "llm context": {
+    "bucket": "excluded",
+    "rejected": false,
+    "note": "different 0.95: The candidate 'VIRGINIA TILE' is in Kansas City KS with trade code 4233, while the sub 'SERVICE CONTRACTING OF VIRGINIA INC.' is in Dublin VA (E1, E2) with matching OSHA records at Stepp Pl, Dublin VA and trade codes 2381/2383. No shared name, address, state, or trade connects them."
+   },
+   "jev today": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   },
+   "jev context": {
+    "bucket": "excluded",
+    "note": "P(same) 0.01"
+   },
+   "question": {
+    "bucket": "excluded",
+    "note": "P(same) 0.00"
+   }
+  }
+ ],
+ "usage": {
+  "input": 158791,
+  "output": 21805,
+  "search": 43
+ },
+ "cost_usd": 0.42
+}

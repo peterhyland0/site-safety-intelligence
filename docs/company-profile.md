@@ -66,10 +66,47 @@ Profiles are cached for 90 days per company (rows in `app.company_profile` are i
 `SSI_DAILY_PROFILE_LIMIT` (default 100 a day) caps spending; `SSI_PROFILE=off` switches the step off;
 `SSI_PROFILE_MODEL` changes the model (e.g. `claude-opus-5-5`).
 
+## The M3 web check
+
+Rule M3 matches the same distinctive name in another state. With a profile, an M3 record in a state the profile
+doesn't list has its own company looked up (`adjudicate.check_m3`, up to 5 a sub, cached like any profile): another
+company's website sends it back to the adjudicator (rule M3w), the sub's own website confirms it, no website leaves
+it as it was. Records the rules' M3 guard held back (M3u) are restored when the profile lists their state or the
+lookup finds the sub's website. Why: [eval/m3_audit/review.md](../eval/m3_audit/review.md). On by default with the
+Tavily backend; with Claude (twenty cents a lookup) only with `SSI_M3_WEB_CHECK=on`.
+
+## Two backends
+
+`SSI_PROFILE_BACKEND` picks how a profile is built; both reports go through the same checks above.
+
+- **claude** (the default): Claude with web search and web fetch, as described above.
+- **tavily**: one basic Tavily search (5 results, page text cut to 5,000 characters, `osha.gov` excluded, results
+  without the name's first word dropped), then the adjudicator LLM (DeepSeek V4.1 Flash) writes the same
+  `report_profile` report from those pages, and the checks hold it to exactly the text it was shown. It searches the
+  warehouse's cleaned spelling when known (record numbers and legal words gone), unquoted. Needs `TAVILY_API_KEY`.
+
+Compared on the same 43 companies (eval/profile, seed 7; [Claude](../eval/profile/results-seed7-cached.md),
+[Tavily](../eval/profile/results-seed7-tavily.md)):
+
+| | Claude (Sonnet 5.5) | Tavily + DeepSeek |
+|---|---|---|
+| Found the company | 43 of 43 | 40 of 43 |
+| Locations a found profile (share from the company's own site) | 1.8 (100%) | 4.4 (69%) |
+| Cost a profile / median time | $0.20 / 32 s | $0.01 / 3 s |
+| Jev with the profile (61 cases): same matched, wrong exclusions, wrong merges, lookalikes excluded | 3, 0, 0, 24 | 2, 1, 1, 25 |
+| Question approach: same-company records asked about, misleading "same" suggestions | 3, 4 | 6, 3 |
+
+Close on a small sample. Only own-site locations drive the address lookup, so Tavily's directory listings add
+context and city-level questions, not lookups. Tavily's one extra wrong exclusion is NPL Construction: its profile gave the parent's site
+(centuri.com) and only Tulsa and Greenwood, and Jev read the short list as evidence against Las Vegas. Its one wrong
+merge is Big-D Construction in Salt Lake City, where the company's own pages list both offices, so the silver label
+(different tax IDs) is likely the error. A sparse profile can mislead either backend.
+
 ## Privacy
 
 The name, city and state a GC types, OSHA's spelling and the addresses of records already matched are sent to
-Anthropic, whose web search runs the queries. Person-name subs (sole proprietors) are never looked up.
+Anthropic, whose web search runs the queries (with tavily: the name, city and state go to Tavily, and its pages to the
+adjudicator LLM). Person-name subs (sole proprietors) are never looked up.
 
 ## Evaluation
 

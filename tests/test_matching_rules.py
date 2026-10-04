@@ -428,3 +428,14 @@ def test_typo_equal_takes_different_family_names_for_slips():
     for a, b in (("JOSE HERNANDEZ", "JOSE FERNANDEZ"), ("JOHNSON", "JOHNSTON"), ("JUAN GARCIA", "JUAN GARZA"),
                  ("CARLOS MEJIA", "CARLOS MEDINA"), ("MARIO RAMIREZ", "MARIA RAMIREZ")):
         assert rules.typo_equal(a, b)
+
+
+def test_m3_guard_only_for_a_colliding_name_under_another_trade():
+    from ssi.matching.rules import m3_collides
+    assert m3_collides("QUINN CONSTRUCTION", "2389", {"2362"})  # Quinn in TN against the sub's Quinn in PA
+    assert m3_collides("MELTON ELECTRIC", "2361", {"2382"})
+    assert not m3_collides("HELIX ELECTRIC", "2382", {"2382"})  # the same trade: a branch
+    assert not m3_collides("BRASFIELD GORRIE", "2362", {"2382"})  # not "<word> CONSTRUCTION|ELECTRIC"
+    assert not m3_collides("ADOLFSON PETERSON CONSTRUCTION", "2389", {"2362"})  # three words
+    assert not m3_collides("QUINN CONSTRUCTION", "2389", set())  # no in-state match to compare trades with
+    assert not m3_collides("QUINN CONSTRUCTION", None, {"2362"})  # no trade code on the record

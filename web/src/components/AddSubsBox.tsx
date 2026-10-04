@@ -238,7 +238,8 @@ export function AddSubsBox({
             </label>
             <p id={`${ids.lookup}-hint`} className="text-xs text-muted">
               Finds the locations each company lists, so records at its other sites can come back to you as a
-              question. Uses Claude credits and adds about 30 seconds a sub. You can also do it later from a sub's page.
+              question. Uses web-search credits and adds a few seconds to half a minute a sub. You can also do it later
+              from a sub's page.
             </p>
           </div>
         </div>

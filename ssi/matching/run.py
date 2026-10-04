@@ -13,6 +13,7 @@ from ssi.matching.rules import (
     Decision,
     Query,
     decide,
+    m3_collides,
     norm_city,
     one_slip,
     tokens,
@@ -162,6 +163,16 @@ def match(name: str, city: str | None, state: str | None, trade: str | None, lic
     decided: dict[str, tuple[dict, object]] = {}
     for r in rows:
         decided[r["establishment_key"]] = (r, decide(q, _candidate(r), generic, descriptors))
+    # M3 guard, before the address expansion so a doubtful match can't pull in records at its address: a same-name
+    # record in another state whose trade code none of the sub's in-state matches have, under a colliding
+    # "<word> CONSTRUCTION|ELECTRIC" name, is often another company (rules.m3_collides). It goes to the adjudicator.
+    own_trades = {r["primary_naics4"] for r, d in decided.values()
+                  if d.bucket == MATCHED and d.rule_id != "M3" and r.get("primary_naics4")}
+    for k, (r, d) in list(decided.items()):
+        if d.rule_id == "M3" and m3_collides(r["clean_name"], r.get("primary_naics4"), own_trades):
+            decided[k] = (r, Decision(UNCERTAIN, "M3u", (
+                f"Same name in another state ({r['state']}), but under a trade code the sub's records here don't have; "
+                f"a '<name> {r['clean_name'].split()[-1]}' name in another state is often another company")))
     # address expansion (two passes): records at a matched address whose name differs only by spelling
     excluded_at_address: dict[str, dict] = {}
     for _ in range(2):

@@ -183,6 +183,20 @@ def without_suffix(core: str, suffix: str | None, generic: frozenset[str]) -> st
     return core
 
 
+# M3 guard (run.match): in the M3 audit (eval/m3_audit/review.md) the wrong cross-state matches were small firms whose
+# names collide, mostly "<word> CONSTRUCTION" or "<word> ELECTRIC" under a trade code the sub's own records don't
+# have: 10 of 21 wrong matches looked like that, against 1 of 35 right ones.
+COLLIDING_TRADE_WORDS = ("CONSTRUCTION", "ELECTRIC")
+
+
+def m3_collides(clean_name: str, naics4: str | None, sub_naics: set[str]) -> bool:
+    """A same-name record in another state that M3 shouldn't match outright: a two-word "<word> CONSTRUCTION|ELECTRIC"
+    name, and a trade code none of the sub's in-state matched records have (both codes known)."""
+    words = (clean_name or "").split()
+    return (len(words) == 2 and words[1] in COLLIDING_TRADE_WORDS and bool(naics4) and bool(sub_naics)
+            and naics4 not in sub_naics)
+
+
 def decide(q: Query, c: Candidate, generic: frozenset[str], descriptors: frozenset[str] | None = None) -> Decision:
     if c.clean_name != q.clean and c.clean_name in q.aliases and c.clean_name in q.alias_queries:
         # the record carries one of the sub's other names: judge it as that name. "QORVANEX HOLDINGS DBA QUALITY

@@ -154,6 +154,8 @@ GC enters: name, city, state (+ optional trade, licence #)
 | M1b | Same distinctive core, differing only by descriptor words (GENERAL, CONTRACTORS…) | Matched |
 | M2 | At an already-matched address, name differs only by spelling (not a JV, a swapped trade word or another person: J1, U3, P2) | Matched |
 | M3 | Same distinctive name in another state ("also operates in …") | Matched |
+| M3u | M3's guard: a two-word "<word> CONSTRUCTION / ELECTRIC" name under a trade code none of the sub's in-state matched records have (QUINN CONSTRUCTION of Essington PA vs of Parsons TN) | Uncertain |
+| M3w | M3's web check, when the sub has a company profile: the record's own company has another website | Uncertain |
 | L1 | Linked to the licence number the GC entered | Matched |
 | S1 | Differs only by `OF <STATE>` / `AT <project>` (HOFFMAN CONSTRUCTION vs HOFFMAN CONSTRUCTION CO OF OREGON): usually a sibling company. A common name only in the same state | Uncertain |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE / REGION ("BARNHART CRANE & RIGGING-OKLAHOMA CITY BRANCH") | Uncertain, never excluded |
@@ -241,7 +243,7 @@ Both are served from Modal as OpenAI-compatible APIs.
 - **Validation in code:** the LLM must cite evidence IDs that exist, and any number or place it mentions must appear in the evidence. Otherwise the answer is discarded. Jev writes no text: its reason line is written in code from the evidence, each fact for or against the same company ("Against: Las Vegas, NV, outside the sub's state (OK); no address in common with the sub's matched records. For: same trade code (2371).").
 - **Mapping:** LLM "same" at ≥0.85 confidence → matched; "different" at ≥0.80 → excluded; otherwise possible. Jev's P(same) ≥0.85 → matched; ≤0.20 → excluded (≤0.06 for a record outside the sub's state, where a national firm's own branches are); otherwise possible.
 - **How many:** up to 50 uncertain groups per sub get an AI call, most inspections first (`ADJUDICATE_MAX_CLUSTERS`; it was 15 when every call went to the LLM). The rest stay possible, and red-flagged ones still reach the GC.
-- **Company profile first** ([docs/company-profile.md](docs/company-profile.md)): when the GC ticks "Look up each company on the web first" while adding subs (off by default: it costs Claude credits), a new sub with uncertain records is looked up on the web by Claude (the locations it lists, each quoted from its page); other subs can be looked up later from their page. Records at those locations skip the AI and go to the GC in one question with the page, along with records found at those addresses under other names. Nothing is matched from the web without the GC's answer.
+- **Company profile first** ([docs/company-profile.md](docs/company-profile.md)): when the GC ticks "Look up each company on the web first" while adding subs (off by default: it costs web-search credits), a new sub with uncertain records is looked up on the web, by Claude or by a Tavily search read by the adjudicator LLM (the locations it lists, each quoted from its page); other subs can be looked up later from their page. Records at those locations skip the AI and go to the GC in one question with the page, along with records found at those addresses under other names. Nothing is matched from the web without the GC's answer.
 - **Never alone on red flags:** a record carrying a fatality, willful, repeat or failure-to-abate flag is never settled by the AI in *either* direction. It can't pin a fatality on a sub, and it can't quietly clear one either: the GC gets a yes/no question with the AI's lean as a suggestion. (An earlier version let a confident "different" exclude a red-flagged record and capped questions at 3; on the demo that hid a lookalike's red flags from Barnhart's GC.)
 
 ---
@@ -286,7 +288,7 @@ DOL / OSHA / WA / OR ──► build (DuckDB, ~1–2 min, run locally) ──►
 
 ## 8. Evaluation
 
-**Tests:** `uv run pytest`, 735 test cases:
+**Tests:** `uv run pytest`, 764 test cases:
 - the cleaning traps, and properties over many spellings of each name (legal forms, ID prefixes, case, accents, initials never split a company)
 - people's names: who is and isn't one, and the Python and SQL copies of the rule agreeing on ~40,000 names
 - every matching rule, and what the rules must never do (a person matched outside the GC's city, another real word matched without an address)
@@ -408,7 +410,9 @@ Development sample (302 uncertain), wrong merges / wrong exclusions / lookalikes
 
 **Outcome:** the app uses Jev with the tuned thresholds for groups without red flags ([docs/adjudicator.md](docs/adjudicator.md)).
 
-**What the cross-state pairs showed about the rules:** M3 ("same distinctive name, another state") auto-matched 51 of the 1,600 local-firm pairs (3%), such as Quinn Construction in Pennsylvania and Tennessee, and Straub Construction in California and Kansas. Those never reach the adjudicator: each attaches another company's history to the sub. The matching table above doesn't count them, because its different-company pairs are all same-state.
+**What the cross-state pairs showed about the rules:** M3 ("same distinctive name, another state") auto-matched 51 of the 1,600 local-firm pairs, which looked like 3% wrong merges. Checked on the web instead of tax IDs ([eval/m3_audit/](eval/m3_audit/review.md): company profiles for 101 M3 matches, 146 Tavily searches), a third of those were one national firm filing each state under its own tax ID (Tutor Perini, Alston, Conti, DN Tanks), and none of the app's M3 matches was wrong. The real errors (about 20 of some 260 cross-state names: Quinn Construction in PA and TN, Ames in PA and MN, Huff, Gunter, Melton Electric) are small firms whose names collide; their footprint is no different from a real branch's, so M3 got two checks instead of a threshold:
+- **A guard (M3u)**, always on: a two-word "<word> CONSTRUCTION / ELECTRIC" name under a trade code the sub's in-state records don't have goes to the adjudicator. On the audit it held back 10 of the 21 web-confirmed wrong matches and 3 of 54 right ones, and changed no decision on the app's projects.
+- **A web check (M3w)** when the sub has a company profile ([adjudicate.check_m3](ssi/matching/adjudicate.py)): for an M3 record in a state the profile doesn't list, the record's own company is looked up; another website sends it to the adjudicator, the sub's own website confirms it (and restores a guarded one). On the audit's verdicts it catches all 21 wrong matches and none of the 54 right ones. On by default with the Tavily backend, `SSI_M3_WEB_CHECK=on` with Claude.
 
 **Foreman.** 20 questions against the demo project, each with expected tools, an expected status (answered, clarify, needs confirmation, unanswerable) and phrases that must or mustn't appear ([eval/foreman/](eval/foreman/)). It spends model credit, so it runs deliberately: `uv run python -m eval.foreman.run`. Each run is logged as a LangSmith experiment.
 
@@ -475,7 +479,7 @@ Without them, enrichment is just empty.
 
   Check both endpoints with `uv run python -m scripts.check_llm`: one plain call, one JSON call and one tool call per role.
 - `LANGSMITH_API_KEY` (optional): traces and eval experiments.
-- `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` (optional): company profiles, Claude with web search ([docs/company-profile.md](docs/company-profile.md)). `SSI_PROFILE=off` switches them off; `SSI_DAILY_PROFILE_LIMIT` (default 100) caps them; `SSI_PROFILE_MODEL` (default `claude-sonnet-5-5`). The foreman and adjudicator keep using `SSI_LLM_PROVIDER`.
+- `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` (optional): company profiles, Claude with web search ([docs/company-profile.md](docs/company-profile.md)). `SSI_PROFILE_BACKEND=tavily` uses `TAVILY_API_KEY` and the adjudicator LLM instead (about $0.01 and 3 s a profile, against $0.20 and 30 s). With a profile, M3 matches in states it doesn't list are checked on the web (up to 5 lookups a sub): on with Tavily, `SSI_M3_WEB_CHECK=on` with Claude, `off` to switch it off. `SSI_PROFILE=off` switches them off; `SSI_DAILY_PROFILE_LIMIT` caps them (default 100 a day, 30 with Tavily for its free 1,000 a month); `SSI_PROFILE_MODEL` (default `claude-sonnet-5-5`). The foreman and adjudicator keep using `SSI_LLM_PROVIDER`.
 - `JEV_API_KEY` (optional, from console.typesafe.ai/keys): Jev adjudicates uncertain matches without red flags, and the adjudicator LLM keeps the red-flagged ones ([docs/adjudicator.md](docs/adjudicator.md)). `SSI_ADJUDICATOR=llm` sends everything to the LLM. Also used by `make eval-adjudication`, which also compares GLM 5.3 (the foreman's endpoint) and Kimi K3 (`SSI_LLM_ADJUDICATOR_KIMI_3`, an OpenAI-compatible base URL) when they're set.
 
 **Hosting.** It runs locally today. [docs/deploy.md](docs/deploy.md) describes the optional hosted setup: the React site on Vercel, and the API plus nightly data refresh as a Modal app ([modal_app.py](modal_app.py)).

@@ -8,8 +8,14 @@ Every location must quote the page it came from, and the quote must be in text t
 page or a search citation) with the city in it; a street counts only if its house number and street are in the
 quote too. Anything else is dropped (check()). Why and how: docs/company-profile.md.
 
-Env: an Anthropic credential (ANTHROPIC_API_KEY, or CLAUDE_API_KEY); SSI_PROFILE=off switches it off; SSI_PROFILE_MODEL (default
-claude-sonnet-5-5); SSI_DAILY_PROFILE_LIMIT (default 100 profiles a day, every attempt counts)."""
+Two backends (SSI_PROFILE_BACKEND): claude (the default; Claude with web search and fetch, ~$0.20 and ~30 s a
+profile) or tavily (one Tavily search, then the adjudicator LLM reads the pages: ~$0.01 and a few seconds). Both
+reports go through the same check().
+
+Env: claude needs an Anthropic credential (ANTHROPIC_API_KEY, or CLAUDE_API_KEY) and takes SSI_PROFILE_MODEL (default
+claude-sonnet-5-5); tavily needs TAVILY_API_KEY and the adjudicator LLM (ssi/llm/client.py). SSI_PROFILE=off switches
+profiles off; SSI_DAILY_PROFILE_LIMIT caps them (default 100 a day, 30 with tavily to stay inside its free 1,000 a
+month; every attempt counts)."""
 from __future__ import annotations
 
 import hashlib
@@ -19,6 +25,8 @@ import os
 import re
 import time
 from urllib.parse import urlsplit
+
+import httpx
 
 from ssi import config
 from ssi.matching.rules import norm_city
@@ -84,7 +92,15 @@ REPORT_TOOL = {
 }
 
 
+def backend() -> str:
+    return "tavily" if os.environ.get("SSI_PROFILE_BACKEND", "").strip().lower() == "tavily" else "claude"
+
+
 def model() -> str:
+    """The model in the cache key: Claude's, or the Tavily backend's version plus the LLM that reads the pages."""
+    if backend() == "tavily":
+        from ssi.llm import client as llm
+        return f"tavily-v{TAVILY_VERSION}+{llm.get('adjudicator').model}"
     return os.environ.get("SSI_PROFILE_MODEL", "").strip() or DEFAULT_MODEL
 
 
@@ -101,11 +117,21 @@ def _api_key() -> str | None:
 def available() -> bool:
     if os.environ.get("SSI_PROFILE", "on").strip().lower() == "off":
         return False
+    if backend() == "tavily":
+        from ssi.llm import client as llm
+        return bool(_tavily_key()) and llm.available("adjudicator")
     return bool(_api_key() or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
 
+def m3_check_enabled() -> bool:
+    """The M3 web check (ssi.matching.adjudicate.check_m3): on with the Tavily backend (a cent a lookup), off with
+    Claude (twenty cents) unless SSI_M3_WEB_CHECK=on; SSI_M3_WEB_CHECK=off switches it off."""
+    v = os.environ.get("SSI_M3_WEB_CHECK", "").strip().lower()
+    return available() and (v == "on" if v in ("on", "off") else backend() == "tavily")
+
+
 def daily_limit() -> int:
-    return int(os.environ.get("SSI_DAILY_PROFILE_LIMIT", "100"))
+    return int(os.environ.get("SSI_DAILY_PROFILE_LIMIT", "").strip() or (30 if backend() == "tavily" else 100))
 
 
 # --- what the prompt is told -----------------------------------------------------------------------------------
@@ -183,6 +209,8 @@ def _collect(content: list[dict], texts: dict[str, list[str]], titles: dict[str,
 
 def research(ctx: dict, http=None) -> dict:
     """{report, texts, titles, searches, usage, model, error}. `report` is report_profile's input or None."""
+    if backend() == "tavily":
+        return research_tavily(ctx)
     http = http or client()
     messages = [{"role": "user", "content": user_prompt(ctx)}]
     texts: dict[str, list[str]] = {}
@@ -226,9 +254,131 @@ def research(ctx: dict, http=None) -> dict:
     return out
 
 
+# --- the Tavily backend: one search, then the adjudicator LLM reads the pages -----------------------------------
+# One basic Tavily search (1 credit) returns up to 5 pages' text; pages that don't name the company are dropped and
+# the rest are cut to PAGE_CHARS. The adjudicator LLM writes report_profile's report from them, and check() holds
+# it to exactly the text it was shown, as it does Claude's.
+TAVILY_URL = "https://api.tavily.com"
+TAVILY_VERSION = 2  # in the cache key: the query, the page selection and trimming, EXTRACT_SYSTEM
+# 2: search the cleaned spelling, unquoted; a page needs only the name's first word (v1 dropped "317727255 - …"
+#    names and pages that say "Sunrun" for SUNRUN INSTALLATION SERVICES)
+PAGE_CHARS = 5000  # per page; long pages are mostly menus and footers
+LEGAL_WORDS = {"INC", "LLC", "CO", "CORP", "CORPORATION", "COMPANY", "LTD", "LP", "LLP", "PLLC", "PC", "THE", "AND",
+               "OF", "DBA"}
+
+EXTRACT_SYSTEM = """You identify a construction subcontractor from what a general contractor (GC) typed, using the \
+web search results you're given, and list the locations the company itself publishes.
+
+Report:
+- found=false if the results aren't about this company, or several companies share the name and nothing you were \
+given narrows it down. Say why in note.
+- name: the company's name as it publishes it; website: its domain; summary: what it does, in a few words.
+- locations: only places this company itself operates (headquarters, offices, branches, plants, yards, shops). \
+Never parent, sister or affiliate companies, customers, or projects and job sites. Give each the URL of the result \
+it came from, exactly as given, and a short quote copied exactly from that result's text that contains the address \
+or at least the city.
+
+Copy quotes verbatim. Don't fill in an address, zip or city you didn't read."""
+
+
+def _tavily_key() -> str | None:
+    return os.environ.get("TAVILY_API_KEY", "").strip() or None
+
+
+def search_name(ctx: dict) -> str:
+    """The warehouse's cleaned spelling when known (no legal words or record numbers), else what the GC typed without
+    a leading record number ("317727255 - PERFORMANCE CONTRACTING INC")."""
+    return (ctx.get("osha_spelling") or "").strip() or re.sub(r"^\W*\d+\s*-\s*", "", ctx["name"]).strip()
+
+
+def tavily_query(ctx: dict) -> str:
+    return " ".join(x for x in (search_name(ctx), ctx.get("city"), ctx.get("state"), "contractor locations") if x)
+
+
+def name_words(name: str) -> list[str]:
+    """The name's words in order, without legal words."""
+    words = re.findall(r"[A-Z0-9]+", (name or "").upper().replace("&", " AND "))
+    return list(dict.fromkeys(w for w in words if w not in LEGAL_WORDS and (len(w) > 1 or w.isdigit())))
+
+
+def tavily_search(query: str, http: httpx.Client | None = None) -> dict:
+    body = {"query": query, "search_depth": "basic", "max_results": 5, "include_raw_content": "text",
+            "include_answer": False, "exclude_domains": ["osha.gov"], "country": "united states", "include_usage": True}
+    own = http is None
+    http = http or httpx.Client(base_url=TAVILY_URL, timeout=30.0, headers={"Authorization": f"Bearer {_tavily_key()}"})
+    try:
+        for attempt in range(2):
+            r = http.post("/search", json=body)
+            if (r.status_code == 429 or r.status_code >= 500) and attempt == 0:
+                time.sleep(2)
+                continue
+            if r.is_error:
+                raise RuntimeError(f"Tavily HTTP {r.status_code}: {r.text[:200]}")
+            return r.json()
+    finally:
+        if own:
+            http.close()
+    raise AssertionError("unreachable")
+
+
+def pages(resp: dict, name: str) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """(texts, titles, urls) keyed by normalised URL, for the results with the name's first word (SUNRUN, HOEKSTRA,
+    NPL); texts cut to PAGE_CHARS. Whether a page is really the company is for the LLM and check()."""
+    want = name_words(name)[:1]
+    texts, titles, urls = {}, {}, {}
+    for r in resp.get("results") or []:
+        text = re.sub(r"\s+", " ", r.get("raw_content") or r.get("content") or "").strip()[:PAGE_CHARS]
+        title = (r.get("title") or "").strip()
+        hay = f"{title} {text}".upper()
+        if not (r.get("url") and text) or not all(re.search(rf"\b{re.escape(w)}\b", hay) for w in want):
+            continue
+        k = _norm_url(r["url"])
+        texts[k], titles[k], urls[k] = text, title, r["url"]
+    return texts, titles, urls
+
+
+def research_tavily(ctx: dict, http: httpx.Client | None = None, provider=None) -> dict:
+    """research()'s result from one Tavily search and one call to the adjudicator LLM."""
+    out = {"report": None, "searches": 1, "usage": {"input_tokens": 0, "output_tokens": 0}, "model": model(),
+           "error": None, "texts": {}, "titles": {}}
+    resp = tavily_search(tavily_query(ctx), http)
+    out["credits"] = (resp.get("usage") or {}).get("credits") or 1
+    texts, titles, urls = pages(resp, search_name(ctx))
+    out["texts"], out["titles"] = texts, titles
+    if not texts:
+        out["report"] = {"found": False, "name": None, "website": None, "summary": None, "locations": [],
+                         "note": "No search result names the company."}
+        return out
+    if provider is None:
+        from ssi.llm import client as llm
+        provider = llm.get("adjudicator")
+    results = "\n\n".join(f"[{i}] URL: {urls[k]}\nTitle: {titles[k] or '-'}\nText: {texts[k]}"
+                           for i, k in enumerate(texts, 1))
+    report, usage = provider.structured(EXTRACT_SYSTEM, f"{user_prompt(ctx)}\n\nSearch results:\n\n{results}",
+                                        REPORT_TOOL["input_schema"], max_tokens=4096)
+    out["usage"] = {"input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens}
+    if report is None:
+        out["error"] = "no report"
+    else:
+        out["report"] = report
+    return out
+
+
 # --- checking the report against what was read --------------------------------------------------------------
 def _squash(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").upper()).strip()
+
+
+# listings and social sites, not a company's own website: never evidence of which company it is (eval/m3_audit)
+DIRECTORIES = ("buildzoom.com", "procore.com", "linkedin.com", "facebook.com", "bbb.org", "yelp.com", "mapquest.com",
+               "bizapedia.com", "dnb.com", "zoominfo.com", "manta.com", "opencorporates.com", "yellowpages.com",
+               "angi.com", "houzz.com", "instagram.com", "x.com", "twitter.com")
+
+
+def company_domain(profile: dict | None) -> str | None:
+    """A found profile's own website, or None (not found, no website, or a directory or social site)."""
+    d = (profile or {}).get("domain") if (profile or {}).get("found") else None
+    return None if d and any(d == x or d.endswith("." + x) for x in DIRECTORIES) else d
 
 
 def domain(website: str | None) -> str | None:

@@ -5,7 +5,8 @@ lean as a suggestion) and is not counted until answered; past a few, questions a
 
 With a company profile (ssi/llm/profile.py), records at a location the company lists skip the AI and go to the
 GC in one question, with the page that lists them; so do records found at those addresses under another name.
-They're written with method 'profile' (possible until answered), which a re-match keeps.
+They're written with method 'profile' (possible until answered), which a re-match keeps. And an M3 match (the same
+name in another state) in a state the profile doesn't list is checked on the web first (check_m3).
 
 One request at a time resolves a sub (claim()), and a record the GC moves while the AI is working keeps the GC's
 bucket."""
@@ -25,6 +26,7 @@ from ssi.store import pg, warehouse
 LLMFn = Callable[[dict], dict | None]
 
 CLAIM_STALE_MINUTES = 15  # a claim older than this was abandoned (the request died); the next request takes over
+M3_CHECK_LIMIT = 5  # M3 groups (a name in a state) looked up per sub, most inspections first
 
 
 @contextmanager
@@ -50,14 +52,84 @@ def claim(sub_id: str):
 
 def resolve(sub_id: str, project: dict, llm: LLMFn | None = None,
             packet_fn: Callable[[dict, list[dict]], dict] | None = None,
-            profile_fn: Callable[[dict, dict], dict | None] | None = None) -> dict | None:
-    """The adjudication step for a sub, under its claim: look the company up (profile_fn), then adjudicate. None when
-    another request is already resolving the sub; its answer lands when that request finishes."""
+            profile_fn: Callable[[dict, dict], dict | None] | None = None,
+            m3_fn: Callable[[dict, dict], dict] | None = None) -> dict | None:
+    """The adjudication step for a sub, under its claim: look the company up (profile_fn), check its M3 matches against
+    the profile (m3_fn: check_m3), then adjudicate, including any M3 match the check sent back. None when another
+    request is already resolving the sub; its answer lands when that request finishes."""
     with claim(sub_id) as sub:
         if sub is None:
             return None
         profile = profile_fn(sub, project) if profile_fn else None
+        if profile and m3_fn:
+            m3_fn(sub, profile)
         return adjudicate(sub, llm=llm, packet_fn=packet_fn, profile=profile)
+
+
+def check_m3(sub: dict, profile: dict | None, build_fn: Callable[[dict], dict | None]) -> dict:
+    """The M3 web check. M3 matches the same distinctive name in another state; the M3 audit (eval/m3_audit) found the
+    wrong ones are other companies with their own websites. With the sub's own website known, for each M3 group (a
+    name in a state), up to M3_CHECK_LIMIT, most inspections first:
+      a state the profile lists              ->  matched (an M3u record the guard held back is restored)
+      otherwise the record's company is looked up (build_fn: profile.build, cached):
+        the sub's own website                ->  matched, the reason says so (M3u restored)
+        another company's website            ->  possible, rule M3w, for the adjudicator (needs_adjudication)
+        no website of its own                ->  as it was (a short or missing profile isn't evidence)
+    M3u records (rules.m3_collides) are the guard's doubtful ones, already waiting for the adjudicator. Returns
+    {checked, moved, confirmed}: lookups made, records sent back, records confirmed or restored."""
+    # imported here: the matching package doesn't otherwise need the profile module
+    from ssi.llm.profile import company_domain
+    stats = {"checked": 0, "moved": 0, "confirmed": 0}
+    site = company_domain(profile)
+    if not site:
+        return stats
+    sub_id = str(sub["sub_id"])
+    listed = {loc["state"] for loc in profile.get("locations") or []}
+    with pg.conn() as c:
+        rows = c.execute("""SELECT * FROM app.sub_match WHERE sub_id = %s AND method = 'rule' AND (
+                              (rule_id = 'M3' AND bucket = 'matched') OR (rule_id = 'M3u' AND needs_adjudication))""",
+                         [sub_id]).fetchall()
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for r in rows:
+        ev = r["evidence"] or {}
+        if ev.get("state") and (ev["state"] not in listed or r["rule_id"] == "M3u"):
+            groups[(ev.get("name"), ev["state"])].append(r)
+    order = sorted(groups.items(), key=lambda kv: -sum((r["evidence"] or {}).get("inspections") or 0 for r in kv[1]))
+
+    def confirm(c, grp: list[dict], why: str) -> None:
+        for r in grp:
+            reason = ((r["evidence"] or {}).get("reason") or "Same distinctive name, another state").rstrip(".")
+            if r["rule_id"] == "M3u":
+                reason = f"Same distinctive name, another state ({(r['evidence'] or {}).get('state')})"
+            c.execute("""UPDATE app.sub_match SET bucket = 'matched', rule_id = 'M3', rationale = %s, needs_adjudication = false,
+                                evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('rule', 'M3', 'reason', %s::text)
+                         WHERE sub_id = %s AND establishment_key = %s AND method = 'rule' AND rule_id IN ('M3', 'M3u')""",
+                      [f"{reason}; {why}", reason, sub_id, r["establishment_key"]])
+        stats["confirmed"] += len(grp)
+
+    for (name, state), grp in order[:M3_CHECK_LIMIT]:
+        if state in listed:  # only M3u records get here: the profile itself lists the state
+            with pg.conn() as c:
+                confirm(c, grp, f"the company's profile lists {state}")
+            continue
+        top = max((r["evidence"] for r in grp), key=lambda e: e.get("inspections") or 0)
+        at = ", ".join(x for x in (top.get("address"), top.get("city"), state, top.get("zip")) if x)
+        theirs = company_domain(build_fn({"name": name, "city": top.get("city"), "state": state, "trade": None,
+                                          "osha_spelling": name, "tier": None, "matched_at": [at] if top.get("address") else []}))
+        stats["checked"] += 1
+        with pg.conn() as c:
+            if theirs == site:
+                confirm(c, grp, f"the web check found its records there under {site} too")
+            elif theirs:
+                why = (f"Same name in another state ({state}), but the company there has its own website ({theirs}), "
+                       f"not {site}: often another company")
+                c.execute("""UPDATE app.sub_match SET bucket = 'possible', rule_id = 'M3w', rationale = %s,
+                                    needs_adjudication = true, decided_by = 'rules', decided_at = now(),
+                                    evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('rule', 'M3w', 'reason', %s::text)
+                             WHERE sub_id = %s AND establishment_key = ANY(%s) AND method = 'rule' AND rule_id IN ('M3', 'M3u')""",
+                          [why, why, sub_id, [r["establishment_key"] for r in grp]])
+                stats["moved"] += sum(r["rule_id"] == "M3" for r in grp)
+    return stats
 
 
 def _clusters(rows: list[dict]) -> dict[tuple, list[dict]]:

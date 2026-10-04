@@ -1,5 +1,5 @@
 /** Whether "Look up each company on the web" is ticked when adding subs. Off by default (each lookup costs
- * Claude credits); the viewer's choice is kept per browser, like the theme. */
+ * web-search credits); the viewer's choice is kept per browser, like the theme. */
 const KEY = "ssi-lookup-profiles";
 
 export function savedLookup(): boolean {

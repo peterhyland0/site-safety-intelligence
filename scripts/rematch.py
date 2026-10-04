@@ -3,8 +3,9 @@
 Dry run by default: shows, per sub, the decisions that move to new establishment keys (a cleaning-rule change
 regroups records; ssi/matching/remap.py) and the records whose rule decision would change. --apply moves the
 decisions (GC answers that now disagree about one record become a question to the GC), rewrites the rule
-decisions (decisions made by the GC or the AI reviewer are kept), then sends newly uncertain records through
-the adjudicator, which turns red-flagged ones into GC questions.
+decisions (decisions made by the GC or the AI reviewer are kept), checks M3 matches against the sub's company
+profile when it has one (adjudicate.check_m3: a re-match writes them as plain M3 again), then sends newly uncertain
+records through the adjudicator, which turns red-flagged ones into GC questions.
 
     uv run python -m scripts.rematch                              # every project, dry run
     uv run python -m scripts.rematch --project "Demo: Hospital expansion, Nashville TN" --apply
@@ -13,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 
+from ssi.llm import profile as P
 from ssi.matching import adjudicate as ADJ
 from ssi.matching import candidates as C
 from ssi.matching import remap
@@ -159,6 +161,11 @@ def main() -> None:
                         with pg.conn() as c:
                             c.execute("UPDATE app.sub_match SET needs_adjudication = true WHERE sub_id = %s AND method = 'llm_rejected'",
                                       [s["sub_id"]])
+                    prof = P.load(claimed.get("profile_id")) if P.m3_check_enabled() else None
+                    if prof:
+                        m3 = ADJ.check_m3(claimed, prof, P.build)
+                        if m3["moved"] or m3["confirmed"]:
+                            print(f"    M3 web check: {m3['moved']} record(s) sent back, {m3['confirmed']} confirmed")
                     stats = ADJ.adjudicate(claimed, llm=llm, packet_fn=ADJ.evidence_packet)
                 print(f"    applied; adjudicated {stats['clusters']} uncertain group(s), {stats['questions']} new GC question(s)")
 
