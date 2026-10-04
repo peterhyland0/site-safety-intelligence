@@ -170,8 +170,9 @@ def health():
     except Exception:
         db_ok = False
     m = warehouse.meta()
+    from ssi.llm import profile as P
     return S.Health(status="ok" if db_ok else "degraded", data_as_of=m["data_as_of"], build_id=m["build_id"],
-                    llm_enabled=llm_client.available("foreman"), db_ok=db_ok)
+                    llm_enabled=llm_client.available("foreman"), db_ok=db_ok, profile_lookup=P.available())
 
 
 @app.get("/api/projects", response_model=list[S.Project])
@@ -234,9 +235,9 @@ def add_subs(project_id: str, body: S.SubsCreate):
             # profile_status 'pending': the adjudication step looks the company up first (ssi/llm/profile.py)
             s = c.execute("""INSERT INTO app.project_sub (project_id, entered_name, entered_city, entered_state, trade, licence,
                                                           position, profile_status)
-                             VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending') RETURNING *""",
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                           [project_id, row.name.strip(), (row.city or "").strip() or None, state, row.trade, row.licence,
-                           start + i + 1]).fetchone()
+                           start + i + 1, "pending" if body.lookup_profiles else None]).fetchone()
             created.append(s)
     for s in created:
         match_and_persist(s, p["state"])

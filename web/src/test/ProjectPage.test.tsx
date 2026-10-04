@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectDetail, SubCard } from "../api/types";
 import { toProjectDetail } from "../mock/derive";
 import { seedProjects } from "../mock/fixtures";
@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   updateProject: vi.fn(),
   addSubs: vi.fn(),
   adjudicate: vi.fn(),
+  health: vi.fn(),
   exportCsvUrl: (id: string) => `/api/projects/${id}/export.csv`,
 }));
 
@@ -19,6 +20,21 @@ vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
   return { ...actual, MOCK_MODE: false, api };
 });
+
+// Node's own experimental localStorage global shadows jsdom's here, so give the tests a plain one (as ThemeToggle.test)
+function memoryStorage(): Storage {
+  const m = new Map<string, string>();
+  return {
+    get length() {
+      return m.size;
+    },
+    clear: () => m.clear(),
+    getItem: (k) => m.get(k) ?? null,
+    key: (i) => [...m.keys()][i] ?? null,
+    removeItem: (k) => void m.delete(k),
+    setItem: (k, v) => void m.set(k, String(v)),
+  };
+}
 
 function detail(): ProjectDetail {
   return toProjectDetail(structuredClone(seedProjects()[0]));
@@ -37,6 +53,11 @@ function renderPage() {
 describe("GC scorecard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    api.health.mockResolvedValue({ status: "ok", data_as_of: null, build_id: null, llm_enabled: true, db_ok: true, profile_lookup: false });
+    vi.stubGlobal("localStorage", memoryStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("ranks subs with verdict chips that carry text, and keeps 'No OSHA record' distinct from 'No flags'", async () => {
@@ -99,10 +120,37 @@ describe("GC scorecard", () => {
     await user.type(screen.getByLabelText("Sub 2: Company name"), "Lone Star Framing");
     await user.click(screen.getByRole("button", { name: "Add 2 subs" }));
 
-    expect(api.addSubs).toHaveBeenCalledWith("demo-riverside", [
-      { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
-      { name: "Lone Star Framing", city: null, state: detail().project.state, trade: null, licence: null },
-    ]);
+    expect(api.addSubs).toHaveBeenCalledWith(
+      "demo-riverside",
+      [
+        { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
+        { name: "Lone Star Framing", city: null, state: detail().project.state, trade: null, licence: null },
+      ],
+      false, // no web lookup unless the GC ticks it
+    );
+  });
+
+  it("offers the web lookup when the server can do it, off until ticked, and remembers the choice", async () => {
+    const user = userEvent.setup();
+    api.health.mockResolvedValue({ status: "ok", data_as_of: null, build_id: null, llm_enabled: true, db_ok: true, profile_lookup: true });
+    api.getProject.mockResolvedValue({ ...detail(), subs: [] });
+    api.addSubs.mockResolvedValue([]);
+    renderPage();
+
+    const box = await screen.findByRole("checkbox", { name: "Look up each company on the web first" });
+    expect(box).not.toBeChecked();
+    await user.click(box);
+    await user.type(screen.getByLabelText("Sub 1: Company name"), "Tindell Corporation");
+    await user.click(screen.getByRole("button", { name: "Add 1 sub" }));
+    expect(api.addSubs).toHaveBeenCalledWith("demo-riverside", [expect.objectContaining({ name: "Tindell Corporation" })], true);
+    expect(window.localStorage.getItem("ssi-lookup-profiles")).toBe("1");
+  });
+
+  it("hides the web lookup when the server can't do it", async () => {
+    api.getProject.mockResolvedValue({ ...detail(), subs: [] });
+    renderPage();
+    await screen.findByLabelText("Sub 1: Company name");
+    expect(screen.queryByRole("checkbox", { name: /Look up each company/ })).not.toBeInTheDocument();
   });
 
   it("fills rows from a pasted list and holds back a row with an unrecognised state until it's fixed", async () => {
@@ -122,10 +170,14 @@ describe("GC scorecard", () => {
 
     await user.selectOptions(screen.getByLabelText("Sub 2: State"), "NV");
     await user.click(screen.getByRole("button", { name: "Add 2 subs" }));
-    expect(api.addSubs).toHaveBeenCalledWith("demo-riverside", [
-      { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
-      { name: "Bad Co", city: "Nowhere", state: "NV", trade: null, licence: null },
-    ]);
+    expect(api.addSubs).toHaveBeenCalledWith(
+      "demo-riverside",
+      [
+        { name: "ABC Roofing", city: "Dallas", state: "TX", trade: "roofing", licence: null },
+        { name: "Bad Co", city: "Nowhere", state: "NV", trade: null, licence: null },
+      ],
+      false,
+    );
   });
 
   it("shows an access message on 401", async () => {

@@ -89,7 +89,7 @@ const normName = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-function subFromInput(row: SubInput, project: FxProject): FxSub {
+function subFromInput(row: SubInput, project: FxProject, lookup: boolean): FxSub {
   const known = catalogue.find((c) => normName(c.entered_name) === normName(row.name));
   const base: FxSub = known
     ? structuredClone(known)
@@ -119,7 +119,7 @@ function subFromInput(row: SubInput, project: FxProject): FxSub {
   base.entered_state = row.state ?? project.state ?? null;
   base.trade = row.trade ?? base.trade;
   base.questions = base.questions.map((q) => ({ ...q, question_id: newId("q") }));
-  base.profile_status = "pending"; // the adjudication step looks the company up first, as the API does
+  base.profile_status = lookup ? "pending" : null; // pending: the adjudication step looks the company up first
   base.profile = null;
   return base;
 }
@@ -201,7 +201,7 @@ const routes: Route[] = [
   {
     method: "GET",
     pattern: /^\/api\/health$/,
-    run: (): Health => ({ status: "ok", data_as_of: DATA_AS_OF, build_id: "mock", llm_enabled: true, db_ok: true }),
+    run: (): Health => ({ status: "ok", data_as_of: DATA_AS_OF, build_id: "mock", llm_enabled: true, db_ok: true, profile_lookup: true }),
   },
   {
     method: "GET",
@@ -247,10 +247,10 @@ const routes: Route[] = [
     pattern: /^\/api\/projects\/([^/]+)\/subs$/,
     run: async (m, body) => {
       const p = findProject(decodeURIComponent(m[1]));
-      const rows = (body as { rows?: SubInput[] })?.rows ?? [];
+      const { rows = [], lookup_profiles: lookup = false } = (body ?? {}) as { rows?: SubInput[]; lookup_profiles?: boolean };
       if (!rows.length) fail(422, "No rows to add.");
       await sleep(500);
-      const created = rows.map((r) => subFromInput(r, p));
+      const created = rows.map((r) => subFromInput(r, p, lookup));
       p.subs.push(...created);
       return created.map((s) => toCard(s, p.lookback_years));
     },

@@ -96,6 +96,8 @@ export interface SubInput {
 
 export interface SubsCreate {
   rows: SubInput[];
+  /** look each company up on the web first (uses Claude credits); otherwise the sub page offers it later */
+  lookup_profiles?: boolean;
 }
 
 export interface Reason {
@@ -471,4 +473,6 @@ export interface Health {
   build_id: string | null;
   llm_enabled: boolean;
   db_ok: boolean;
+  /** a Claude key is set, so adding subs can offer the company lookup */
+  profile_lookup?: boolean;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { api, errorMessage } from "../api/client";
+import { savedLookup, saveLookup } from "../lib/lookupPref";
 import type { SubCard } from "../api/types";
 import { plural } from "../lib/format";
 import { US_STATES } from "../lib/parseSubs";
@@ -48,7 +49,17 @@ export function AddSubsBox({
   const [error, setError] = useState<string | null>(null);
   // rows the server turned away as already on the project, by row id; cleared when the row is edited
   const [taken, setTaken] = useState<Record<number, string>>({});
-  const ids = { title: useId(), help: useId(), paste: useId(), trades: useId() };
+  // the web lookup is offered only when the server can do it; it costs credits, so it's off unless ticked
+  const [canLookUp, setCanLookUp] = useState(false);
+  const [lookup, setLookup] = useState(savedLookup);
+  useEffect(() => {
+    let live = true;
+    api.health().then((h) => live && setCanLookUp(!!h?.profile_lookup), () => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const ids = { title: useId(), help: useId(), paste: useId(), trades: useId(), lookup: useId() };
 
   const { checks, valid, validIds } = useMemo(() => {
     const res = checkRows(rows, defaultState);
@@ -103,7 +114,7 @@ export function AddSubsBox({
     setBusy(true);
     setError(null);
     try {
-      const cards = await api.addSubs(projectId, valid);
+      const cards = await api.addSubs(projectId, valid, canLookUp && lookup);
       setRows([emptyRow()]);
       setNotice(null);
       onAdded(cards ?? []);
@@ -207,6 +218,31 @@ export function AddSubsBox({
         <IconPlus size={16} />
         Add another sub
       </button>
+
+      {canLookUp ? (
+        <div className="mt-3 flex items-start gap-2.5">
+          <input
+            id={ids.lookup}
+            type="checkbox"
+            className="mt-1 size-4 shrink-0 accent-[var(--accent)]"
+            checked={lookup}
+            onChange={(e) => {
+              setLookup(e.target.checked);
+              saveLookup(e.target.checked);
+            }}
+            aria-describedby={`${ids.lookup}-hint`}
+          />
+          <div className="min-w-0">
+            <label htmlFor={ids.lookup} className="text-sm font-medium text-ink">
+              Look up each company on the web first
+            </label>
+            <p id={`${ids.lookup}-hint`} className="text-xs text-muted">
+              Finds the locations each company lists, so records at its other sites can come back to you as a
+              question. Uses Claude credits and adds about 30 seconds a sub. You can also do it later from a sub's page.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <InlineError message={error} />
       <div className="mt-4 flex flex-wrap items-center gap-2">

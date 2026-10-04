@@ -184,8 +184,8 @@ export const api = {
   updateProject: (projectId: string, body: ProjectUpdate) =>
     request<Project>("PATCH", `/api/projects/${enc(projectId)}`, body),
 
-  addSubs: (projectId: string, rows: SubInput[]) =>
-    request<SubCard[]>("POST", `/api/projects/${enc(projectId)}/subs`, { rows }),
+  addSubs: (projectId: string, rows: SubInput[], lookupProfiles = false) =>
+    request<SubCard[]>("POST", `/api/projects/${enc(projectId)}/subs`, { rows, lookup_profiles: lookupProfiles }),
   deleteSub: (projectId: string, subId: string) =>
     request<{ ok: boolean }>("DELETE", `/api/projects/${enc(projectId)}/subs/${enc(subId)}`),
   getSub: (projectId: string, subId: string, signal?: AbortSignal) =>

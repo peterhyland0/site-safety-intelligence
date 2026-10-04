@@ -1,8 +1,10 @@
 # Company profiles: asking the GC about a sub's other locations
 
-**What it does.** When a new sub has uncertain OSHA records, Claude looks the company up on the web and builds a
-short profile: its name, website, what it does, and the locations it lists, each with a quote from the page it came
-from. OSHA records at those locations skip the AI adjudicator and go to the GC in one question:
+**What it does.** When the GC ticks "Look up each company on the web first" while adding subs (off by default, since
+each lookup costs Claude credits; shown only when the server has a Claude key) and a new sub has uncertain OSHA
+records, Claude looks the company up on the web and builds a short profile: its name, website, what it does, and the
+locations it lists, each with a quote from the page it came from. OSHA records at those locations skip the AI
+adjudicator and go to the GC in one question:
 
 > Tindall Corporation lists these addresses on tindallcorp.com, and OSHA has records there: 'TINDALL' at 5400 OLGERS
 > RD, PETERSBURG VA (10 inspections, red flags); 'TINDALL CORPORATION VIRGINIA DIVISION' (another name) at 5400
@@ -35,9 +37,9 @@ GC adds sub ─► rules (instant): the scorecard appears; uncertain records wai
 
 - **Searched before the AI**, so a listed branch can't be excluded by the AI first, and each question is complete when
   it's created. The rules still run first: they decide in under a second whether a search is needed at all.
-- **Subs added before profiles** get a "Look up this company" button on their page. It asks about their undecided
-  possible and excluded records (including ones the AI excluded), and an open red-flag question about exactly those
-  records gets the profile's evidence as its suggestion instead of a second question.
+- **Subs added without the lookup** (or before profiles existed) get a "Look up this company" button on their page. It
+  asks about their undecided possible and excluded records (including ones the AI excluded), and an open red-flag
+  question about exactly those records gets the profile's evidence as its suggestion instead of a second question.
 - **Records the profile routes to the GC** are written with method `profile` (possible until answered), which a
   re-match keeps, so the question's records stay put after a data refresh.
 
