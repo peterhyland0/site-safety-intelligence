@@ -96,7 +96,7 @@ class FakeClaude:
 
 
 def resp(stop, content, searches=0):
-    return {"stop_reason": stop, "model": "claude-opus-5-5", "content": content,
+    return {"stop_reason": stop, "model": "claude-sonnet-5-5", "content": content,
             "usage": {"input_tokens": 100, "output_tokens": 10, "server_tool_use": {"web_search_requests": searches}}}
 
 
@@ -135,7 +135,7 @@ def test_the_prompt_says_what_is_known():
 
 
 # --- matching records to listed locations, and the questions --------------------------------------------------
-PROFILE = {"name": "Tindall Corporation", "domain": "tindallcorp.com", "model": "claude-opus-5-5", "locations": [
+PROFILE = {"name": "Tindall Corporation", "domain": "tindallcorp.com", "model": "claude-sonnet-5-5", "locations": [
     {"address": "5400 Olgers Road", "addr_key": "5400 OLGERS", "city": "Petersburg", "state": "VA", "zip": "23803",
      "kind": "plant", "source_url": URL, "quote": "Virginia Division\n5400 Olgers Road  Petersburg, VA 23803", "own_site": True},
     {"address": None, "addr_key": None, "city": "San Antonio", "state": "TX", "zip": None, "kind": "plant",

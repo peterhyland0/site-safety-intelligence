@@ -9,7 +9,7 @@ page or a search citation) with the city in it; a street counts only if its hous
 quote too. Anything else is dropped (check()). Why and how: docs/company-profile.md.
 
 Env: an Anthropic credential (ANTHROPIC_API_KEY, or CLAUDE_API_KEY); SSI_PROFILE=off switches it off; SSI_PROFILE_MODEL (default
-claude-opus-5-5); SSI_DAILY_PROFILE_LIMIT (default 100 profiles a day, every attempt counts)."""
+claude-sonnet-5-5); SSI_DAILY_PROFILE_LIMIT (default 100 profiles a day, every attempt counts)."""
 from __future__ import annotations
 
 import hashlib
@@ -27,7 +27,7 @@ from ssi.store import pg, warehouse
 log = logging.getLogger(__name__)
 
 PROMPT_VERSION = 2  # 2: fetch the company's own page before reporting (snippet-only locations can't be checked)
-DEFAULT_MODEL = "claude-opus-5-5"
+DEFAULT_MODEL = "claude-sonnet-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"  # as ssi/llm/anthropic_provider.py
 TTL_DAYS = 90
 BUILDING_STALE_MINUTES = 10  # a 'building' row older than this was abandoned

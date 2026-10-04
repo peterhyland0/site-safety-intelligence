@@ -45,7 +45,7 @@ GC adds sub ─► rules (instant): the scorecard appears; uncertain records wai
 
 ## What is checked
 
-The profile comes from one Claude call (`claude-opus-5-5` by default) with Anthropic's web search and web fetch tools,
+The profile comes from one Claude call (`claude-sonnet-5-5` by default) with Anthropic's web search and web fetch tools,
 ending with a strict `report_profile` tool call. Then, in code:
 - each location must quote text the call actually read from that page (a fetched page or a search citation), and the
   city must be in the quote; otherwise it's dropped;
@@ -60,10 +60,11 @@ separately, with "unsure", since a common name can recur in one city.
 
 ## Cost and limits
 
-About $0.20 a profile on Opus 5.5 (≈38k input tokens, mostly the pages it reads, plus 1-2 searches), ~20-40 s.
+About $0.20 a profile on Sonnet 5.5 (≈80k input tokens, mostly the pages it reads, plus 2-3 searches), median ~30 s
+and under a minute (43 profiles in [eval/profile](../eval/profile/results-seed7-cached.md)).
 Profiles are cached for 90 days per company (rows in `app.company_profile` are immutable versions).
 `SSI_DAILY_PROFILE_LIMIT` (default 100 a day) caps spending; `SSI_PROFILE=off` switches the step off;
-`SSI_PROFILE_MODEL` changes the model (e.g. `claude-sonnet-5-5`).
+`SSI_PROFILE_MODEL` changes the model (e.g. `claude-opus-5-5`).
 
 ## Privacy
 
