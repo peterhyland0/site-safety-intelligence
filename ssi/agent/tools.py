@@ -15,7 +15,7 @@ FATALITY_KINDS = RED_FLAG_KINDS[:8]  # the fatality/catastrophe investigations, 
 
 def specs(sub_ids: list[str], hazard_codes: list[str]) -> list[ToolSpec]:
     sub = {"type": "string", "enum": sub_ids, "description": "The project sub's id (from the project context)"}
-    obj = lambda props, req: {"type": "object", "properties": props, "required": req, "additionalProperties": False}  # noqa: E731
+    obj = lambda props, req: {"type": "object", "properties": props, "required": req, "additionalProperties": False}
     return [
         ToolSpec("compare_subs", "Scorecard for every sub on the project: verdict, top reasons, inspection counts, "
                  "serious-citation rate vs the trade median, red-flag counts, fatality/catastrophe investigations by "

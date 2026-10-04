@@ -30,8 +30,7 @@ def fetch(url: str, dest: Path) -> None:
     with httpx.stream("GET", url, follow_redirects=True, timeout=httpx.Timeout(60, read=300)) as r:
         r.raise_for_status()
         with open(tmp, "wb") as f:
-            for chunk in r.iter_bytes(1 << 20):
-                f.write(chunk)
+            f.writelines(r.iter_bytes(1 << 20))
     tmp.replace(dest)
     print(f"  {dest.name}: {dest.stat().st_size / 1e6:.0f} MB", flush=True)
 

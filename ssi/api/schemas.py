@@ -4,7 +4,6 @@ The SPA (web/) mirrors these as TypeScript types in web/src/api/types.ts. Change
 """
 from __future__ import annotations
 
-from datetime import date
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints

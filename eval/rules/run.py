@@ -97,15 +97,15 @@ POOLS = {
     "shared address": (f"addr_key IN {SHARED_ADDRESS}", "NULL"),
     "joint venture": ("is_jv OR addr_key IN (SELECT addr_key FROM entity.establishment WHERE is_jv AND addr_key IS NOT NULL)",
                       "NULL"),
-    "branch or sibling": ("name_core IN (SELECT name_core FROM entity.establishment WHERE name_core <> '' AND "
-                          f"(sibling_suffix IS NOT NULL OR {BRANCHY}))", "NULL"),
+    "branch or sibling": (("name_core IN (SELECT name_core FROM entity.establishment WHERE name_core <> '' AND "
+                           f"(sibling_suffix IS NOT NULL OR {BRANCHY}))"), "NULL"),
     "related facility": ("name_core IN (SELECT name_core FROM entity.establishment WHERE related_only AND name_core <> '')",
                          "NULL"),
     "common name": ("coalesce(name_core, '') = ''", "NULL"),
-    "licence": ("establishment_key IN (SELECT establishment_key FROM entity.ref_link "
-                "WHERE source LIKE 'licence:%' AND method = 'M1')",
-                "(SELECT min(ref_id) FROM entity.ref_link k WHERE k.establishment_key = e.establishment_key "
-                "AND k.source LIKE 'licence:%' AND k.method = 'M1')"),
+    "licence": (("establishment_key IN (SELECT establishment_key FROM entity.ref_link "
+                 "WHERE source LIKE 'licence:%' AND method = 'M1')"),
+                ("(SELECT min(ref_id) FROM entity.ref_link k WHERE k.establishment_key = e.establishment_key "
+                 "AND k.source LIKE 'licence:%' AND k.method = 'M1')")),
 }
 
 
@@ -236,14 +236,14 @@ def summarise(fired: list[dict], graded: list[dict], review: dict[tuple, dict]) 
 def report(summary: list[dict], graded: list[dict], review: dict[tuple, dict], meta: dict) -> str:
     pools = ", ".join(f"{p} {n}" for p, n in meta["pools"].items())
     lines = ["# Matching rules, one at a time (silver labels from ITA EINs)", "",
-             f"{meta['searches']} searches ({pools}) on warehouse {meta['build_id']}: {meta['records']:,} records "
-             f"decided, {meta['labelled']:,} of them labelled; {meta['graded']:,} graded after the cap of {PER_SEARCH} "
-             f"per search, rule and bucket. {meta['seconds']} s.", "",
-             "The targeted pools oversample the cases their rules act on, so each share describes a rule where it "
-             "acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they "
-             "aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule "
-             "with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a "
-             "corporate family's divisions as different companies.", ""]
+             (f"{meta['searches']} searches ({pools}) on warehouse {meta['build_id']}: {meta['records']:,} records "
+              f"decided, {meta['labelled']:,} of them labelled; {meta['graded']:,} graded after the cap of {PER_SEARCH} "
+              f"per search, rule and bucket. {meta['seconds']} s."), "",
+             ("The targeted pools oversample the cases their rules act on, so each share describes a rule where it "
+              "acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they "
+              "aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule "
+              "with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a "
+              "corporate family's divisions as different companies."), ""]
     for bucket, (title, meaning) in BUCKETS.items():
         rows = [s for s in summary if s["bucket"] == bucket]
         if not rows:
@@ -265,8 +265,8 @@ def report(summary: list[dict], graded: list[dict], review: dict[tuple, dict], m
         lines += ["## Rules that never fired in these searches", "",
                   ", ".join(f"{r} ({RULES[r]})" for r in never) + ".", ""]
     lines += ["## Apparent errors (first 8 per rule)", "",
-              "A matched record labelled different, or an excluded one labelled same. Many are a family's divisions "
-              "filing under their own EINs; review.jsonl holds them for a verdict.", ""]
+              ("A matched record labelled different, or an excluded one labelled same. Many are a family's divisions "
+               "filing under their own EINs; review.jsonl holds them for a verdict."), ""]
     for s in summary:
         errs = sorted((r for r in graded if r["rule"] == s["rule"] and r["bucket"] == s["bucket"] and apparent_error(r)),
                       key=lambda r: h(r["a_key"], r["b_key"]))

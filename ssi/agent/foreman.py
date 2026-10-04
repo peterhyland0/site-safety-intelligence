@@ -58,7 +58,7 @@ HAZARD_FALLBACK = ["fall_protection", "scaffolds", "ladders", "electrical", "exc
 def _hazard_codes() -> list[str]:
     try:
         codes = [r["hazard_code"] for r in warehouse.rows("SELECT hazard_code FROM ref.hazard_category ORDER BY 1")]
-    except Exception:
+    except Exception:  # noqa: BLE001
         codes = []
     return codes or HAZARD_FALLBACK
 
@@ -71,8 +71,8 @@ def _traceable(fn):
 
 
 def _context(project: dict, subs: list[dict]) -> str:
-    lines = [f"Project: {project['name']} (job-site state {project['state'] or 'not set'}; "
-             f"lookback window {project['lookback_years']} years). OSHA data as of {warehouse.meta()['data_as_of']}.",
+    lines = [(f"Project: {project['name']} (job-site state {project['state'] or 'not set'}; "
+              f"lookback window {project['lookback_years']} years). OSHA data as of {warehouse.meta()['data_as_of']}."),
              "Subs on this project (use these ids):"]
     for s in subs:
         where = ", ".join(x for x in (s["entered_city"], s["entered_state"]) if x)
@@ -152,7 +152,7 @@ def answer(project: dict, question: str, history: list[dict], *, chat_id: str | 
                 try:
                     out = tb.run(call.name, call.input)
                     err = "error" in out
-                except Exception as e:  # a failed tool goes back to the model as an error result
+                except Exception as e:  # a failed tool goes back to the model as an error result  # noqa: BLE001
                     out, err = {"error": str(e)}, True
                 outputs.append(out)
                 tool_log.append({"tool": call.name, "input": call.input, "error": err})

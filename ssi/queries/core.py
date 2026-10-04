@@ -74,7 +74,7 @@ def _labels(table: str, key: str, value: str, fallback: dict) -> dict:
         rs = warehouse.rows(f"SELECT {key} AS k, {value} AS v FROM ref.{table}")
         d = {r["k"]: r["v"] for r in rs}
         return {**fallback, **d} if d else fallback
-    except Exception:
+    except Exception:  # noqa: BLE001
         return fallback
 
 

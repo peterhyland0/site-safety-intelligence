@@ -105,8 +105,7 @@ def generic_tokens() -> frozenset[str]:
 def descriptor_tokens() -> frozenset[str]:
     try:
         return frozenset(warehouse.one("SELECT ssi_descriptor_tokens() AS t")["t"])
-    except Exception:  # warehouse built before descriptor words existed
-        from ssi.cleaning import install_macros
+    except Exception:  # warehouse built before descriptor words existed  # noqa: BLE001
         return frozenset({"GENERAL", "CONTRACTOR", "CONTRACTORS", "CONTRACTING", "CONSTRUCTION", "SERVICES", "GROUP"})
 
 

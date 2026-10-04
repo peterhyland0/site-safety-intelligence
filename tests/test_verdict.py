@@ -2,9 +2,10 @@ from ssi.scoring.verdict import Facts, HazardFact, RedFlagFact, evaluate
 
 
 def facts(**kw):
-    base = dict(as_of_year=2026, window_years=5, matched_establishments=2, inspections_all=10, inspections_window=4,
-                rated_window=4, serious_plus_window=2, red_flags=[], hazards=[], open_serious_cases=[], pending_questions=0,
-                benchmark_p75=1.5, benchmark_p90=2.5, benchmark_peers=100, benchmark_label="roofing contractors")
+    base = {"as_of_year": 2026, "window_years": 5, "matched_establishments": 2, "inspections_all": 10,
+            "inspections_window": 4, "rated_window": 4, "serious_plus_window": 2, "red_flags": [], "hazards": [],
+            "open_serious_cases": [], "pending_questions": 0, "benchmark_p75": 1.5, "benchmark_p90": 2.5,
+            "benchmark_peers": 100, "benchmark_label": "roofing contractors"}
     base.update(kw)
     return Facts(**base)
 

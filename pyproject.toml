@@ -33,3 +33,7 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 110
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency injection is declared as a default argument
+extend-immutable-calls = ["fastapi.Depends"]

@@ -17,7 +17,7 @@ For Claude: ANTHROPIC_API_KEY (+ SSI_MODEL)."""
 from __future__ import annotations
 
 import os
-from datetime import date
+from datetime import UTC, datetime
 
 from ssi import config
 from ssi.llm.base import Provider
@@ -71,7 +71,7 @@ def budget_ok(share: float = 1.0) -> bool:
     from ssi.store import pg
     with pg.conn() as c:
         r = c.execute("SELECT input_tokens + output_tokens AS t FROM app.llm_usage_daily WHERE day = %s",
-                      [date.today()]).fetchone()
+                      [datetime.now(UTC).date()]).fetchone()
     return (r["t"] if r else 0) < config.DAILY_TOKEN_BUDGET * share
 
 
@@ -81,4 +81,4 @@ def record_usage(input_tokens: int, output_tokens: int) -> None:
         c.execute("""INSERT INTO app.llm_usage_daily (day, input_tokens, output_tokens) VALUES (%s, %s, %s)
                      ON CONFLICT (day) DO UPDATE SET input_tokens = app.llm_usage_daily.input_tokens + EXCLUDED.input_tokens,
                                                     output_tokens = app.llm_usage_daily.output_tokens + EXCLUDED.output_tokens""",
-                  [date.today(), input_tokens, output_tokens])
+                  [datetime.now(UTC).date(), input_tokens, output_tokens])

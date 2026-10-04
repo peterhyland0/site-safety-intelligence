@@ -19,7 +19,7 @@ import json
 import os
 import shutil
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
@@ -209,7 +209,7 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     raw_dir = data_dir / "raw"
     build_dir = data_dir / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
-    build_id = "dev" if dev else datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    build_id = "dev" if dev else datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     wh_path = build_dir / f"warehouse-{build_id}.duckdb"
     scratch_path = build_dir / f"scratch-{build_id}.duckdb"
     if not from_step:
@@ -226,7 +226,7 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
     con.execute(f"ATTACH '{wh_path}' AS wh")
     install_macros(con)
 
-    report: dict = {"build_id": build_id, "started_at": datetime.now(timezone.utc).isoformat(), "steps": []}
+    report: dict = {"build_id": build_id, "started_at": datetime.now(UTC).isoformat(), "steps": []}
     t0 = time.time()
     hazard_stubbed = False
     refs_loaded = False
@@ -238,8 +238,7 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
         if from_step and prefix < from_step and not prefix.startswith("0"):
             continue
         if prefix == "31" or (prefix >= "32" and not hazard_stubbed and not (config.SQL_DIR / "31_hazard_map.sql").exists()):
-            if prefix >= "31":
-                report["refs_loaded"] = load_refs(con)
+            report["refs_loaded"] = load_refs(con)
         if prefix == "32":
             hazard_stubbed = ensure_hazard_stub(con)
         if prefix.startswith("6") and not (raw_dir / "reference").exists():
@@ -279,7 +278,7 @@ def build(data_dir: Path, dev: bool = False, from_step: str | None = None, keep_
                    SELECT ? AS build_id, ?::TIMESTAMP AS built_at, ?::DATE AS data_as_of,
                           ?::DATE AS accident_detail_through, ?::DATE AS history_since,
                           ? AS inputs_fingerprint, ? AS code_fingerprint, ? AS table_checksums""",
-                [build_id, datetime.now(timezone.utc).replace(tzinfo=None), data_as_of,
+                [build_id, datetime.now(UTC).replace(tzinfo=None), data_as_of,
                  con.execute("SELECT max(event_date)::VARCHAR FROM wh.osha.accident").fetchone()[0], history_since,
                  fingerprints["inputs_fingerprint"], fingerprints["code_fingerprint"], json.dumps(checksums)])
     con.execute("DETACH wh")

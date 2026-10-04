@@ -11,7 +11,7 @@ import hmac
 import secrets
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
@@ -116,7 +116,7 @@ def session_user(token: str | None) -> tuple[dict | None, bool]:
                         [h]).fetchone()
         if not row:
             return None, False
-        refresh = row["expires_at"] - datetime.now(timezone.utc) < timedelta(days=SESSION_DAYS - 1)
+        refresh = row["expires_at"] - datetime.now(UTC) < timedelta(days=SESSION_DAYS - 1)
         if refresh:
             c.execute("UPDATE app.user_session SET expires_at = now() + %s WHERE token_hash = %s",
                       [timedelta(days=SESSION_DAYS), h])

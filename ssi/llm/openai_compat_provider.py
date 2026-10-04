@@ -47,7 +47,7 @@ class OpenAICompatProvider:
         u = resp.usage
         usage = Usage(getattr(u, "prompt_tokens", 0) or 0, getattr(u, "completion_tokens", 0) or 0, 1)
         text = resp.choices[0].message.content or ""
-        m = re.search(r"\{.*\}", text, re.S)
+        m = re.search(r"\{.*\}", text, re.DOTALL)
         try:
             return (json.loads(m.group(0)) if m else None), usage
         except json.JSONDecodeError:

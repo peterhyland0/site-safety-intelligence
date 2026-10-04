@@ -178,7 +178,7 @@ def health():
     try:
         with pg.conn() as c:
             c.execute("SELECT 1")
-    except Exception:
+    except Exception:  # noqa: BLE001
         db_ok = False
     m = warehouse.meta()
     from ssi.llm import profile as P

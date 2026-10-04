@@ -297,16 +297,16 @@ def test_slip_with_a_record_in_the_gcs_city_is_searched_by_osha_spelling(monkeyp
     q3, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Savannah"), rows)
     assert note is None and q3.core == "MCKENNYS"
     # the GC's spelling has records of its own
-    q4, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
-                                    [*rows, _row("MCKENNYS", 1, city="MACON", state="GA")])
+    _, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
+                                   [*rows, _row("MCKENNYS", 1, city="MACON", state="GA")])
     assert note is None
     # two names a slip away in the city: no way to tell which one the GC meant
-    q5, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
-                                    [*rows, _row("MCKENNYSS", 1, city="ATLANTA", state="GA")])
+    _, note = run.correct_spelling(q("MCKENNYS", "MCKENNYS", state="GA", city="Atlanta"),
+                                   [*rows, _row("MCKENNYSS", 1, city="ATLANTA", state="GA")])
     assert note is None
     # a replaced letter is usually another company, even in the same city
-    q6, note = run.correct_spelling(q("SANDOBAL ROOFING", "SANDOBAL", state="MT", city="Billings"),
-                                    [_row("SANDOVAL", 2, "SANDOVAL ROOFING", city="BILLINGS", state="MT")])
+    _, note = run.correct_spelling(q("SANDOBAL ROOFING", "SANDOBAL", state="MT", city="Billings"),
+                                   [_row("SANDOVAL", 2, "SANDOVAL ROOFING", city="BILLINGS", state="MT")])
     assert note is None
 
 
