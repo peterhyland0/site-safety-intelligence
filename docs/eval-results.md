@@ -298,7 +298,7 @@ regress. The full tables are in the [README](../README.md#8-evaluation); the one
 | Pipeline | The 10-year cut came before "is this a construction company?", dropping 5,817 recent inspections | Scope decided from every year, then 10 years kept |
 | Pipeline | The 2026 load restarts injury line numbers per employer: two deaths shown as one | Victims split on sex or age; a build check fails on a mixed row |
 | Outlier | Arizona and Iowa case numbers in front of names: 1,184 records became one-inspection companies; the matcher missed 10 of 12 Arizona companies' cited fatality records | Stripped: all 21 such companies now match their fatality record (19) or get a GC question (2) |
-| Outlier | 18,550 "inspections" (5.5%) were files where OSHA didn't inspect; a sub with only those read "No flags" | Never counted; only such files = No OSHA record |
+| Outlier | 18,553 "inspections" (5.5%) were files where OSHA didn't inspect; a sub with only those read "No flags" | Never counted; only such files = No OSHA record |
 | Outlier | "Open case" read as provisional, but 26,055 of 29,564 open serious cases were final | Provisional = open with a citation not yet final |
 | Outlier | Self-reported 300A deaths unused: 435 construction firms, 533 deaths (Karvo Companies: 6 in 2023, no OSHA fatality record) | Review flag when no OSHA fatality investigation is within a year |
 | Outlier | A safety and a health inspection of one visit counted as two: 13 firms High for "repeats in 2 separate inspections" from one visit | Repeats and hazard patterns count visits |
@@ -473,15 +473,17 @@ smoke test, not a benchmark: small enough to read every answer, which is how mos
 
 | Check | First run | 20/20 run | Latest run ([results](../eval/foreman/results.md)) |
 |---|---|---|---|
-| Used an expected tool | 20/20 | 20/20 | 19/20 |
-| Expected status | 15/20 | 20/20 | 20/20 |
-| Grounded (passed the number check) | 17/20 | 20/20 | 20/20 |
-| Required phrases present | 14/20 | 20/20 | 20/20 |
+| Used an expected tool | 20/20 | 20/20 | 20/20 |
+| Expected status | 15/20 | 20/20 | 19/20 |
+| Grounded (passed the number check) | 17/20 | 20/20 | 19/20 |
+| Required phrases present | 14/20 | 20/20 | 19/20 |
 | No forbidden phrases | 20/20 | 20/20 | 20/20 |
-| Median / slowest answer | | 2.6 s / 6.9 s | 2.2 s / 10.9 s |
+| Median / slowest answer | | 2.6 s / 6.9 s | 2.2 s / 4.6 s |
 
-The latest run is on the re-seeded demo, whose GC questions are answered. Its one tool miss is "Has Brasfield had
-any recent problems?", answered correctly through `compare_subs` and `open_cases` rather than the expected tool.
+The latest run is on the current demo, which leaves Barnhart's red-flag question for the GC. Its three misses are one
+question: the draft answer to "Has Brasfield had any recent problems?" failed the number check twice, so the foreman
+got the fallback built from the tool results, which lacks the phrase the eval looks for. The run before it missed
+Tindall's inspection count the same way, so about one answer in 20 falls back.
 
 | Found in a run | Changed |
 |---|---|
@@ -490,6 +492,7 @@ any recent problems?", answered correctly through `compare_subs` and `open_cases
 | Counts the model added up itself failed grounding | `inspection_list` returns its own total and the number with citations; the prompt says "quote, never compute" |
 | Tool results didn't name the sub ("the insulation sub") | Every per-sub result carries the name |
 | "Smith Electric" was answered as Allison-Smith | The prompt says to ask; the eval forbids "assuming you mean" |
+| With Barnhart's question left open, cross-sub answers come back `needs_confirmation` (the other subs answered, Barnhart named as unchecked) | Those four questions accept either status |
 | "Possible" records read as needing GC action | The tool says they only need the GC when they carry red flags |
 | "Which subs had a fatality?" called a per-sub tool 13 times (about four model rounds) | `compare_subs` carries each sub's fatality investigations by outcome and its open cases: one call |
 | Three expectations were wrong, not the model | Changed in `questions.json`, each in its git history |

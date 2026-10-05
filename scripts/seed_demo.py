@@ -20,8 +20,8 @@ SUBS = [
     ("Fugate Construction LLC", "Georgetown", "TN", "framing"),        # repeat violations, recent
     ("Cooper Steel Fabricators", "Shelbyville", "TN", "structural steel"),  # open serious case
     ("Dixie Roofing, Inc.", "LaFollette", "TN", "roofing"),            # many inspections + injury rates
-    ("McKenney's, Inc.", "Atlanta", "GA", "mechanical"),               # injury rates, mostly clean
-    ("Barnhart Crane & Rigging", "Memphis", "TN", "crane and rigging"),  # national, WA state plan; branch fatality via a GC answer
+    ("McKennys", "Atlanta", "GA", "mechanical"),                       # a GC's slip for MCKENNEY'S; injury rates, mostly clean
+    ("Barnhart Crane & Rigging", "Memphis", "TN", "crane and rigging"),  # national, WA state plan; branch fatality left to the GC
     ("Allison-Smith Company", "Smyrna", "GA", "electrical"),           # clean record
     ("Tindall Corporation", "Spartanburg", "SC", "precast concrete"),  # plants coded as manufacturing, confirmed by the GC
     ("Brasfield & Gorrie", "Birmingham", "AL", "general contractor"),  # JV partner: old history only
@@ -35,10 +35,14 @@ SUBS = [
 # printed, so a rule change that raises a new one is visible.
 GC_ANSWERS = {
     ("Barnhart Crane & Rigging", "BARNARD ROOFING"): "no",  # a roofer in Gray, TN
-    ("Barnhart Crane & Rigging", "BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH"): "yes",  # filed at Barnhart's Memphis HQ
     ("Brasfield & Gorrie", "EXCEL ELECTRICAL TECHNOLOGIES"): "no",  # an electrical contractor in Kennesaw, GA
     ("Tindall Corporation", "TINDALL"): "yes",  # Tindall's precast plants (Petersburg, Spartanburg, Conley, San Antonio)
+    ("Quality Roofing", "QUALITY ROOFING"): "no",  # roofers in Lubbock, TX and Kearny, NJ (U4: a common name in another state)
 }
+
+# Left for whoever opens the demo: the branch was filed at Barnhart's Memphis HQ and carries a cited fatality (2020).
+# Until the GC answers, Barnhart reads Review and the foreman says it needs confirmation; a "yes" makes it High concern.
+LEFT_OPEN = {("Barnhart Crane & Rigging", "BARNHART CRANE RIGGING OKLAHOMA CITY BRANCH")}
 
 
 def answer_questions(project_id: str) -> None:
@@ -50,6 +54,8 @@ def answer_questions(project_id: str) -> None:
         ans = next((a for (sub, osha), a in GC_ANSWERS.items() if sub == q["entered_name"] and f"under '{osha}'" in q["text"]), None)
         if ans:
             A.answer(q["question_id"], QuestionAnswer(answer=ans))
+        elif any(sub == q["entered_name"] and f"under '{osha}'" in q["text"] for sub, osha in LEFT_OPEN):
+            print(f"  left open for the GC: {q['entered_name']}: {q['text'][:120]}")
         else:
             print(f"  open question (no demo answer): {q['entered_name']}: {q['text'][:120]}")
 
