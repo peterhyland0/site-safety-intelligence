@@ -215,11 +215,15 @@ CREATE OR REPLACE MACRO addr_split_dir(s) AS
 
 -- Address key: house number + first street word (skipping a leading directional), or "POBOX <n>".
 -- Tolerates suffix variants ("7TH AVE SOUTH" = "7TH AVE S"), a direction written onto the street word, and suites.
+-- N or S then E, W or WEST before the street word is one direction, as NW is: OSHA's N.W. cleans to N W, and
+-- 6616 N W 32ND ST was keyed 6616 W (6616 NW 32ND ST is 6616 32ND); Okland's 1978 S WEST TEMPLE, S W TEMPLE and
+-- SW TEMPLE were three establishments. A street called West or E keys as its type, as 525 WEST ST does (100 S WEST ST
+-- is 100 ST, 833 S E AVE is 833 SE AVE). Not W or E then N or S: 15 W S TEMPLE is West South Temple, not North Temple.
 CREATE OR REPLACE MACRO addr_key(s) AS CASE
   WHEN regexp_matches(clean_addr(s), '\bPO BOX\s+[0-9]+') THEN 'POBOX ' || regexp_extract(clean_addr(s), '\bPO BOX\s+([0-9]+)', 1)
   WHEN regexp_matches(clean_addr(s), '^[0-9]+[A-Z]?\s+') THEN
-       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 1) || ' ' ||
-       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 2)
+       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S)\s+(?:E|W|WEST)\s+|(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 1) || ' ' ||
+       regexp_extract(addr_split_dir(clean_addr(s)), '^([0-9]+)[A-Z]?\s+(?:(?:N|S)\s+(?:E|W|WEST)\s+|(?:N|S|E|W|NORTH|SOUTH|EAST|WEST|NE|NW|SE|SW)\s+)?([A-Z0-9]+)', 2)
   ELSE NULL END;
 
 CREATE OR REPLACE MACRO zip5(z) AS CASE

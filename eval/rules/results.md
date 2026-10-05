@@ -1,6 +1,6 @@
 # Matching rules, one at a time (silver labels from ITA EINs)
 
-3264 searches (general 1500, person 282, shared address 274, joint venture 93, branch or sibling 274, related facility 268, common name 273, licence 300) on warehouse 20261004T230852Z: 140,764 records decided, 23,612 of them labelled; 8,020 graded after the cap of 3 per search, rule and bucket. 456 s.
+3264 searches (general 1500, person 282, shared address 275, joint venture 93, branch or sibling 274, related facility 267, common name 273, licence 300) on warehouse 20261004T235319Z: 140,782 records decided, 23,607 of them labelled; 8,018 graded after the cap of 3 per search, rule and bucket. 437 s.
 
 The targeted pools oversample the cases their rules act on, so each share describes a rule where it acts, not a GC's usual mix. Intervals are 95% (Wilson) and treat records as independent, which they aren't when a few firms supply most of a rule's records (firms: distinct tax IDs searched). A rule with under ~30 labelled records, or a handful of firms, settles little. Silver labels count a corporate family's divisions as different companies.
 
@@ -10,12 +10,12 @@ Share same = precision: the rest are records of another company counted in the s
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M1 | Same name, same state (distinctive, or the same city) | 967 | 1620 | 950 (585) | 946 | 4 (3) | 0.996 [0.99–1.0] | 0 of 4 reviewed |
+| M1 | Same name, same state (distinctive, or the same city) | 964 | 1621 | 949 (583) | 945 | 4 (3) | 0.996 [0.99–1.0] | 0 of 4 reviewed |
 | M1b | Same distinctive core, differing only by descriptor words | 113 | 180 | 44 (21) | 20 | 24 (9) | 0.455 [0.32–0.6] | 0 of 24 reviewed |
 | M1s | The sub's name plus OF <PLACE>, in its city, at an address where another OF <PLACE> of it files | 1 | 2 | 0 (0) | 0 | 0 (0) |  |  |
 | M2 | At a matched address, the name differs only by spelling | 237 | 318 | 40 (28) | 28 | 12 (6) | 0.7 [0.55–0.82] | 0 of 12 reviewed |
-| M3 | Same distinctive name in another state | 408 | 3591 | 469 (120) | 366 | 103 (40) | 0.78 [0.74–0.82] | 0 of 103 reviewed |
-| L1 | Linked to the licence number entered | 91 | 124 | 112 (78) | 112 | 0 (0) | 1.0 [0.97–1.0] |  |
+| M3 | Same distinctive name in another state | 409 | 3588 | 469 (120) | 366 | 103 (39) | 0.78 [0.74–0.82] | 0 of 103 reviewed |
+| L1 | Linked to the licence number entered | 91 | 118 | 108 (77) | 108 | 0 (0) | 1.0 [0.97–1.0] |  |
 
 ## Rules that exclude
 
@@ -23,8 +23,8 @@ Share same = the share wrongly excluded: the sub's own records hidden.
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| X1 | A different real word in the name | 2317 | 86030 | 3497 (1336) | 18 | 3479 (2937) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
-| X3 | A common name with different words | 706 | 21243 | 1204 (472) | 1 | 1203 (1076) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
+| X1 | A different real word in the name | 2317 | 86013 | 3498 (1336) | 18 | 3480 (2935) | 0.005 [0.0–0.01] | 0 of 18 reviewed |
+| X3 | A common name with different words | 709 | 21290 | 1209 (474) | 1 | 1208 (1081) | 0.001 [0.0–0.0] | 0 of 1 reviewed |
 | X5 | A person's name in another city or state | 17 | 23 | 0 (0) | 0 | 0 (0) |  |  |
 
 ## Rules that hold records back
@@ -33,22 +33,22 @@ Share same = how often the held-back record was the sub's (near 1 the rule could
 
 | Rule | What it does | Searches | Records | Labelled (firms) | Same | Different (local) | Share same [95% CI] | After review |
 |---|---|---|---|---|---|---|---|---|
-| M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 61 | 109 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
+| M3u | M3 held back: a '<word> CONSTRUCTION / ELECTRIC' name under a trade code the sub's records lack | 60 | 108 | 23 (15) | 13 | 10 (10) | 0.565 [0.37–0.74] |  |
 | M3a | M3 held back: at an address where its name spelt another way, or plus a trade word, has more inspections | 2 | 2 | 0 (0) | 0 | 0 (0) |  |  |
 | S1 | Differs only by OF <STATE> / AT <project> | 416 | 20537 | 482 (208) | 5 | 477 (458) | 0.01 [0.0–0.02] |  |
 | S2 | The sub's name plus BRANCH / DIVISION / OFFICE | 9 | 51 | 2 (1) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
-| S3 | The sub's name plus a real word, at an address the sub uses | 120 | 209 | 48 (28) | 18 | 30 (21) | 0.375 [0.25–0.52] |  |
+| S3 | The sub's name plus a real word, at an address the sub uses | 119 | 206 | 46 (27) | 18 | 28 (19) | 0.391 [0.26–0.54] |  |
 | S4 | The sub's name plus a state, or the record's own city | 42 | 110 | 23 (8) | 3 | 20 (8) | 0.13 [0.05–0.32] |  |
 | P1 | A person's name without a city to tell people apart | 9 | 9 | 2 (2) | 2 | 0 (0) | 1.0 [0.34–1.0] |  |
 | P3 | A company named after a person, in another city or state | 53 | 90 | 23 (13) | 23 | 0 (0) | 1.0 [0.86–1.0] |  |
 | J1 | A joint venture at a member's address | 62 | 85 | 0 (0) | 0 | 0 (0) |  |  |
-| U3 | Same family name, a different trade word | 383 | 1088 | 149 (92) | 20 | 129 (98) | 0.134 [0.09–0.2] |  |
-| U2 | A common name with other words, same city | 125 | 183 | 42 (29) | 7 | 35 (34) | 0.167 [0.08–0.31] |  |
+| U3 | Same family name, a different trade word | 382 | 1085 | 147 (92) | 20 | 127 (98) | 0.136 [0.09–0.2] |  |
+| U2 | A common name with other words, same city | 126 | 184 | 42 (29) | 7 | 35 (34) | 0.167 [0.08–0.31] |  |
 | U4 | The sub's common name in another state | 121 | 378 | 72 (36) | 18 | 54 (52) | 0.25 [0.16–0.36] |  |
-| G1 | Initials-only names | 104 | 431 | 61 (31) | 31 | 30 (29) | 0.508 [0.39–0.63] |  |
-| N1 | A related facility (not coded construction), by name | 290 | 809 | 319 (117) | 272 | 47 (21) | 0.853 [0.81–0.89] |  |
+| G1 | Initials-only names | 105 | 442 | 64 (32) | 34 | 30 (29) | 0.531 [0.41–0.65] |  |
+| N1 | A related facility (not coded construction), by name | 290 | 809 | 318 (116) | 271 | 47 (21) | 0.852 [0.81–0.89] |  |
 | R1 | A red-flagged record at an address the company uses | 115 | 127 | 54 (29) | 6 | 48 (18) | 0.111 [0.05–0.22] |  |
-| U | Anything else the rules can't settle | 670 | 3415 | 404 (195) | 127 | 277 (214) | 0.314 [0.27–0.36] |  |
+| U | Anything else the rules can't settle | 669 | 3406 | 403 (194) | 127 | 276 (213) | 0.315 [0.27–0.36] |  |
 
 ## Rules that never fired in these searches
 
@@ -99,12 +99,12 @@ A matched record labelled different, or an excluded one labelled same. Many are 
 |---|---|---|---|
 | different | HENSEL PHELPS (HONOLULU, HI) | HENSEL PHELPS CONSTRUCTION CO. (420 SIXTH AVE, GREELEY, CO) |  |
 | different | BRANDSAFWAY INDUSTRIES, LLC (LESTER, PA) | BRANDSAFWAY SOLUTIONS, LLC (11208 BOGGY CREEK RD, ORLANDO, FL) |  |
-| different (local firms) | D.R. HORTON, INC. (MOUNT LAUREL, NJ) | D.R. HORTON (5724 N W 132ND, OKLAHOMA CITY, OK) |  |
 | different | 133410 - D. R. HORTON, INC (MORRISVILLE, NC) | D.R. HORTON, INC. (4400 ALAMEDA BLVD NE STE B, ALBUQUERQUE, NM) |  |
 | different | BRANDSAFWAY SERVICES LLC (BENICIA, CA) | BRANDSAFWAY INDUSTRIES (501 ROBB ST, MC KEES ROCKS, PA) |  |
 | different | 149146 - BRANDSAFWAY SOLUTIONS, LLC (RALEIGH, NC) | BRANDSAFWAY SERVICES, LLC (5251 W 130TH ST, CLEVELAND, OH) |  |
 | different | 67978 - BRANDSAFWAY INDUSTRIES LLC (INDIANAPOLIS, IN) | BRANDSAFWAY LLC (3674 HWY 51, LA PLACE, LA) |  |
 | different | D.R. HORTON, INC. (MOUNT LAUREL, NJ) | 139010 - D.R. HORTON, INC. (408 MENDENHALL OAKS STE 101, HIGH POINT, NC) |  |
+| different | BRANDSAFWAY SERVICES LLC (GARDENA, CA) | BRANDSAFWAY INDUSTRIES, LLC (10 INDUSTRIAL HWY BLDG G, LESTER, PA) |  |
 
 ### X1 (excluded): 18
 

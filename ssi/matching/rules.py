@@ -97,14 +97,17 @@ _SPLIT_DIR = re.compile(r"(NORTH|SOUTH|EAST|WEST)([A-DF-Z][A-Z]{2,}|E[A-QS-Z][A-
 
 def street_side(address: str | None) -> frozenset[str]:
     """The compass letters an address gives its half of the street: before the street (525 N TRYON ST, 7900 WESTPARK
-    DR) or after its type (2455 PACES FERRY RD SE, 1278 PARK AVE S W). The addr_key macro drops them, so 525 NORTH
-    TRYON and 525 S TRYON share a key. Empty when none is written, or the address contradicts itself."""
+    DR, 6616 N W 32ND ST) or after its type (2455 PACES FERRY RD SE, 1278 PARK AVE S W). The addr_key macro drops
+    them, so 525 NORTH TRYON and 525 S TRYON share a key. Empty when none is written, or the address contradicts
+    itself."""
     w = re.sub(r"[^A-Z0-9 ]", " ", (address or "").upper()).split()
     if len(w) < 3 or not re.fullmatch(r"\d+[A-Z]?", w[0]):
         return frozenset()
     side, street = "", 1
     if w[1] in _DIRECTIONS:  # as addr_key reads it: 525 WEST ST is W, on a street called ST
         side, street = _DIRECTIONS[w[1]], 2
+        if side in ("N", "S") and len(w) > 3 and _DIRECTIONS.get(w[2]) in ("E", "W"):  # 6616 N W 32ND ST is NW
+            side, street = side + _DIRECTIONS[w[2]], 3
     elif m := _SPLIT_DIR.fullmatch(w[1]):
         side = m.group(1)[0]
     typ = next((i for i in range(street + 1, len(w)) if w[i] in _STREET_TYPES), None)

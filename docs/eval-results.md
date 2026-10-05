@@ -202,7 +202,7 @@ It runs searches the way a GC would, starting from 3,264 establishments that fil
 1,500 drawn at random, and the rest from pools where particular rules act (people's names, shared buildings, joint
 ventures, branch and OF <STATE> names, related facilities, names made only of common words, licence numbers). Every
 record the rules decide is filed under the rule that decided it and labelled by tax ID, with at most 3 per search and
-rule so that one national firm can't fill a rule's set. 140,766 records were decided, 23,612 labelled and 8,020
+rule so that one national firm can't fill a rule's set. 140,782 records were decided, 23,607 labelled and 8,018
 graded, in about 7 minutes with no model calls. Full table and examples: [eval/rules/results.md](../eval/rules/results.md).
 
 Share of a rule's labelled records that were the same company (firms = distinct tax IDs searched):
