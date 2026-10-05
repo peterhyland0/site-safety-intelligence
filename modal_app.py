@@ -60,10 +60,13 @@ image = (
 app = modal.App("site-safety-intelligence", image=image)
 
 web_secrets = [modal.Secret.from_name(name) for name, flag in SECRET_FLAGS if flag in with_flags]
+# Beside the app's Postgres (Supabase, AWS us-east-1 in Virginia): a project page makes dozens of round trips to it, one
+# after another, and from an unpinned container each took ~130 ms. Billed at 1.75x; the broad "us" (1.15x) can land in Oregon.
+REGION = "us-east"
 
 
 # No ephemeral_disk: the default 512 GiB is the smallest Modal accepts, and the build needs about 15 GB
-@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=8, memory=32768, timeout=2 * 3600,
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=8, memory=32768, timeout=2 * 3600, region=REGION,
               # daily, after DOL's ~11:00 UTC refresh; off unless deployed with SSI_NIGHTLY=1 (else `make refresh`)
               schedule=modal.Cron("0 13 * * *") if os.environ.get("SSI_NIGHTLY") == "1" else None)
 def refresh(download: bool = True) -> dict:
@@ -134,7 +137,7 @@ def latest_local() -> Path | None:
     return local
 
 
-@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192,
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, region=REGION,
               min_containers=int(os.environ.get("SSI_MIN_CONTAINERS", "0")), scaledown_window=900)
 @modal.concurrent(max_inputs=16)
 @modal.asgi_app()
@@ -150,7 +153,7 @@ def web():
     return fastapi_app
 
 
-@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=3600)
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=3600, region=REGION)
 def follow() -> dict:
     """Move the app's decisions onto the live build again: for subs a refresh couldn't move (busy or failed)."""
     from ssi.matching import remap
@@ -159,7 +162,7 @@ def follow() -> dict:
     return remap.follow_all(Path(VOL_PATH) / "build")
 
 
-@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=1800)
+@app.function(volumes={VOL_PATH: volume}, secrets=web_secrets, cpu=2, memory=8192, timeout=1800, region=REGION)
 def seed_demo() -> None:
     """Create the demo project against the deployed warehouse and Postgres."""
     import shutil

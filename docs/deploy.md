@@ -8,8 +8,11 @@ forwards `/api/*` to Modal, so the browser sees one site. The GC's decisions liv
 ## One-time setup (account owner)
 1. **Modal CLI login**, so this repo can deploy into your workspace:
    `uv run modal setup`
-2. **Postgres** for the `app` schema: create a database and copy its connection string (use the pooled URL
-   on Supabase). The app creates its tables on first start.
+2. **Postgres** for the `app` schema: create a database in AWS us-east-1 (Supabase: East US (North Virginia)) and
+   copy its connection string (use the pooled URL on Supabase). The Modal functions run in `us-east` (`REGION` in
+   [modal_app.py](../modal_app.py)) because a project page makes dozens of round trips to Postgres, one after another:
+   from across the Atlantic each took ~130 ms. A database elsewhere needs `REGION` moved with it. The app creates
+   its tables on first start.
 3. **Secrets** (created by you; values never go in the repo):
    ```bash
    uv run modal secret create ssi-db DATABASE_URL='postgresql://...'
