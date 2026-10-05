@@ -56,8 +56,11 @@ follow:           ## Move the app's decisions onto the live build again (subs a 
 	cd web && npm run build
 	$(SSI_SECRETS) uv run modal run modal_app.py::follow
 
-deploy:           ## Deploy the web app to Modal (secrets: docs/deploy.md; drop one with SSI_SECRETS=...; SSI_NIGHTLY=1 rebuilds daily)
+deploy:           ## Deploy the web app to Modal, one container warm (secrets: docs/deploy.md; drop one with SSI_SECRETS=...; SSI_NIGHTLY=1 rebuilds daily)
 	cd web && npm run build
-	$(SSI_SECRETS) uv run modal deploy modal_app.py
+	SSI_MIN_CONTAINERS=$(SSI_MIN_CONTAINERS) $(SSI_SECRETS) uv run modal deploy modal_app.py
 
 SSI_SECRETS = SSI_WITH_DB=1 SSI_WITH_GLM=1 SSI_WITH_LANGSMITH=1 SSI_WITH_JEV=1 SSI_WITH_TAVILY=1
+# One web container always running: a visit after 15 idle minutes would otherwise wait ~7.5 s for a cold start.
+# `make deploy SSI_MIN_CONTAINERS=0` lets it scale to zero (no cost while idle).
+SSI_MIN_CONTAINERS ?= 1

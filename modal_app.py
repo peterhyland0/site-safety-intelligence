@@ -2,7 +2,8 @@
 
     make refresh                                # download + build on Modal (first time: ~10 min), then move the
                                                 # app's decisions onto the new build (needs ssi-db)
-    make deploy                                 # deploy the web app with its secrets (the nightly build is off)
+    make deploy                                 # deploy the web app with its secrets and one container kept warm
+                                                # (SSI_MIN_CONTAINERS=0: none); the nightly build is off
     SSI_NIGHTLY=1 make deploy                   # ... and rebuild the data daily at 13:00 UTC
     make follow                                 # move decisions again, for subs a refresh couldn't
 

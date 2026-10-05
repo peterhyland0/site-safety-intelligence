@@ -56,7 +56,9 @@ Each secret is named by an `SSI_WITH_*` flag (list in [modal_app.py](../modal_ap
 overriding the list, e.g. `make deploy SSI_SECRETS="SSI_WITH_DB=1 SSI_WITH_GLM=1"`. `ssi-db` is required: without
 it the API has no database. `modal deploy` prints the API URL, e.g.
 `https://<workspace>--site-safety-intelligence-web.modal.run`.
-Set `SSI_MIN_CONTAINERS=1` on deploy while reviewers are looking, to avoid cold starts.
+`make deploy` keeps one container running (`SSI_MIN_CONTAINERS=1`), so a visit after 15 idle minutes doesn't wait
+~7.5 s for a cold start; `make deploy SSI_MIN_CONTAINERS=0` lets it scale to zero, at no cost while idle. A bare
+`uv run modal deploy` keeps none.
 
 The data doesn't rebuild on its own: refresh it with `make refresh`, or deploy with `SSI_NIGHTLY=1 make deploy` to
 rebuild daily at 13:00 UTC (after DOL's ~11:00 UTC update; about 3 minutes on 8 CPUs). A plain `make deploy` turns
